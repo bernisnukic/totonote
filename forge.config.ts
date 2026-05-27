@@ -20,10 +20,14 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   hooks: {
-    // Ad-hoc sign the macOS app so downloaded builds aren't flagged "damaged".
-    // An unsigned/invalidated arm64 app is rejected outright by Gatekeeper; an
-    // ad-hoc signature downgrades that to the normal "unidentified developer"
-    // prompt users clear with right-click → Open (or `xattr -dr com.apple.quarantine`).
+    // Ad-hoc re-sign the macOS app after packaging so downloaded builds aren't
+    // flagged "damaged". Packaging modifies the bundle (asar, renamed binary),
+    // invalidating Electron's original signature; on Apple Silicon an invalid
+    // signature is rejected outright. `codesign --deep -s -` lays down a fresh
+    // ad-hoc signature over the final bundle. (Forge's osxSign with identity '-'
+    // does NOT actually sign here — verified locally — so we re-sign explicitly.)
+    // NOT a Developer ID signature: users still clear the first-launch
+    // "unidentified developer" prompt (right-click → Open).
     postPackage: async (_config, { platform, outputPaths }) => {
       if (platform !== 'darwin') return;
       for (const outputPath of outputPaths) {
