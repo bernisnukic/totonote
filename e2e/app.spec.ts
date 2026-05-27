@@ -849,3 +849,13 @@ test.describe('Status Bar', () => {
     await expect(page.getByText('TotoNote')).toBeVisible();
   });
 });
+
+// ─── Intro Animation ───────────────────────────────────────────────────
+
+test.describe('Intro Animation', () => {
+  test('intro overlay is skipped under automation so it never blocks the UI', async () => {
+    // The intro plays on real launches but is disabled when navigator.webdriver
+    // is true (Playwright), so the suite can interact with the app immediately.
+    await expect(page.locator('.intro-overlay')).toHaveCount(0);
+  });
+});
