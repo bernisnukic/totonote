@@ -11,6 +11,9 @@ import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-nati
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    // Lowercase binary name so the Linux deb/rpm makers can find it
+    // (they expect out/TotoNote-linux-x64/totonote, derived from the package "name").
+    executableName: 'totonote',
   },
   rebuildConfig: {},
   makers: [
