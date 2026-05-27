@@ -7,15 +7,37 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
+import { execFileSync } from 'child_process';
+import { readdirSync } from 'fs';
+import path from 'path';
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    // Lowercase binary name so the Linux deb/rpm makers can find it
-    // (they expect out/TotoNote-linux-x64/totonote, derived from the package "name").
-    executableName: 'totonote',
+    // Linux .deb/.rpm makers look for a lowercase binary named after the package
+    // "name" (totonote); macOS/Windows keep the "TotoNote" display name.
+    executableName: process.platform === 'linux' ? 'totonote' : 'TotoNote',
   },
   rebuildConfig: {},
+  hooks: {
+    // Ad-hoc sign the macOS app so downloaded builds aren't flagged "damaged".
+    // An unsigned/invalidated arm64 app is rejected outright by Gatekeeper; an
+    // ad-hoc signature downgrades that to the normal "unidentified developer"
+    // prompt users clear with right-click → Open (or `xattr -dr com.apple.quarantine`).
+    postPackage: async (_config, { platform, outputPaths }) => {
+      if (platform !== 'darwin') return;
+      for (const outputPath of outputPaths) {
+        const appDir = readdirSync(outputPath).find((f) => f.endsWith('.app'));
+        if (appDir) {
+          execFileSync(
+            'codesign',
+            ['--force', '--deep', '--sign', '-', path.join(outputPath, appDir)],
+            { stdio: 'inherit' },
+          );
+        }
+      }
+    },
+  },
   makers: [
     new MakerSquirrel({}),
     new MakerZIP({}, ['darwin']),
