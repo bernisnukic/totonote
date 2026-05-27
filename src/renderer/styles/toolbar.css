@@ -1,0 +1,112 @@
+/* Main toolbar */
+.main-toolbar {
+  display: flex;
+  align-items: center;
+  height: var(--toolbar-height);
+  padding: 0 var(--space-3);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+}
+
+.toolbar-group + .toolbar-group {
+  border-left: 1px solid var(--border-default);
+  padding-left: var(--space-2);
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.toolbar-btn.active {
+  background: var(--accent-dim);
+  color: var(--accent-primary);
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--border-default);
+  margin: 0 var(--space-1);
+}
+
+/* Selection toolbar (floating) */
+.selection-toolbar {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--accent-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-popup);
+  z-index: var(--z-popover);
+  transform: translateY(-8px);
+}
+
+.selection-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+  white-space: nowrap;
+}
+
+.selection-toolbar-btn:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.selection-toolbar-separator {
+  width: 1px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Toolbar spacer for title bar drag area */
+.toolbar-drag-spacer {
+  -webkit-app-region: drag;
+  flex: 1;
+}
+
+/* Back button */
+.toolbar-back-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toolbar-back-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}

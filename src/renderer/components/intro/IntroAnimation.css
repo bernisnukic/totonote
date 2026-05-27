@@ -1,0 +1,28 @@
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  opacity: 1;
+  transition: opacity 450ms ease;
+}
+
+.intro-overlay--closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intro-gif {
+  width: min(420px, 60vmin);
+  height: auto;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-overlay {
+    transition: none;
+  }
+}
