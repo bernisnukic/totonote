@@ -43,6 +43,34 @@ jobs:
       - name: Build distributables
         run: npm run make
 
+      # Rename Forge's jargony defaults (darwin-arm64 / amd64 / x86_64) to user-friendly names.
+      # Squirrel-Windows files (RELEASES + .nupkg + Setup.exe) keep their original names —
+      # Squirrel's installer/updater requires the exact filenames.
+      - name: Rename macOS artifact
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          cd out/make/zip/darwin/arm64
+          for f in TotoNote-darwin-arm64-*.zip; do
+            v="${f#TotoNote-darwin-arm64-}"; v="${v%.zip}"
+            mv "$f" "TotoNote-${v}-macOS.zip"
+          done
+          ls
+
+      - name: Rename Linux artifacts
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          for f in out/make/deb/x64/totonote_*_amd64.deb; do
+            b=$(basename "$f"); v="${b#totonote_}"; v="${v%_amd64.deb}"
+            mv "$f" "$(dirname "$f")/TotoNote-${v}-Linux.deb"
+          done
+          for f in out/make/rpm/x64/totonote-*.x86_64.rpm; do
+            b=$(basename "$f"); v="${b#totonote-}"; v="${v%-1.x86_64.rpm}"
+            mv "$f" "$(dirname "$f")/TotoNote-${v}-Linux.rpm"
+          done
+          ls out/make/deb/x64 out/make/rpm/x64
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -63,9 +91,26 @@ jobs:
         with:
           path: artifacts
 
+      # Only attach the user-facing files; Squirrel internals (RELEASES + .nupkg)
+      # exist in the artifact bundle but are not exposed on the public release page.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
-          generate_release_notes: true
+          files: |
+            artifacts/**/*-macOS.zip
+            artifacts/**/*.Setup.exe
+            artifacts/**/*-Linux.deb
+            artifacts/**/*-Linux.rpm
           fail_on_unmatched_files: true
+          generate_release_notes: true
+          body: |
+            ## 📥 Download for your OS
+
+            | OS | File | How to install |
+            |----|------|---------------|
+            | 🍎 **macOS** (Apple Silicon) | `TotoNote-*-macOS.zip` | Unzip and drag the app to **Applications**. First launch: **right-click → Open** to bypass Gatekeeper. |
+            | 🪟 **Windows** | `TotoNote-*.Setup.exe` | Double-click to install. On SmartScreen: **More info → Run anyway**. |
+            | 🐧 **Linux** (Debian/Ubuntu) | `TotoNote-*-Linux.deb` | `sudo dpkg -i TotoNote-*-Linux.deb` |
+            | 🐧 **Linux** (RHEL/Fedora) | `TotoNote-*-Linux.rpm` | `sudo rpm -i TotoNote-*-Linux.rpm` |
+
+            Builds are **unsigned** (ad-hoc on macOS) — that's why your OS warns on first launch.
