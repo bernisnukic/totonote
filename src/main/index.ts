@@ -38,8 +38,10 @@ const createWindow = (): void => {
     console.log(`[Renderer ${level}] ${message} (${sourceId}:${line})`);
   });
 
-  // Open DevTools in development (skip in test mode)
-  if (process.env.NODE_ENV !== 'test') {
+  // DevTools only in dev. app.isPackaged is the canonical check —
+  // NODE_ENV is unset in packaged builds, so the old `!== 'test'` guard
+  // opened DevTools in production too (the mystery "second window").
+  if (!app.isPackaged && process.env.NODE_ENV !== 'test') {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 };
