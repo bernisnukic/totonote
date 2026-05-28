@@ -70,6 +70,18 @@ export interface IpcHandlerMap {
   // Preferences
   'preference:get': { args: { key: string }; result: string | null };
   'preference:set': { args: { key: string; value: string }; result: void };
+
+  // App / Updates
+  'app:check-for-updates': {
+    args: void;
+    result: {
+      available: boolean;
+      currentVersion: string;
+      latestVersion?: string;
+      releaseUrl?: string;
+    };
+  };
+  'app:open-external': { args: { url: string }; result: void };
 }
 
 export type IpcChannel = keyof IpcHandlerMap;

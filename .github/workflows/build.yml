@@ -98,7 +98,7 @@ jobs:
         with:
           files: |
             artifacts/**/*-macOS.zip
-            artifacts/**/*.Setup.exe
+            artifacts/**/*Setup.exe
             artifacts/**/*-Linux.deb
             artifacts/**/*-Linux.rpm
           fail_on_unmatched_files: true

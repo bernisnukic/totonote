@@ -5,6 +5,7 @@ import { DocumentList } from './components/document-list/DocumentList';
 import { EditorArea } from './components/editor/EditorArea';
 import { TagContextMenu } from './components/editor/TagContextMenu';
 import { IntroAnimation } from './components/intro/IntroAnimation';
+import { UpdateBanner } from './components/common/UpdateBanner';
 
 export function App() {
   const activeDocumentId = useStore(s => s.activeDocumentId);
@@ -29,6 +30,7 @@ export function App() {
         {activeDocumentId ? <EditorArea /> : <DocumentList />}
         <TagContextMenu />
       </AppLayout>
+      <UpdateBanner />
     </>
   );
 }
