@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import Database from 'better-sqlite3';
+import { createTestDb, type TestDb } from '../test-helpers';
 
-let testDb: Database.Database;
+let testDb: TestDb;
 
 vi.mock('../connection', () => ({
   getDb: () => testDb,
@@ -10,18 +10,7 @@ vi.mock('../connection', () => ({
 import { listDocuments, getDocument, createDocument, updateDocument, deleteDocument } from './document-repo';
 
 function initTestDb() {
-  testDb = new Database(':memory:');
-  testDb.pragma('foreign_keys = ON');
-  testDb.exec(`
-    CREATE TABLE documents (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      section_label TEXT DEFAULT 'Section',
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
+  ({ db: testDb } = createTestDb());
 }
 
 describe('document-repo', () => {

@@ -65,3 +65,16 @@ if (nodeFiles.length === 0) {
 }
 
 console.log(`✓ verify-package: better-sqlite3 native binding present (${nodeFiles[0]})`);
+
+// Drizzle migrations must be bundled as extraResource for the runtime
+// migrator to find them; without this the app crashes on first launch.
+const migrationsDir = join(res, 'migrations');
+const journal = join(migrationsDir, 'meta', '_journal.json');
+if (!existsSync(journal)) {
+  fail(`Missing ${journal} — Drizzle migrations weren't copied. Check extraResource in forge.config.ts.`);
+}
+const sqlFiles = readdirSync(migrationsDir).filter(f => f.endsWith('.sql'));
+if (sqlFiles.length === 0) {
+  fail(`No .sql migration files in ${migrationsDir}.`);
+}
+console.log(`✓ verify-package: Drizzle migrations bundled (${sqlFiles.length} file(s))`);

@@ -1,7 +1,7 @@
 {
   "name": "totonote",
   "productName": "TotoNote",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A desktop app for organizing lore and world-building notes",
   "main": ".vite/build/index.js",
   "private": true,
@@ -16,7 +16,9 @@
     "test": "ELECTRON_RUN_AS_NODE=1 ./node_modules/electron/dist/Electron.app/Contents/MacOS/Electron ./node_modules/vitest/vitest.mjs run",
     "test:watch": "ELECTRON_RUN_AS_NODE=1 ./node_modules/electron/dist/Electron.app/Contents/MacOS/Electron ./node_modules/vitest/vitest.mjs",
     "test:e2e:build": "node e2e/build-for-test.mjs",
-    "test:e2e": "npm run test:e2e:build && npx playwright test"
+    "test:e2e": "npm run test:e2e:build && npx playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio"
   },
   "keywords": [],
   "author": "bernis",
@@ -42,6 +44,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^4.7.0",
+    "drizzle-kit": "^0.31.10",
     "electron": "40.4.0",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
@@ -71,6 +74,7 @@
     "@tiptap/react": "^2.11.0",
     "@tiptap/starter-kit": "^2.11.0",
     "better-sqlite3": "^12.6.2",
+    "drizzle-orm": "^0.45.2",
     "electron-squirrel-startup": "^1.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

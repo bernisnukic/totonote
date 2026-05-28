@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import Database from 'better-sqlite3';
+import { createTestDb, type TestDb } from '../test-helpers';
 
-let testDb: Database.Database;
+let testDb: TestDb;
 
 vi.mock('../connection', () => ({
   getDb: () => testDb,
@@ -10,24 +10,9 @@ vi.mock('../connection', () => ({
 import { listTags, createTag, updateTag, deleteTag, searchTags } from './tag-repo';
 
 function initTestDb() {
-  testDb = new Database(':memory:');
-  testDb.pragma('foreign_keys = ON');
-  testDb.exec(`
-    CREATE TABLE categories (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      sort_order INTEGER NOT NULL DEFAULT 0
-    );
-    CREATE TABLE tags (
-      id TEXT PRIMARY KEY,
-      category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      color TEXT NOT NULL DEFAULT '#48dbfb',
-      description TEXT DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE INDEX idx_tags_category ON tags(category_id);
-    CREATE UNIQUE INDEX idx_tags_name_category ON tags(name, category_id);
+  const { db, sqlite } = createTestDb();
+  testDb = db;
+  sqlite.exec(`
     INSERT INTO categories (id, name, sort_order) VALUES ('cat-1', 'Member', 1);
     INSERT INTO categories (id, name, sort_order) VALUES ('cat-2', 'Location', 2);
   `);

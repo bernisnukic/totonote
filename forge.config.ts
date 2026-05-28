@@ -42,6 +42,9 @@ const config: ForgeConfig = {
     // Linux .deb/.rpm makers look for a lowercase binary named after the package
     // "name" (totonote); macOS/Windows keep the "TotoNote" display name.
     executableName: process.platform === 'linux' ? 'totonote' : 'TotoNote',
+    // Drizzle's migrator reads SQL files from disk; ship them next to the app
+    // so `process.resourcesPath/migrations/` resolves in packaged builds.
+    extraResource: ['./src/main/db/migrations'],
   },
   rebuildConfig: {},
   hooks: {

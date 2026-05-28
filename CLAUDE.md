@@ -11,7 +11,7 @@ Electron desktop app for organizing lore/world-building notes. Rich text editor 
 | Shell | Electron Forge + Vite |
 | Frontend | React 19 + TypeScript |
 | Editor | TipTap (ProseMirror) |
-| Database | SQLite via better-sqlite3 (synchronous) |
+| Database | SQLite (better-sqlite3) + Drizzle ORM |
 | State | Zustand (slices pattern) |
 | Styling | Plain CSS + custom properties |
 | Unit Tests | Vitest (run via Electron's Node for ABI compat) |
@@ -88,7 +88,7 @@ Slices pattern: each file exports an interface + `createXSlice` function. All co
 - **preference-slice**: shortcuts, theme
 
 ### Repositories
-Plain exported functions (no classes). Use `getDb()` from connection.ts. Each has a `rowToEntity()` mapper for snake_case DB rows → camelCase domain types. UUID for IDs, ISO strings for timestamps.
+Plain exported functions (no classes). Use `getDb()` from connection.ts to access the Drizzle query builder (`db.select().from(...).where(eq(...))` etc). No hand-written SQL strings; no `rowToEntity` mappers — schema declares `text('section_label')` with JS field `sectionLabel`, so Drizzle returns camelCase rows directly. UUID for IDs (uuid v4 for most, `cat-<uuid>` prefix for categories), ISO strings for timestamps.
 
 ### Annotations (Core Feature)
 Annotations are **ProseMirror decorations**, NOT marks in the document JSON. They're stored as `(sectionId, tagId, fromPos, toPos)` in SQLite and rendered as colored inline decorations via a custom plugin (`extensions/annotation-decoration/`). Positions are mapped through edits using ProseMirror's transaction mapping.
@@ -100,13 +100,20 @@ All sections render as one scrollable page. Each section gets its own `SectionEd
 
 ## Database
 
-SQLite with WAL mode and foreign keys ON. Migrations in `src/main/db/migrations/` (numbered SQL files). Embedded fallback migrations in `connection.ts` for production builds where files aren't on disk.
+SQLite with WAL mode and foreign keys ON. Schema lives in `src/main/db/schema.ts` (Drizzle `sqliteTable()` declarations). On app start, the Drizzle migrator applies any new migrations from `src/main/db/migrations/` and records them in the `__drizzle_migrations` table.
 
-**Tables**: documents, sections, categories, tags, annotations, document_tags, browse_categories, preferences, _migrations
+**Tables**: documents, sections, categories, tags, annotations, document_tags, section_tags, browse_categories, preferences, __drizzle_migrations
 
-**Default seed**: One "General" category (`cat-general`). No other pre-filled data.
+**Default seed**: One "General" category (`cat-general`). Inserted post-migrate in `connection.ts` via `INSERT OR IGNORE` so it's idempotent across launches.
 
-**Adding migrations**: Create `NNN-name.sql` in migrations dir AND add the same SQL to the embedded migration function in `connection.ts`.
+**Workflow for schema changes**:
+1. Edit `src/main/db/schema.ts`
+2. `npm run db:generate` — Drizzle Kit diffs your schema against the previous snapshot and emits `NNNN_<name>.sql` + updated `meta/_journal.json` and `meta/NNNN_snapshot.json`
+3. Commit schema.ts + everything in `migrations/`
+
+**Packaged builds**: Forge's `packagerConfig.extraResource` copies the migrations folder to `Contents/Resources/migrations/` so the runtime migrator can find it via `process.resourcesPath`. The `verify-package.mjs` post-make check fails the build if migrations didn't get bundled.
+
+**Local DB inspection**: `npm run db:studio` opens Drizzle Studio at localhost:4983 against your dev DB.
 
 ## Styling
 
@@ -119,7 +126,7 @@ Dark theme. CSS custom properties in `tokens.css`. Key tokens:
 ## Common Pitfalls
 
 1. **CSS variable `--accent` doesn't exist** — use `--accent-primary`.
-2. **Migration ordering matters for existing DBs** — if migration N already ran, you can't modify it. Create N+1 instead. Always test that new migrations work on DBs that already applied previous migrations.
+2. **Migrations are immutable once generated** — Drizzle Kit hashes each migration; editing an already-generated `.sql` file desyncs the hash and breaks startup. If you need to fix a migration, edit `schema.ts` and run `db:generate` again to produce a new migration on top.
 3. **Categories must exist before tags** — tags have a FK to categories. If categories table is empty, tag creation fails silently unless you add validation.
 4. **React controlled `<select>` race condition** — when options load async, the visual first-option doesn't match React state (`""`). Auto-select first option in a useEffect.
 5. **Annotation decorations must re-sync** — when annotations change globally (e.g., from SelectionToolbar), SectionEditor must watch the global store and re-apply decorations. Don't rely only on mount-time loading.
