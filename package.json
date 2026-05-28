@@ -1,7 +1,7 @@
 {
   "name": "totonote",
   "productName": "TotoNote",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A desktop app for organizing lore and world-building notes",
   "main": ".vite/build/index.js",
   "private": true,
@@ -9,6 +9,8 @@
     "start": "node node_modules/@electron-forge/cli/dist/electron-forge.js start",
     "package": "node node_modules/@electron-forge/cli/dist/electron-forge.js package",
     "make": "node node_modules/@electron-forge/cli/dist/electron-forge.js make",
+    "postmake": "node scripts/verify-package.mjs",
+    "verify:package": "node scripts/verify-package.mjs",
     "publish": "node node_modules/@electron-forge/cli/dist/electron-forge.js publish",
     "lint": "eslint --ext .ts,.tsx .",
     "test": "ELECTRON_RUN_AS_NODE=1 ./node_modules/electron/dist/Electron.app/Contents/MacOS/Electron ./node_modules/vitest/vitest.mjs run",

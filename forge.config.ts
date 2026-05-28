@@ -8,18 +8,35 @@ import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { execFileSync } from 'child_process';
-import { readdirSync } from 'fs';
+import { readdirSync, mkdirSync, cpSync } from 'fs';
 import path from 'path';
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      // Native .node files can't be loaded from inside an asar — unpack them.
+      unpack: '**/*.node',
+    },
     // Linux .deb/.rpm makers look for a lowercase binary named after the package
     // "name" (totonote); macOS/Windows keep the "TotoNote" display name.
     executableName: process.platform === 'linux' ? 'totonote' : 'TotoNote',
   },
   rebuildConfig: {},
   hooks: {
+    // The Forge Vite plugin only places .vite/ into the staged app dir —
+    // node_modules is NOT carried over, so external native deps like
+    // better-sqlite3 can't be resolved at runtime. Copy native deps here so
+    // packaging includes them; the asar.unpack glob then puts their .node
+    // files in app.asar.unpacked/.
+    packageAfterCopy: async (_config, buildPath) => {
+      const nativeDeps = ['better-sqlite3'];
+      const srcRoot = path.join(process.cwd(), 'node_modules');
+      const dstRoot = path.join(buildPath, 'node_modules');
+      mkdirSync(dstRoot, { recursive: true });
+      for (const dep of nativeDeps) {
+        cpSync(path.join(srcRoot, dep), path.join(dstRoot, dep), { recursive: true });
+      }
+    },
     // Ad-hoc re-sign the macOS app after packaging so downloaded builds aren't
     // flagged "damaged". Packaging modifies the bundle (asar, renamed binary),
     // invalidating Electron's original signature; on Apple Silicon an invalid
