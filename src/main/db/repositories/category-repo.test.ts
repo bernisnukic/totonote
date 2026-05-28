@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import Database from 'better-sqlite3';
+import { createTestDb, type TestDb } from '../test-helpers';
 
-let testDb: Database.Database;
+let testDb: TestDb;
 
 vi.mock('../connection', () => ({
   getDb: () => testDb,
@@ -10,26 +10,12 @@ vi.mock('../connection', () => ({
 import { listCategories, listBrowseCategories } from './category-repo';
 
 function initTestDb() {
-  testDb = new Database(':memory:');
-  testDb.pragma('foreign_keys = ON');
-  testDb.exec(`
-    CREATE TABLE categories (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      parent_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
-      sort_order INTEGER NOT NULL DEFAULT 0
-    );
-    CREATE TABLE browse_categories (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      parent_id TEXT REFERENCES browse_categories(id),
-      sort_order INTEGER NOT NULL DEFAULT 0
-    );
-
+  const { db, sqlite } = createTestDb();
+  testDb = db;
+  sqlite.exec(`
     INSERT INTO categories (id, name, sort_order) VALUES ('cat-1', 'Member', 1);
     INSERT INTO categories (id, name, sort_order) VALUES ('cat-2', 'Location', 2);
     INSERT INTO categories (id, name, sort_order) VALUES ('cat-3', 'Game', 3);
-
     INSERT INTO browse_categories (id, name, sort_order) VALUES ('bc-gen', 'Gen', 1);
     INSERT INTO browse_categories (id, name, sort_order) VALUES ('bc-group', 'Group', 2);
     INSERT INTO browse_categories (id, name, parent_id, sort_order) VALUES ('bc-sub', 'Sub Group', 'bc-group', 3);

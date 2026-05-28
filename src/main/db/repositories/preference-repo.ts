@@ -1,58 +1,52 @@
+import { eq, and } from 'drizzle-orm';
 import { getDb } from '../connection';
+import { preferences, documentTags, tags, categories } from '../schema';
 import type { DocumentTagWithDetails } from '../../../shared/domain-types';
 
 // Preferences
 export function getPreference(key: string): string | null {
-  const row = getDb().prepare('SELECT value FROM preferences WHERE key = ?').get(key) as { value: string } | undefined;
-  return row ? row.value : null;
+  const row = getDb().select().from(preferences).where(eq(preferences.key, key)).get();
+  return row?.value ?? null;
 }
 
 export function setPreference(key: string, value: string): void {
-  getDb().prepare(
-    'INSERT INTO preferences (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?'
-  ).run(key, value, value);
+  getDb()
+    .insert(preferences)
+    .values({ key, value })
+    .onConflictDoUpdate({ target: preferences.key, set: { value } })
+    .run();
 }
 
 // Document Tags
-interface DocumentTagRow {
-  document_id: string;
-  tag_id: string;
-  category_id: string;
-  tag_name: string;
-  tag_color: string;
-  category_name: string;
-}
-
 export function listDocumentTags(documentId: string): DocumentTagWithDetails[] {
-  const rows = getDb().prepare(`
-    SELECT dt.document_id, dt.tag_id, dt.category_id,
-           t.name as tag_name, t.color as tag_color,
-           c.name as category_name
-    FROM document_tags dt
-    JOIN tags t ON t.id = dt.tag_id
-    JOIN categories c ON c.id = dt.category_id
-    WHERE dt.document_id = ?
-    ORDER BY c.sort_order, t.name
-  `).all(documentId) as DocumentTagRow[];
-
-  return rows.map(row => ({
-    documentId: row.document_id,
-    tagId: row.tag_id,
-    categoryId: row.category_id,
-    tagName: row.tag_name,
-    tagColor: row.tag_color,
-    categoryName: row.category_name,
-  }));
+  return getDb()
+    .select({
+      documentId: documentTags.documentId,
+      tagId: documentTags.tagId,
+      categoryId: documentTags.categoryId,
+      tagName: tags.name,
+      tagColor: tags.color,
+      categoryName: categories.name,
+    })
+    .from(documentTags)
+    .innerJoin(tags, eq(tags.id, documentTags.tagId))
+    .innerJoin(categories, eq(categories.id, documentTags.categoryId))
+    .where(eq(documentTags.documentId, documentId))
+    .orderBy(categories.sortOrder, tags.name)
+    .all();
 }
 
 export function addDocumentTag(documentId: string, tagId: string, categoryId: string): void {
-  getDb().prepare(
-    'INSERT OR IGNORE INTO document_tags (document_id, tag_id, category_id) VALUES (?, ?, ?)'
-  ).run(documentId, tagId, categoryId);
+  getDb()
+    .insert(documentTags)
+    .values({ documentId, tagId, categoryId })
+    .onConflictDoNothing()
+    .run();
 }
 
 export function removeDocumentTag(documentId: string, tagId: string): void {
-  getDb().prepare(
-    'DELETE FROM document_tags WHERE document_id = ? AND tag_id = ?'
-  ).run(documentId, tagId);
+  getDb()
+    .delete(documentTags)
+    .where(and(eq(documentTags.documentId, documentId), eq(documentTags.tagId, tagId)))
+    .run();
 }

@@ -1,73 +1,45 @@
 import { randomUUID } from 'crypto';
+import { eq, max } from 'drizzle-orm';
 import { getDb } from '../connection';
+import { categories, browseCategories } from '../schema';
 import type { Category, BrowseCategory } from '../../../shared/domain-types';
 
-interface CategoryRow {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  sort_order: number;
-}
-
-interface BrowseCategoryRow {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  sort_order: number;
-}
-
-function rowToCategory(row: CategoryRow): Category {
-  return { id: row.id, name: row.name, parentId: row.parent_id, sortOrder: row.sort_order };
-}
-
 export function listCategories(): Category[] {
-  const rows = getDb().prepare(
-    'SELECT * FROM categories ORDER BY sort_order'
-  ).all() as CategoryRow[];
-  return rows.map(rowToCategory);
+  return getDb().select().from(categories).orderBy(categories.sortOrder).all();
 }
 
 export function createCategory(name: string, parentId?: string): Category {
-  const id = `cat-${randomUUID()}`;
   const db = getDb();
-  const maxOrder = db.prepare('SELECT COALESCE(MAX(sort_order), 0) as max_order FROM categories').get() as { max_order: number };
-  const sortOrder = maxOrder.max_order + 1;
-  db.prepare('INSERT INTO categories (id, name, parent_id, sort_order) VALUES (?, ?, ?, ?)').run(id, name, parentId ?? null, sortOrder);
-  return { id, name, parentId: parentId ?? null, sortOrder };
+  const maxRow = db.select({ max: max(categories.sortOrder) }).from(categories).get();
+  const sortOrder = (maxRow?.max ?? 0) + 1;
+  const category: Category = {
+    id: `cat-${randomUUID()}`,
+    name,
+    parentId: parentId ?? null,
+    sortOrder,
+  };
+  db.insert(categories).values(category).run();
+  return category;
 }
 
-export function updateCategory(id: string, updates: { name?: string; parentId?: string | null }): Category {
+export function updateCategory(
+  id: string,
+  updates: { name?: string; parentId?: string | null },
+): Category {
   const db = getDb();
-  const sets: string[] = [];
-  const params: (string | null)[] = [];
-  if (updates.name !== undefined) {
-    sets.push('name = ?');
-    params.push(updates.name);
+  const patch: Partial<Category> = {};
+  if (updates.name !== undefined) patch.name = updates.name;
+  if (updates.parentId !== undefined) patch.parentId = updates.parentId;
+  if (Object.keys(patch).length > 0) {
+    db.update(categories).set(patch).where(eq(categories.id, id)).run();
   }
-  if (updates.parentId !== undefined) {
-    sets.push('parent_id = ?');
-    params.push(updates.parentId);
-  }
-  if (sets.length > 0) {
-    params.push(id);
-    db.prepare(`UPDATE categories SET ${sets.join(', ')} WHERE id = ?`).run(...params);
-  }
-  const row = db.prepare('SELECT * FROM categories WHERE id = ?').get(id) as CategoryRow;
-  return rowToCategory(row);
+  return db.select().from(categories).where(eq(categories.id, id)).get()!;
 }
 
 export function deleteCategory(id: string): void {
-  getDb().prepare('DELETE FROM categories WHERE id = ?').run(id);
+  getDb().delete(categories).where(eq(categories.id, id)).run();
 }
 
 export function listBrowseCategories(): BrowseCategory[] {
-  const rows = getDb().prepare(
-    'SELECT * FROM browse_categories ORDER BY sort_order'
-  ).all() as BrowseCategoryRow[];
-  return rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    parentId: row.parent_id,
-    sortOrder: row.sort_order,
-  }));
+  return getDb().select().from(browseCategories).orderBy(browseCategories.sortOrder).all();
 }

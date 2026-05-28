@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import Database from 'better-sqlite3';
+import { createTestDb, type TestDb } from '../test-helpers';
 
-let testDb: Database.Database;
+let testDb: TestDb;
 
 vi.mock('../connection', () => ({
   getDb: () => testDb,
@@ -10,52 +10,9 @@ vi.mock('../connection', () => ({
 import { listAnnotations, createAnnotation, updateAnnotation, deleteAnnotation, batchUpdatePositions } from './annotation-repo';
 
 function initTestDb() {
-  testDb = new Database(':memory:');
-  testDb.pragma('foreign_keys = ON');
-  testDb.exec(`
-    CREATE TABLE documents (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      section_label TEXT DEFAULT 'Section',
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE sections (
-      id TEXT PRIMARY KEY,
-      document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-      title TEXT NOT NULL,
-      abbreviation TEXT NOT NULL,
-      sort_order INTEGER NOT NULL,
-      content TEXT NOT NULL DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE categories (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      sort_order INTEGER NOT NULL DEFAULT 0
-    );
-    CREATE TABLE tags (
-      id TEXT PRIMARY KEY,
-      category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-      name TEXT NOT NULL,
-      color TEXT NOT NULL DEFAULT '#48dbfb',
-      description TEXT DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE TABLE annotations (
-      id TEXT PRIMARY KEY,
-      section_id TEXT NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
-      tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
-      from_pos INTEGER NOT NULL,
-      to_pos INTEGER NOT NULL,
-      note TEXT DEFAULT '',
-      created_at TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE INDEX idx_annotations_section ON annotations(section_id);
-    CREATE INDEX idx_annotations_tag ON annotations(tag_id);
-
+  const { db, sqlite } = createTestDb();
+  testDb = db;
+  sqlite.exec(`
     INSERT INTO documents (id, title) VALUES ('doc-1', 'Test Doc');
     INSERT INTO sections (id, document_id, title, abbreviation, sort_order) VALUES ('sec-1', 'doc-1', 'Section 1', 'S1', 0);
     INSERT INTO categories (id, name, sort_order) VALUES ('cat-1', 'Member', 1);
