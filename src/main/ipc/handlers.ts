@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, shell } from 'electron';
 import * as documentRepo from '../db/repositories/document-repo';
 import * as sectionRepo from '../db/repositories/section-repo';
 import * as tagRepo from '../db/repositories/tag-repo';
@@ -6,6 +6,9 @@ import * as categoryRepo from '../db/repositories/category-repo';
 import * as annotationRepo from '../db/repositories/annotation-repo';
 import * as sectionTagRepo from '../db/repositories/section-tag-repo';
 import * as preferenceRepo from '../db/repositories/preference-repo';
+import { checkForUpdates } from '../services/update-checker';
+
+const ALLOWED_EXTERNAL_PREFIX = 'https://github.com/bernisnukic/totonote/';
 
 export function registerIpcHandlers(): void {
   // Documents
@@ -67,4 +70,13 @@ export function registerIpcHandlers(): void {
   // Preferences
   ipcMain.handle('preference:get', (_, args: { key: string }) => preferenceRepo.getPreference(args.key));
   ipcMain.handle('preference:set', (_, args: { key: string; value: string }) => preferenceRepo.setPreference(args.key, args.value));
+
+  // App / Updates
+  ipcMain.handle('app:check-for-updates', () => checkForUpdates());
+  ipcMain.handle('app:open-external', (_, args: { url: string }) => {
+    if (!args.url.startsWith(ALLOWED_EXTERNAL_PREFIX)) {
+      throw new Error('External URL not allowed');
+    }
+    return shell.openExternal(args.url);
+  });
 }
