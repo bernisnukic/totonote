@@ -5,6 +5,7 @@ import { app } from 'electron';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from './schema';
+import { adoptLegacyDatabase } from './legacy-baseline';
 
 export type Db = BetterSQLite3Database<typeof schema>;
 
@@ -24,10 +25,21 @@ export function initDb(): Db {
 
   sqlite = new Database(dbPath);
   sqlite.pragma('journal_mode = WAL');
-  sqlite.pragma('foreign_keys = ON');
 
   db = drizzle(sqlite, { schema });
-  migrate(db, { migrationsFolder: findMigrationsFolder() });
+
+  // Foreign keys MUST be off across migrate(). Migrations that alter a table are
+  // emitted by drizzle-kit as a rebuild (create __new_x, copy, DROP TABLE x, rename),
+  // and with enforcement on, that DROP cascades — deleting every tag, annotation and
+  // document_tag hanging off the table. The `PRAGMA foreign_keys=OFF` drizzle-kit puts
+  // inside the migration file cannot help: the migrator wraps all statements in a
+  // single BEGIN, and SQLite ignores this pragma inside a transaction. So it has to be
+  // toggled out here, on the connection, around the call.
+  sqlite.pragma('foreign_keys = OFF');
+  const migrationsFolder = findMigrationsFolder();
+  adoptLegacyDatabase(sqlite, migrationsFolder);
+  migrate(db, { migrationsFolder });
+  sqlite.pragma('foreign_keys = ON');
 
   // Default seed: ensure the General category always exists.
   // Drizzle migrations only handle schema; this is idempotent data.
