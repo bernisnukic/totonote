@@ -199,7 +199,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       const annotationId = annotationEl.getAttribute('data-annotation-id');
       if (annotationId) {
         setActiveAnnotation(annotationId);
-        setContextMenu({ x: e.clientX, y: e.clientY, type: 'annotation' });
+        setContextMenu({ x: e.clientX, y: e.clientY, type: 'annotation', annotationId });
       }
     } else if (editor) {
       const { from, to } = editor.state.selection;

@@ -47,3 +47,44 @@ export function hexToRgba(hex: string, alpha: number): string {
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+/** Minimal shape of a ProseMirror doc — enough to walk it, without importing the editor. */
+interface WalkableDoc {
+  nodesBetween(
+    from: number,
+    to: number,
+    f: (node: { isText: boolean; nodeSize: number }, pos: number) => void,
+  ): void;
+}
+
+/**
+ * Shrink a selection range to the text it actually covers.
+ *
+ * Select-all produces a ProseMirror `AllSelection` running from 0 to the document size,
+ * which includes the paragraph's own open/close positions. An annotation stored with
+ * those bounds ends *after* the last character, so text typed at the end of the
+ * paragraph is inserted before the annotation's end and shifts it — the highlight grows
+ * to swallow whatever is typed next, and `inclusiveEnd` never gets a say because the
+ * insertion is not at the boundary.
+ *
+ * Returns null when the range covers no text at all.
+ */
+export function clampRangeToText(
+  doc: WalkableDoc,
+  from: number,
+  to: number,
+): { from: number; to: number } | null {
+  let start: number | null = null;
+  let end: number | null = null;
+
+  doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isText) return;
+    const s = Math.max(from, pos);
+    const e = Math.min(to, pos + node.nodeSize);
+    if (e <= s) return;
+    if (start === null) start = s;
+    end = e;
+  });
+
+  return start === null || end === null ? null : { from: start, to: end };
+}

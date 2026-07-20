@@ -27,6 +27,11 @@ export function createAnnotationPlugin() {
           // Rebuild decorations from new annotations
           const decorations: Decoration[] = [];
 
+          // inclusiveEnd is false so that text typed immediately after a highlight
+          // starts a fresh, untagged run. With it on, carrying on writing at the end of
+          // a tagged sentence silently swallowed the next sentence into the highlight —
+          // and the debounced save then persisted the grown range. Use "Expand to
+          // selection" from the right-click menu to grow a highlight deliberately.
           for (const ann of annotations) {
             if (ann.fromPos >= 0 && ann.toPos > ann.fromPos && ann.toPos <= tr.doc.content.size) {
               const alpha = 0.25;
@@ -40,7 +45,7 @@ export function createAnnotationPlugin() {
                   style: `background-color: rgba(${r}, ${g}, ${b}, ${alpha}); border-bottom: 2px solid ${ann.color};`,
                   'data-annotation-id': ann.id,
                   'data-tag-id': ann.tagId,
-                }, { inclusiveEnd: true, annotationId: ann.id })
+                }, { inclusiveEnd: false, annotationId: ann.id })
               );
             }
           }

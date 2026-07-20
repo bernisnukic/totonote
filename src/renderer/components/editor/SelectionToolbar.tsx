@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { useStore } from '../../stores';
 import { getActiveEditor } from '../../lib/editor-registry';
 import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
+import { clampRangeToText } from '../../lib/annotation-utils';
 import { Modal } from '../common/Modal';
 import { LabelAutocomplete } from '../right-sidebar/LabelAutocomplete';
 import { ColorPicker } from '../common/ColorPicker';
@@ -23,7 +24,6 @@ export function SelectionToolbar() {
   const [newTagName, setNewTagName] = useState('');
   const [newCategoryId, setNewCategoryId] = useState('');
   const [newColor, setNewColor] = useState('#48dbfb');
-  const [selectedText, setSelectedText] = useState('');
 
   const savedRange = useRef<{ from: number; to: number } | null>(null);
   const savedPos = useRef<{ x: number; y: number } | null>(null);
@@ -31,16 +31,9 @@ export function SelectionToolbar() {
   const handleAnnotate = () => {
     savedRange.current = selectedRange;
     savedPos.current = selectionToolbarPos;
-
-    // Extract selected text for pre-filling tag name (only for short selections)
-    const editor = getActiveEditor(activeSectionId);
-    if (editor && selectedRange) {
-      const text = editor.state.doc.textBetween(selectedRange.from, selectedRange.to, ' ');
-      setSelectedText(text.length <= 50 ? text : '');
-    } else {
-      setSelectedText('');
-    }
-
+    // The search box deliberately starts empty. Pre-filling it with the selected
+    // text hid the tag list behind a "Create <the whole sentence>" row, which is
+    // almost never the tag anyone wants.
     setCreatingTag(false);
     setShowTagModal(true);
   };
@@ -48,7 +41,11 @@ export function SelectionToolbar() {
   const handleSelectTag = async (tagId: string) => {
     const range = savedRange.current;
     if (!activeSectionId || !range) return;
-    await createAnnotation(activeSectionId, tagId, range.from, range.to);
+    // Trim the range to the text it actually covers — see clampRangeToText.
+    const editor = getActiveEditor(activeSectionId);
+    const text = editor ? clampRangeToText(editor.state.doc, range.from, range.to) : null;
+    const { from, to } = text ?? range;
+    await createAnnotation(activeSectionId, tagId, from, to);
     setShowTagModal(false);
     savedRange.current = null;
     loadAnnotations(activeSectionId);
@@ -154,13 +151,20 @@ export function SelectionToolbar() {
             </div>
           </div>
         ) : (
-          <LabelAutocomplete
-            tags={tags}
-            onSelect={handleSelectTag}
-            placeholder="Search tags..."
-            onCreateNew={handleCreateNew}
-            initialQuery={selectedText}
-          />
+          <>
+            <button
+              className="btn btn-secondary btn-sm create-tag-btn"
+              onClick={() => handleCreateNew('')}
+            >
+              + Create new tag
+            </button>
+            <LabelAutocomplete
+              tags={tags}
+              onSelect={handleSelectTag}
+              placeholder="Search tags..."
+              onCreateNew={handleCreateNew}
+            />
+          </>
         )}
       </Modal>
     </>
