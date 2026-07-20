@@ -24,6 +24,8 @@ export function SelectionToolbar() {
   const [newTagName, setNewTagName] = useState('');
   const [newCategoryId, setNewCategoryId] = useState('');
   const [newColor, setNewColor] = useState('#48dbfb');
+  // Optional filing for the annotation being created — '' means leave it unfiled.
+  const [fileUnderCategoryId, setFileUnderCategoryId] = useState('');
 
   const savedRange = useRef<{ from: number; to: number } | null>(null);
   const savedPos = useRef<{ x: number; y: number } | null>(null);
@@ -35,6 +37,7 @@ export function SelectionToolbar() {
     // text hid the tag list behind a "Create <the whole sentence>" row, which is
     // almost never the tag anyone wants.
     setCreatingTag(false);
+    setFileUnderCategoryId('');
     setShowTagModal(true);
   };
 
@@ -45,7 +48,7 @@ export function SelectionToolbar() {
     const editor = getActiveEditor(activeSectionId);
     const text = editor ? clampRangeToText(editor.state.doc, range.from, range.to) : null;
     const { from, to } = text ?? range;
-    await createAnnotation(activeSectionId, tagId, from, to);
+    await createAnnotation(activeSectionId, tagId, from, to, undefined, fileUnderCategoryId || null);
     setShowTagModal(false);
     savedRange.current = null;
     loadAnnotations(activeSectionId);
@@ -138,6 +141,20 @@ export function SelectionToolbar() {
               </select>
             </div>
             <div className="input-group">
+              <label className="input-label">File under <span className="rule-help-count">(optional)</span></label>
+              <select
+                className="input"
+                value={fileUnderCategoryId}
+                onChange={e => setFileUnderCategoryId(e.target.value)}
+                title="Which wiki page this excerpt belongs to"
+              >
+                <option value="">&mdash; not filed &mdash;</option>
+                {flatCategories.map(({ category: cat, depth }) => (
+                  <option key={cat.id} value={cat.id}>{optionIndent(depth)}{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="input-group">
               <label className="input-label">Color</label>
               <ColorPicker selectedColor={newColor} onSelect={setNewColor} />
             </div>
@@ -158,6 +175,20 @@ export function SelectionToolbar() {
             >
               + Create new tag
             </button>
+            <div className="input-group">
+              <label className="input-label">File under <span className="rule-help-count">(optional)</span></label>
+              <select
+                className="input"
+                value={fileUnderCategoryId}
+                onChange={e => setFileUnderCategoryId(e.target.value)}
+                title="Which wiki page this excerpt belongs to"
+              >
+                <option value="">&mdash; not filed &mdash;</option>
+                {flatCategories.map(({ category: cat, depth }) => (
+                  <option key={cat.id} value={cat.id}>{optionIndent(depth)}{cat.name}</option>
+                ))}
+              </select>
+            </div>
             <LabelAutocomplete
               tags={tags}
               onSelect={handleSelectTag}

@@ -607,3 +607,116 @@
   width: 100%;
   margin-bottom: var(--space-2);
 }
+
+/* ─── Graph view ──────────────────────────────────────────────────────── */
+
+.graph-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.graph-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  -webkit-app-region: drag;
+}
+
+.graph-header .btn {
+  -webkit-app-region: no-drag;
+}
+
+.graph-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+  color: var(--text-muted);
+}
+
+.graph-canvas {
+  flex: 1;
+  width: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.graph-canvas:active {
+  cursor: grabbing;
+}
+
+.graph-edge {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.graph-edge-tree {
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+.graph-edge-member {
+  stroke: var(--border-strong);
+  stroke-dasharray: 3 3;
+}
+
+.graph-edge-filing {
+  stroke: var(--accent-primary);
+  opacity: 0.75;
+}
+
+.graph-node {
+  cursor: pointer;
+}
+
+.graph-node text {
+  fill: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  paint-order: stroke;
+  stroke: var(--bg-primary);
+  stroke-width: 3px;
+  pointer-events: none;
+}
+
+.graph-node-category rect {
+  fill: var(--bg-tertiary);
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+}
+
+.graph-node-category:hover rect,
+.graph-node-tag:hover circle {
+  stroke: var(--accent-primary);
+}
+
+.graph-node-tag circle {
+  stroke: transparent;
+  stroke-width: 2;
+}
+
+.graph-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.graph-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.graph-legend-hint {
+  margin-left: auto;
+}

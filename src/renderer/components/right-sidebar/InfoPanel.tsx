@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../../stores';
 import { LabelItem } from './LabelItem';
 import { LabelOptionsPanel } from './LabelOptionsPanel';
-import { getEditor } from '../../lib/editor-registry';
-import type { Tag } from '../../../shared/domain-types';
+import { CategoryPage, PlacementRow, usePlacementNavigation } from './CategoryPage';
+import type { AnnotationPlacement, Tag } from '../../../shared/domain-types';
 
 export function InfoPanel() {
   const activeSectionId = useStore(s => s.activeSectionId);
@@ -16,9 +16,13 @@ export function InfoPanel() {
   const loadTags = useStore(s => s.loadTags);
   const focusedTagId = useStore(s => s.focusedTagId);
   const setFocusedTag = useStore(s => s.setFocusedTag);
-  const setActiveSection = useStore(s => s.setActiveSection);
+  const focusedCategoryId = useStore(s => s.focusedCategoryId);
+  const setFocusedCategory = useStore(s => s.setFocusedCategory);
+  const loadPlacements = useStore(s => s.loadPlacements);
+  const navigateToPlacement = usePlacementNavigation();
 
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [tagPlacements, setTagPlacements] = useState<AnnotationPlacement[]>([]);
 
   // Clear focused tag when active section changes
   const prevSectionId = useRef(activeSectionId);
@@ -42,52 +46,58 @@ export function InfoPanel() {
     [focusedTagId, tags]
   );
 
-  // Stats for focused tag
+  // The focused tag's excerpts, across every document, grouped by where each is filed
+  // — this is the tag's "mini wiki page".
+  useEffect(() => {
+    if (!focusedTagId) {
+      setTagPlacements([]);
+      return;
+    }
+    loadPlacements({ tagId: focusedTagId }).then(setTagPlacements);
+  }, [focusedTagId, loadPlacements, documentAnnotations]);
+
   const focusedTagStats = useMemo(() => {
     if (!focusedTag) return null;
-    const matching = documentAnnotations.filter(a => a.tagId === focusedTag.id);
-    const sectionIds = new Set(matching.map(a => a.sectionId));
-    return { count: matching.length, sectionCount: sectionIds.size };
-  }, [focusedTag, documentAnnotations]);
+    const docs = new Set(tagPlacements.map(p => p.documentId));
+    return { count: tagPlacements.length, documentCount: docs.size };
+  }, [focusedTag, tagPlacements]);
 
-  // Annotation list grouped by section for focused tag
-  const annotationsBySection = useMemo(() => {
-    if (!focusedTag) return [];
-    const matching = documentAnnotations.filter(a => a.tagId === focusedTag.id);
-    const groups = new Map<string, typeof matching>();
-    for (const ann of matching) {
-      const list = groups.get(ann.sectionId) || [];
-      list.push(ann);
-      groups.set(ann.sectionId, list);
+  const placementsByCategory = useMemo(() => {
+    const groups = new Map<string | null, AnnotationPlacement[]>();
+    for (const p of tagPlacements) {
+      const list = groups.get(p.categoryId) ?? [];
+      list.push(p);
+      groups.set(p.categoryId, list);
     }
-    return Array.from(groups.entries()).map(([sectionId, annotations]) => {
-      const section = sections.find(s => s.id === sectionId);
-      return { sectionId, sectionTitle: section?.title || 'Untitled', annotations };
-    });
-  }, [focusedTag, documentAnnotations, sections]);
+    // Filed groups first (in category tree order), unfiled last.
+    const ordered: { key: string; name: string; categoryId: string | null; rows: AnnotationPlacement[] }[] = [];
+    for (const cat of categories) {
+      const rows = groups.get(cat.id);
+      if (rows) ordered.push({ key: cat.id, name: cat.name, categoryId: cat.id, rows });
+    }
+    const unfiled = groups.get(null);
+    if (unfiled) ordered.push({ key: 'unfiled', name: 'Not filed', categoryId: null, rows: unfiled });
+    return ordered;
+  }, [tagPlacements, categories]);
 
-  // Navigate to annotation's section
-  const navigateToAnnotation = useCallback((sectionId: string) => {
-    setActiveSection(sectionId);
-    setFocusedTag(null);
-    // Small delay to allow React to re-render before scrolling
-    requestAnimationFrame(() => {
-      document.querySelector(`[data-section-id="${sectionId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }, [setActiveSection, setFocusedTag]);
-
-  // Escape key to close focused tag
+  // Escape closes whichever page is focused
   useEffect(() => {
-    if (!focusedTagId) return;
+    if (!focusedTagId && !focusedCategoryId) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         setFocusedTag(null);
+        setFocusedCategory(null);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusedTagId, setFocusedTag]);
+  }, [focusedTagId, focusedCategoryId, setFocusedTag, setFocusedCategory]);
+
+  // --- Category wiki page ---
+  if (focusedCategoryId) {
+    return <CategoryPage categoryId={focusedCategoryId} />;
+  }
 
   // --- Focused tag detail view ---
   if (focusedTag && focusedTagStats) {
@@ -115,41 +125,24 @@ export function InfoPanel() {
         <div className="info-section">
           <div className="info-section-title">Usage</div>
           <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-sm)', margin: 0, padding: '0 var(--space-2)' }}>
-            Used {focusedTagStats.count} time{focusedTagStats.count !== 1 ? 's' : ''} across {focusedTagStats.sectionCount} section{focusedTagStats.sectionCount !== 1 ? 's' : ''}
+            Used {focusedTagStats.count} time{focusedTagStats.count !== 1 ? 's' : ''} across {focusedTagStats.documentCount} document{focusedTagStats.documentCount !== 1 ? 's' : ''}
           </p>
         </div>
 
-        {annotationsBySection.length > 0 && (
-          <div className="info-section">
-            <div className="info-section-title">Annotations</div>
-            {annotationsBySection.map(({ sectionId, sectionTitle, annotations }) => (
-              <div key={sectionId} style={{ marginBottom: 'var(--space-2)' }}>
-                <div className="annotation-list-section-title">{sectionTitle}</div>
-                {annotations.map(ann => {
-                  const editor = getEditor(ann.sectionId);
-                  let snippet = '...';
-                  try {
-                    if (editor) {
-                      const text = editor.state.doc.textBetween(ann.fromPos, ann.toPos, ' ');
-                      snippet = text.length > 50 ? text.slice(0, 50) + '…' : text;
-                    }
-                  } catch {
-                    snippet = '...';
-                  }
-                  return (
-                    <div
-                      key={ann.id}
-                      className="annotation-list-item"
-                      onClick={() => navigateToAnnotation(sectionId)}
-                    >
-                      {snippet}
-                    </div>
-                  );
-                })}
-              </div>
+        {placementsByCategory.map(group => (
+          <div key={group.key} className="info-section">
+            <div
+              className={`info-section-title${group.categoryId ? ' placement-subheading' : ''}`}
+              onClick={group.categoryId ? () => setFocusedCategory(group.categoryId) : undefined}
+              title={group.categoryId ? 'Open this page' : undefined}
+            >
+              {group.name} <span className="placement-count">{group.rows.length}</span>
+            </div>
+            {group.rows.map(p => (
+              <PlacementRow key={p.id} placement={p} onNavigate={navigateToPlacement} showTag={false} />
             ))}
           </div>
-        )}
+        ))}
 
         <LabelOptionsPanel key={focusedTag.id} tag={focusedTag} onClose={() => setFocusedTag(null)} hideHeader />
       </div>

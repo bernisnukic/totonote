@@ -73,8 +73,8 @@ to match. They stay in step.
 ![The toolbar, with the back button, heading buttons and settings marked](screenshots/04b-toolbar.png)
 
 Bold, italic, underline and strikethrough; three heading levels; bullet and numbered
-lists; two buttons to hide or show the sidebars; and the gear for
-[Settings](#settings). The formatting buttons only appear once you've clicked into a
+lists; the sidebar toggles; **◈** for the [graph view](filing-and-graph.md#the-graph);
+and the gear for [Settings](#settings). The formatting buttons only appear once you've clicked into a
 section.
 
 ## Reordering sections, and the section label

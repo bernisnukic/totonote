@@ -61,6 +61,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('annotation:batch-update-positions', (_, args: { updates: Array<{ id: string; fromPos: number; toPos: number }> }) =>
     annotationRepo.batchUpdatePositions(args.updates)
   );
+  ipcMain.handle('annotation:placements', (_, args: { categoryIds?: string[]; tagId?: string }) =>
+    annotationRepo.listPlacements(args ?? {})
+  );
+  ipcMain.handle('annotation:reorder-placements', (_, args: { categoryId: string; orderedIds: string[] }) =>
+    annotationRepo.reorderPlacements(args.categoryId, args.orderedIds)
+  );
+  ipcMain.handle('annotation:filing-edges', () => annotationRepo.listFilingEdges());
 
   // Section Tags
   ipcMain.handle('section-tag:list', (_, args: { sectionId: string }) => sectionTagRepo.listSectionTags(args.sectionId));

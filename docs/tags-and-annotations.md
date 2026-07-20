@@ -21,6 +21,10 @@ Click **Tag** and a search box opens:
 ![The Add Tag box with its search field](screenshots/16-add-tag.png)
 
 Start typing. Existing tags are listed as you type — click one, or use ↑ / ↓ and Enter.
+The **+ Create new tag** button above the search box makes a brand-new tag instead.
+
+The **File under** dropdown underneath is optional — it places the excerpt on one of your
+category pages at the same time. See [Filing and the graph](filing-and-graph.md).
 
 If nothing matches, an extra row appears offering **`+ Create "<what you typed>"`**. Pick
 it and you get a small form for the new tag — name, category and colour — with a
@@ -42,6 +46,7 @@ Either way, the text is now coloured in:
 | Option | What it does |
 |--------|--------------|
 | **Remove annotation** | Removes the highlight. Immediate, no confirmation. Your text is untouched. |
+| **File under…** | Places the excerpt on a category page — see [Filing and the graph](filing-and-graph.md) |
 | **Expand to selection** | Stretches the highlight to cover your current selection too |
 | **Shrink to selection** | Trims it down to just the overlapping part |
 | **Split at selection** | Cuts it into two highlights, one either side of your selection |
@@ -70,15 +75,12 @@ Section tags are what the **Filter** mode matches on, along with highlights. See
 ## Editing or deleting a tag
 
 Click any tag in the left sidebar. The right-hand panel switches to **Info** and shows
-that tag: how many times it's used in this document, a list of every highlighted phrase
+that tag: how often it's used, every highlighted phrase grouped by where it's filed
 (click one to jump to it), and a form to change its **name**, **description**, **category**
-and **colour**. Press **Save**.
+and **colour**. **Edits save themselves** — there is no Save button; the panel says so and
+flashes *Saved ✓* as you go.
 
-There are two ways to delete a tag, and they behave differently:
-
-- **Right-click the tag in the left sidebar → Delete.** Asks you to confirm.
-- **The Delete button in the Info panel.** Deletes immediately, no confirmation.
-
-Either way it's permanent, and it removes that tag **everywhere** — in every document, not
+Deleting a tag — from the sidebar's right-click menu or the Info panel's Delete button —
+always asks you to confirm first. It's permanent, and it removes that tag **everywhere** — in every document, not
 just the one you have open. All of its highlights disappear with it (your text stays, only
 the colouring goes).

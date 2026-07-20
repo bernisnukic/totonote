@@ -7,11 +7,23 @@ vi.mock('../connection', () => ({
   getDb: () => testDb,
 }));
 
-import { listAnnotations, createAnnotation, updateAnnotation, deleteAnnotation, batchUpdatePositions } from './annotation-repo';
+import {
+  listAnnotations,
+  createAnnotation,
+  updateAnnotation,
+  deleteAnnotation,
+  batchUpdatePositions,
+  listPlacements,
+  reorderPlacements,
+  listFilingEdges,
+} from './annotation-repo';
+
+let sqliteHandle: ReturnType<typeof createTestDb>['sqlite'];
 
 function initTestDb() {
   const { db, sqlite } = createTestDb();
   testDb = db;
+  sqliteHandle = sqlite;
   sqlite.exec(`
     INSERT INTO documents (id, title) VALUES ('doc-1', 'Test Doc');
     INSERT INTO sections (id, document_id, title, abbreviation, sort_order) VALUES ('sec-1', 'doc-1', 'Section 1', 'S1', 0);
@@ -132,5 +144,114 @@ describe('annotation-repo', () => {
     it('handles empty array', () => {
       expect(() => batchUpdatePositions([])).not.toThrow();
     });
+  });
+});
+
+describe('filing', () => {
+  beforeEach(() => {
+    initTestDb();
+  });
+
+  /** TipTap JSON for one paragraph; text occupies positions 1..len+1. */
+  const contentOf = (text: string) =>
+    JSON.stringify({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] });
+
+  function seedFilingWorld() {
+    const sqlite = sqliteHandle;
+    sqlite.exec(`
+      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-gura', 'GURA', 2, 'cat-1');
+      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-hist', 'HISTORY', 3, 'cat-gura');
+      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-abil', 'ABILITIES', 4, 'cat-gura');
+      INSERT INTO documents (id, title) VALUES ('doc-2', 'Other Doc');
+      INSERT INTO sections (id, document_id, title, abbreviation, sort_order)
+        VALUES ('sec-2', 'doc-2', 'Elsewhere', 'EL', 0);
+    `);
+    sqlite
+      .prepare(`UPDATE sections SET content = ? WHERE id = 'sec-1'`)
+      .run(contentOf('Gura was born in Atlantis.'));
+    sqlite
+      .prepare(`UPDATE sections SET content = ? WHERE id = 'sec-2'`)
+      .run(contentOf('She can breathe underwater.'));
+  }
+
+  it('files a new annotation and appends to the category order', () => {
+    const a = createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 1, toPos: 5, categoryId: 'cat-1' });
+    const b = createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 6, toPos: 9, categoryId: 'cat-1' });
+    expect(a.categoryId).toBe('cat-1');
+    expect(a.placementOrder).toBe(0);
+    expect(b.placementOrder).toBe(1);
+  });
+
+  it('leaves plain highlights unfiled', () => {
+    const a = createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 1, toPos: 5 });
+    expect(a.categoryId).toBeNull();
+  });
+
+  it('refiles to the end of the new category and unfiles with null', () => {
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 1, toPos: 3, categoryId: 'cat-1' });
+    const b = createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 4, toPos: 6 });
+
+    const filed = updateAnnotation({ id: b.id, categoryId: 'cat-1' });
+    expect(filed.placementOrder).toBe(1);
+
+    const unfiled = updateAnnotation({ id: b.id, categoryId: null });
+    expect(unfiled.categoryId).toBeNull();
+  });
+
+  it('keeps the filing when other fields are updated', () => {
+    const a = createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 1, toPos: 3, categoryId: 'cat-1' });
+    const updated = updateAnnotation({ id: a.id, note: 'hello' });
+    expect(updated.categoryId).toBe('cat-1');
+    expect(updated.placementOrder).toBe(a.placementOrder);
+  });
+
+  it('lists placements for a category with computed excerpts, across documents', () => {
+    seedFilingWorld();
+
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 1, toPos: 5, categoryId: 'cat-hist' });
+    createAnnotation({ sectionId: 'sec-2', tagId: 'tag-1', fromPos: 1, toPos: 27, categoryId: 'cat-hist' });
+
+    const rows = listPlacements({ categoryIds: ['cat-hist'] });
+    expect(rows.length).toBe(2);
+    expect(rows[0].excerpt).toBe('Gura');
+    expect(rows[0].documentTitle).toBe('Test Doc');
+    expect(rows[1].excerpt).toBe('She can breathe underwater');
+    expect(rows[1].documentTitle).toBe('Other Doc');
+    expect(rows[0].tagName).toBe('Gura');
+  });
+
+  it('lists placements by tag, including unfiled annotations', () => {
+    seedFilingWorld();
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 1, toPos: 5, categoryId: 'cat-hist' });
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 6, toPos: 9 });
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-2', fromPos: 10, toPos: 14 });
+
+    const rows = listPlacements({ tagId: 'tag-1' });
+    expect(rows.length).toBe(2);
+    expect(rows.map(r => r.categoryId).sort()).toEqual([null, 'cat-hist'].sort());
+  });
+
+  it('respects manual reordering', () => {
+    seedFilingWorld();
+    const a = createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 1, toPos: 5, categoryId: 'cat-hist' });
+    const b = createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 6, toPos: 9, categoryId: 'cat-hist' });
+
+    reorderPlacements('cat-hist', [b.id, a.id]);
+
+    const rows = listPlacements({ categoryIds: ['cat-hist'] });
+    expect(rows.map(r => r.id)).toEqual([b.id, a.id]);
+  });
+
+  it('aggregates filing edges for the graph', () => {
+    seedFilingWorld();
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 1, toPos: 5, categoryId: 'cat-hist' });
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-1', fromPos: 6, toPos: 9, categoryId: 'cat-hist' });
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-2', fromPos: 10, toPos: 14, categoryId: 'cat-abil' });
+    createAnnotation({ sectionId: 'sec-1', tagId: 'tag-2', fromPos: 15, toPos: 18 }); // unfiled
+
+    const edges = listFilingEdges();
+    expect(edges.length).toBe(2);
+    const hist = edges.find(e => e.categoryId === 'cat-hist');
+    expect(hist).toMatchObject({ tagId: 'tag-1', count: 2 });
   });
 });

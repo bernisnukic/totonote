@@ -149,6 +149,31 @@ describe('migrations', () => {
     ).toThrow(/UNIQUE/i);
   });
 
+  it('unfiles annotations when their filing category is deleted, instead of blocking', () => {
+    // Drizzle-kit emitted the 0002 ADD COLUMN without its ON DELETE SET NULL clause;
+    // the .sql was corrected by hand before shipping. Without the clause, deleting a
+    // category that has filed annotations fails the FK constraint outright.
+    const { sqlite } = createTestDb();
+    sqlite.exec(`
+      INSERT INTO categories (id, name, sort_order) VALUES ('cat-chars', 'CHARACTERS', 1);
+      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-hist', 'HISTORY', 2, 'cat-chars');
+      INSERT INTO documents (id, title) VALUES ('doc-1', 'Lore');
+      INSERT INTO sections (id, document_id, title, abbreviation, sort_order)
+        VALUES ('sec-1', 'doc-1', 'Intro', 'IN', 1);
+      INSERT INTO tags (id, category_id, name) VALUES ('tag-1', 'cat-chars', 'Gura');
+      INSERT INTO annotations (id, section_id, tag_id, from_pos, to_pos, category_id)
+        VALUES ('ann-1', 'sec-1', 'tag-1', 1, 5, 'cat-hist');
+    `);
+
+    sqlite.exec(`DELETE FROM categories WHERE id = 'cat-hist'`);
+
+    const row = sqlite.prepare(`SELECT category_id FROM annotations WHERE id = 'ann-1'`).get() as {
+      category_id: string | null;
+    };
+    expect(row.category_id).toBeNull();
+    expect(count(sqlite, 'annotations')).toBe(1);
+  });
+
   it('leaves foreign keys enforced after the helper builds a database', () => {
     // connection.ts and test-helpers.ts must both restore the pragma after migrating.
     const { sqlite } = createTestDb();

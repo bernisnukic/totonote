@@ -4,11 +4,13 @@ import { AppLayout } from './components/layout/AppLayout';
 import { DocumentList } from './components/document-list/DocumentList';
 import { EditorArea } from './components/editor/EditorArea';
 import { TagContextMenu } from './components/editor/TagContextMenu';
+import { GraphView } from './components/graph/GraphView';
 import { IntroAnimation } from './components/intro/IntroAnimation';
 import { UpdateBanner } from './components/common/UpdateBanner';
 
 export function App() {
   const activeDocumentId = useStore(s => s.activeDocumentId);
+  const graphOpen = useStore(s => s.graphOpen);
   const loadPreferences = useStore(s => s.loadPreferences);
   const theme = useStore(s => s.theme);
 
@@ -29,6 +31,7 @@ export function App() {
       <AppLayout>
         {activeDocumentId ? <EditorArea /> : <DocumentList />}
         <TagContextMenu />
+        {graphOpen && <GraphView />}
       </AppLayout>
       <UpdateBanner />
     </>

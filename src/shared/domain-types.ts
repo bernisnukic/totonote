@@ -51,7 +51,43 @@ export interface Annotation {
   fromPos: number;
   toPos: number;
   note: string;
+  /**
+   * Filing: the category this excerpt lives under in the wiki structure, or null for a
+   * plain highlight. Independent of the tag — the tag says what the text is about, the
+   * filing says which page section it belongs to.
+   */
+  categoryId: string | null;
+  /** Manual position among the excerpts filed in the same category. */
+  placementOrder: number;
   createdAt: string;
+}
+
+/** A filed annotation enriched with everything the compiled wiki views need. */
+export interface AnnotationPlacement {
+  id: string;
+  tagId: string;
+  tagName: string;
+  tagColor: string;
+  categoryId: string | null;
+  placementOrder: number;
+  fromPos: number;
+  toPos: number;
+  note: string;
+  createdAt: string;
+  sectionId: string;
+  sectionTitle: string;
+  sectionSortOrder: number;
+  documentId: string;
+  documentTitle: string;
+  /** Text the annotation covers, computed from the stored section content. */
+  excerpt: string;
+}
+
+/** One tag→category filing relationship, aggregated for the graph view. */
+export interface FilingEdge {
+  tagId: string;
+  categoryId: string;
+  count: number;
 }
 
 export interface DocumentTag {
@@ -139,6 +175,8 @@ export interface CreateAnnotationInput {
   fromPos: number;
   toPos: number;
   note?: string;
+  /** File the new annotation under this category straight away. */
+  categoryId?: string | null;
 }
 
 export interface UpdateAnnotationInput {
@@ -147,6 +185,8 @@ export interface UpdateAnnotationInput {
   toPos?: number;
   note?: string;
   tagId?: string;
+  /** Refile (or unfile with null). Filing appends to the end of the category's order. */
+  categoryId?: string | null;
 }
 
 export interface PositionUpdate {
