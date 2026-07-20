@@ -15,8 +15,10 @@ export interface TestDbHandle {
 // Use sqlite.exec(...) for raw seed inserts; use db.* for typed queries.
 export function createTestDb(): TestDbHandle {
   const sqlite = new Database(':memory:');
-  sqlite.pragma('foreign_keys = ON');
   const db = drizzle(sqlite, { schema });
+  // Off across migrate(), on afterwards — see the comment in connection.ts.
+  sqlite.pragma('foreign_keys = OFF');
   migrate(db, { migrationsFolder: path.join(__dirname, 'migrations') });
+  sqlite.pragma('foreign_keys = ON');
   return { db, sqlite };
 }

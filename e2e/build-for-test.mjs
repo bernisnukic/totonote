@@ -5,12 +5,21 @@
  */
 import { build } from 'vite';
 import path from 'path';
+import { builtinModules } from 'module';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
 const VITE_PORT = process.env.VITE_PORT || '5173';
+
+// Every Node builtin, under both spellings. Listing only the bare names is not
+// enough: drizzle-orm's migrator imports `node:fs`, which would not match `fs`,
+// and Vite quietly replaces the unmatched builtin with an empty object — so
+// `readMigrationFiles` blew up on `existsSync is not a function` at startup and
+// the window never opened. Forge's Vite plugin does this for the real build; this
+// hand-rolled config has to do it too.
+const nodeBuiltins = [...builtinModules, ...builtinModules.map(m => `node:${m}`)];
 
 // Build main process
 await build({
@@ -25,15 +34,7 @@ await build({
       fileName: () => 'index.js',
     },
     rollupOptions: {
-      external: [
-        'electron',
-        'better-sqlite3',
-        'crypto',
-        'path',
-        'fs',
-        'url',
-        'electron-squirrel-startup',
-      ],
+      external: ['electron', 'better-sqlite3', 'electron-squirrel-startup', ...nodeBuiltins],
     },
     minify: false,
     sourcemap: false,
@@ -62,7 +63,7 @@ await build({
       fileName: () => 'preload.js',
     },
     rollupOptions: {
-      external: ['electron'],
+      external: ['electron', ...nodeBuiltins],
     },
     minify: false,
     sourcemap: false,
