@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useStore } from '../../stores';
+import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
 import { Modal } from '../common/Modal';
 import { ColorPicker } from '../common/ColorPicker';
 import { CategoryRuleModal } from './CategoryRuleModal';
@@ -7,31 +8,6 @@ import { BulkAddSubcategoryModal } from './BulkAddSubcategoryModal';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { parseRuleTemplate, countRuleNodes } from '../../../shared/category-rule';
 import type { Category } from '../../../shared/domain-types';
-
-interface CategoryNode {
-  category: Category;
-  children: CategoryNode[];
-  depth: number;
-}
-
-function buildCategoryTree(categories: Category[], parentId: string | null = null, depth = 0): CategoryNode[] {
-  return categories
-    .filter(c => c.parentId === parentId)
-    .map(c => ({
-      category: c,
-      depth,
-      children: buildCategoryTree(categories, c.id, depth + 1),
-    }));
-}
-
-function flattenTree(nodes: CategoryNode[]): { category: Category; depth: number }[] {
-  const result: { category: Category; depth: number }[] = [];
-  for (const node of nodes) {
-    result.push({ category: node.category, depth: node.depth });
-    result.push(...flattenTree(node.children));
-  }
-  return result;
-}
 
 export function EditPanel() {
   const categories = useStore(s => s.categories);
@@ -74,8 +50,7 @@ export function EditPanel() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; categoryId: string } | null>(null);
   const contextMenuRef = useClickOutside<HTMLDivElement>(() => setContextMenu(null));
 
-  const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
-  const flatCategories = useMemo(() => flattenTree(categoryTree), [categoryTree]);
+  const flatCategories = useMemo(() => flattenCategoryTree(categories), [categories]);
 
   /** Number of categories a rule would create, for the chips and checkbox labels. */
   const ruleSize = useCallback(
@@ -583,7 +558,7 @@ export function EditPanel() {
           >
             {flatCategories.map(({ category: cat, depth }) => (
               <option key={cat.id} value={cat.id}>
-                {'  '.repeat(depth)}{cat.name}
+                {optionIndent(depth)}{cat.name}
               </option>
             ))}
           </select>

@@ -11,6 +11,7 @@ export function StatusBar() {
 
   return (
     <div
+      className="status-bar"
       style={{
         height: 'var(--status-bar-height)',
         background: 'var(--bg-secondary)',

@@ -1,32 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import type { Tag, Category } from '../../../shared/domain-types';
+import type { Tag } from '../../../shared/domain-types';
 import { ColorPicker } from '../common/ColorPicker';
 import { useStore } from '../../stores';
-
-interface CategoryNode {
-  category: Category;
-  children: CategoryNode[];
-  depth: number;
-}
-
-function buildCategoryTree(categories: Category[], parentId: string | null = null, depth = 0): CategoryNode[] {
-  return categories
-    .filter(c => c.parentId === parentId)
-    .map(c => ({
-      category: c,
-      depth,
-      children: buildCategoryTree(categories, c.id, depth + 1),
-    }));
-}
-
-function flattenTree(nodes: CategoryNode[]): { category: Category; depth: number }[] {
-  const result: { category: Category; depth: number }[] = [];
-  for (const node of nodes) {
-    result.push({ category: node.category, depth: node.depth });
-    result.push(...flattenTree(node.children));
-  }
-  return result;
-}
+import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
 
 interface LabelOptionsPanelProps {
   tag: Tag;
@@ -44,7 +20,7 @@ export function LabelOptionsPanel({ tag, onClose, hideHeader }: LabelOptionsPane
   const [categoryId, setCategoryId] = useState(tag.categoryId);
 
   const [saved, setSaved] = useState(false);
-  const flatCategories = useMemo(() => flattenTree(buildCategoryTree(categories)), [categories]);
+  const flatCategories = useMemo(() => flattenCategoryTree(categories), [categories]);
 
   const handleSave = async () => {
     await updateTag(tag.id, { name, description, color, categoryId });
@@ -88,7 +64,7 @@ export function LabelOptionsPanel({ tag, onClose, hideHeader }: LabelOptionsPane
           onChange={e => setCategoryId(e.target.value)}
         >
           {flatCategories.map(({ category: cat, depth }) => (
-            <option key={cat.id} value={cat.id}>{'\u00A0\u00A0'.repeat(depth)}{cat.name}</option>
+            <option key={cat.id} value={cat.id}>{optionIndent(depth)}{cat.name}</option>
           ))}
         </select>
       </div>

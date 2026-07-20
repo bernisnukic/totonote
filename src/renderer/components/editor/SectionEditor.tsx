@@ -173,10 +173,14 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const syncDecorations = useCallback(
     (annotations: Annotation[]) => {
       if (!editor) return;
+      // Drop annotations whose tag no longer exists. Deleting a tag cascades its
+      // annotations away in the database, but this section may still be holding them
+      // in memory — and without this they would keep rendering as highlights in the
+      // fallback colour until the app restarted.
       const withColors = highlightsVisible
-        ? annotations.map(a => {
+        ? annotations.flatMap(a => {
             const tag = tags.find(t => t.id === a.tagId);
-            return { ...a, color: tag?.color || '#48dbfb' };
+            return tag ? [{ ...a, color: tag.color }] : [];
           })
         : [];
       editor.commands.command(({ tr }) => {

@@ -841,6 +841,95 @@ test.describe('Tag Category Edit', () => {
   });
 });
 
+// ─── Deleting a tag ──────────────────────────────────────────────────
+
+test.describe('Deleting a tag', () => {
+  test('removes its highlights from the text immediately', async () => {
+    // Reported by a user: deleting a tag left its highlights behind until the
+    // highlighted text itself was deleted. The annotations were cascaded away in
+    // the database, but the editor kept rendering them from memory.
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Highlight Test');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('The dragon guards the gate', { delay: 20 });
+
+    // Tag a selection.
+    await page.keyboard.press('Meta+A');
+    await expect(page.locator('.selection-toolbar')).toBeVisible();
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('Dragon');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+
+    // Find the tag in the left sidebar (searching auto-expands its category).
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.sidebar-search-input').fill('Dragon');
+    const sidebarTag = page.locator('.tag-tree-item', { hasText: 'Dragon' }).first();
+    await expect(sidebarTag).toBeVisible();
+
+    // Delete it, accepting the confirmation.
+    page.once('dialog', d => d.accept());
+    await sidebarTag.click({ button: 'right' });
+    await page.locator('.context-menu-item', { hasText: 'Delete' }).click();
+
+    // Sanity: the tag really is gone, so the assertion below is about highlights.
+    await expect(page.locator('.tag-tree-item', { hasText: 'Dragon' })).toHaveCount(0);
+
+    // The highlight must go away without reloading or touching the text.
+    await expect(page.locator('.annotation-highlight')).toHaveCount(0);
+    await expect(editor).toContainText('The dragon guards the gate');
+  });
+});
+
+test.describe('Category dropdowns', () => {
+  test('indent nested categories in the tag-a-selection prompt', async () => {
+    // Reported by a user: the sidebar's category dropdown indented sub-categories
+    // but the one in "Add Tag to Selection" listed them flat.
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Indent Test');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    // A nested category: CHARACTERS > GURA.
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill('CHARACTERS');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await page.locator('.category-row', { hasText: 'CHARACTERS' })
+      .locator('.category-row-btn', { hasText: '+' }).click();
+    await page.locator('.category-new-form input.input').fill('GURA');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.category-row', { hasText: 'GURA' })).toBeVisible();
+
+    // Open the create-a-tag form from a text selection.
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Some text', { delay: 20 });
+    await page.keyboard.press('Meta+A');
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('Brand New Tag');
+    await modal.locator('.autocomplete-item-create').click();
+
+    // The nested category must be indented with non-breaking spaces.
+    const labels = await modal.locator('select.input option').allTextContents();
+    const gura = labels.find(l => l.includes('GURA'));
+    const characters = labels.find(l => l.includes('CHARACTERS'));
+    expect(gura?.startsWith('\u00A0')).toBe(true);
+    expect(characters?.startsWith('\u00A0')).toBe(false);
+  });
+});
+
 // ─── Category Rules ──────────────────────────────────────────────────
 
 test.describe('Category Rules', () => {

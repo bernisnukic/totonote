@@ -1,34 +1,9 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useStore } from '../../stores';
+import { flattenCategoryTree } from '../../lib/category-tree';
 import { SidebarModeBar } from './SidebarModeBar';
 import { CategoryTree } from './CategoryTree';
 import { useClickOutside } from '../../hooks/useClickOutside';
-import type { Category } from '../../../shared/domain-types';
-
-interface CategoryNode {
-  category: Category;
-  children: CategoryNode[];
-  depth: number;
-}
-
-function buildCategoryTree(categories: Category[], parentId: string | null = null, depth = 0): CategoryNode[] {
-  return categories
-    .filter(c => c.parentId === parentId)
-    .map(c => ({
-      category: c,
-      depth,
-      children: buildCategoryTree(categories, c.id, depth + 1),
-    }));
-}
-
-function flattenTree(nodes: CategoryNode[]): { category: Category; depth: number }[] {
-  const result: { category: Category; depth: number }[] = [];
-  for (const node of nodes) {
-    result.push({ category: node.category, depth: node.depth });
-    result.push(...flattenTree(node.children));
-  }
-  return result;
-}
 
 export function LeftSidebar() {
   const searchQuery = useStore(s => s.searchQuery);
@@ -100,8 +75,7 @@ export function LeftSidebar() {
 
   // Flat category list with depth for indentation
   const flatCategoryList = useMemo(() => {
-    const tree = buildCategoryTree(categories);
-    return flattenTree(tree);
+    return flattenCategoryTree(categories);
   }, [categories]);
 
   // Build category→tag tree filtered by search query
