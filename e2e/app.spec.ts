@@ -523,9 +523,9 @@ test.describe('Toolbar', () => {
   });
 
   test('sidebar toggle buttons are visible', async () => {
-    // The toolbar has sidebar toggle and settings buttons
+    // The toolbar has sidebar toggles, the graph button and settings
     const toolbarBtns = page.locator('.toolbar-group').last().locator('.toolbar-btn');
-    await expect(toolbarBtns).toHaveCount(3); // left sidebar, right sidebar, settings
+    await expect(toolbarBtns).toHaveCount(4); // left sidebar, graph, right sidebar, settings
   });
 
   test('settings gear button opens settings modal', async () => {
@@ -1062,6 +1062,286 @@ test.describe('Category dropdowns', () => {
     const characters = labels.find(l => l.includes('CHARACTERS'));
     expect(gura?.startsWith('\u00A0')).toBe(true);
     expect(characters?.startsWith('\u00A0')).toBe(false);
+  });
+});
+
+// ─── Filing ──────────────────────────────────────────────────────────
+
+test.describe('Filing excerpts into categories', () => {
+  const row = (name: string) => page.locator('.category-row', { hasText: name });
+
+  /** Doc + section + CHARACTERS > GURA > HISTORY category tree. */
+  async function setup() {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Filing Test');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill('CHARACTERS');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await row('CHARACTERS').locator('.category-row-btn', { hasText: '+' }).click();
+    await page.locator('.category-new-form input.input').fill('GURA');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await row('GURA').locator('.category-row-btn', { hasText: '+' }).click();
+    await page.locator('.category-new-form input.input').fill('HISTORY');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await expect(row('HISTORY')).toBeVisible();
+
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Gura was born in Atlantis.', { delay: 15 });
+    return editor;
+  }
+
+  /** Tag the whole line, filing it under the given category label. */
+  async function tagAndFile(fileUnder: string | null) {
+    await page.keyboard.press('Meta+A');
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    if (fileUnder) {
+      // Option labels carry a non-breaking-space indent, so resolve the value instead.
+      const value = await modal
+        .locator('select.input option', { hasText: fileUnder })
+        .first()
+        .getAttribute('value');
+      await modal.locator('select.input').selectOption(value!);
+    }
+    await modal.locator('.autocomplete input.input').fill('GURA TAG');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+  }
+
+  test('files an excerpt while tagging, and the category page compiles it', async () => {
+    await setup();
+    await tagAndFile('HISTORY');
+
+    // Open HISTORY's page from the left sidebar (click the name, not the row).
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.category-name-link', { hasText: 'HISTORY' }).click();
+
+    const info = page.locator('.right-sidebar');
+    await expect(info.locator('.category-page')).toBeVisible();
+    await expect(info.locator('.placement-row')).toHaveCount(1);
+    await expect(info.locator('.placement-excerpt')).toContainText('Gura was born in Atlantis.');
+    await expect(info.locator('.placement-source')).toContainText('Filing Test › Main');
+  });
+
+  test('a parent page shows excerpts filed in its children as sections', async () => {
+    await setup();
+    await tagAndFile('HISTORY');
+
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.category-name-link', { hasText: 'GURA' }).click();
+
+    const info = page.locator('.right-sidebar');
+    await expect(info.locator('.placement-subheading', { hasText: 'HISTORY' })).toBeVisible();
+    await expect(info.locator('.placement-row')).toHaveCount(1);
+
+    // Drilling into the HISTORY heading opens HISTORY's own page with a breadcrumb.
+    await info.locator('.placement-subheading', { hasText: 'HISTORY' }).click();
+    await expect(info.locator('.placement-breadcrumb')).toContainText('CHARACTERS › GURA ›');
+  });
+
+  test('File under… on an existing highlight files it after the fact', async () => {
+    await setup();
+    await tagAndFile(null); // tagged but unfiled
+
+    await page.locator('.annotation-highlight').click({ button: 'right' });
+    await page.locator('.context-menu-item', { hasText: 'File under…' }).click();
+    const modal = page.locator('.modal', { hasText: 'File under' });
+    const historyValue = await modal
+      .locator('select.input option', { hasText: 'HISTORY' })
+      .first()
+      .getAttribute('value');
+    await modal.locator('select.input').selectOption(historyValue!);
+    await modal.locator('.btn-primary', { hasText: 'Save' }).click();
+
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.category-name-link', { hasText: 'HISTORY' }).click();
+    await expect(page.locator('.right-sidebar .placement-row')).toHaveCount(1);
+  });
+
+  test('the tag page groups excerpts by where they are filed', async () => {
+    await setup();
+    await tagAndFile('HISTORY');
+
+    // Focus the tag from the left sidebar search list.
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.sidebar-search-input').fill('GURA TAG');
+    await page.locator('.tag-tree-item', { hasText: 'GURA TAG' }).first().click();
+
+    const info = page.locator('.right-sidebar');
+    await expect(info.locator('.info-section-title', { hasText: 'HISTORY' })).toBeVisible();
+    await expect(info.locator('.placement-row')).toHaveCount(1);
+
+    // The group heading is a link into the category's own page.
+    await info.locator('.placement-subheading', { hasText: 'HISTORY' }).click();
+    await expect(info.locator('.category-page')).toBeVisible();
+  });
+
+  test('clicking an excerpt jumps back to the text', async () => {
+    await setup();
+    await tagAndFile('HISTORY');
+
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.category-name-link', { hasText: 'HISTORY' }).click();
+    await page.locator('.right-sidebar .placement-row').click();
+
+    // Back on the document view, page closed, section visible.
+    await expect(page.locator('.right-sidebar .category-page')).toHaveCount(0);
+    await expect(page.locator('.annotation-highlight')).toBeVisible();
+  });
+
+  test('an empty category page explains how to file', async () => {
+    await setup();
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.category-name-link', { hasText: 'HISTORY' }).click();
+    await expect(page.locator('.right-sidebar .empty-state')).toContainText('Nothing filed here yet');
+  });
+});
+
+// ─── Sidebar UX ──────────────────────────────────────────────────────
+
+test.describe('Sidebar UX', () => {
+  /** Doc with two sections, a tag, and one highlight in the first section. */
+  async function setup() {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('UX Test');
+    await page.locator('.modal .btn-primary').click();
+    for (const title of ['First', 'Second']) {
+      await page.locator('.tab-add').click();
+      await page.locator('.modal input.input').first().fill(title);
+      await page.locator('.modal .btn-primary').click();
+    }
+
+    // Creating a section arms a 600ms scroll guard that ignores focus changes;
+    // wait it out so clicking into the first section really activates it.
+    await page.waitForTimeout(700);
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('The dragon sleeps here', { delay: 15 });
+    await page.keyboard.press('Meta+A');
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('Dragon');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+  }
+
+  test('clicking anywhere on a filter row toggles it, and filters the tabs too', async () => {
+    await setup();
+    await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
+
+    // Click the tag name — previously that opened details instead of filtering.
+    await page.locator('.sidebar-filter-item span', { hasText: 'Dragon' }).click();
+    await expect(page.locator('.sidebar-filter-item input[type="checkbox"]')).toBeChecked();
+
+    // Only the annotated section remains, in the editor AND the tab bar.
+    await expect(page.locator('.section-header')).toHaveCount(1);
+    await expect(page.locator('.section-tab')).toHaveCount(1);
+
+    // The details affordance still exists, as its own button.
+    await page.locator('.tag-details-btn').click();
+    await expect(page.locator('.right-sidebar')).toContainText('Usage');
+  });
+
+  test('HL mode can hide one tag’s highlights without touching the rest', async () => {
+    await setup();
+    // A second tag on different text (the other section), so one highlight remains
+    // visible while the first is hidden.
+    const editor2 = page.locator('.tiptap').nth(1);
+    await editor2.click();
+    await editor2.pressSequentially('A lair beneath the mountain', { delay: 15 });
+    await page.keyboard.press('Meta+A');
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('Lair');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight')).toHaveCount(2);
+
+    await page.locator('.sidebar-mode-btn', { hasText: 'HL' }).click();
+    const dragonRow = page.locator('.sidebar-highlight-item', { hasText: 'Dragon' });
+    await dragonRow.locator('input[type="checkbox"]').uncheck();
+
+    // Dragon's highlight is gone; Lair's survives.
+    await expect(page.locator('.annotation-highlight')).toHaveCount(1);
+    await expect(page.locator('.annotation-highlight')).toContainText('A lair beneath');
+
+    await dragonRow.locator('input[type="checkbox"]').check();
+    await expect(page.locator('.annotation-highlight')).toHaveCount(2);
+  });
+
+  test('tag edits save themselves — no Save button, survives a tab switch', async () => {
+    await setup();
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.sidebar-search-input').fill('Dragon');
+    await page.locator('.tag-tree-item', { hasText: 'Dragon' }).first().click();
+
+    const panel = page.locator('.label-options-panel');
+    await expect(panel).toContainText('Changes save automatically');
+    await expect(panel.locator('.btn', { hasText: 'Save' })).toHaveCount(0);
+
+    // Rename, then switch tabs immediately — the flush must catch it.
+    await panel.locator('input.input').first().fill('Wyrm');
+    await page.locator('.sidebar-tab', { hasText: 'Arrange' }).click();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await expect(page.locator('.badge', { hasText: 'Wyrm' })).toBeVisible();
+  });
+});
+
+// ─── Graph view ──────────────────────────────────────────────────────
+
+test.describe('Graph view', () => {
+  test('maps categories, tags and filings, and nodes open their pages', async () => {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Graph Test');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    // One extra category and a tag (General exists already).
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill('CHARACTERS');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await page.locator('.btn', { hasText: '+ New Tag' }).click();
+    await page.locator('.modal input.input').first().fill('Gura');
+    await page.locator('.modal .btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.badge', { hasText: 'Gura' })).toBeVisible();
+
+    await page.locator('.toolbar-btn[title="Graph view"]').click();
+    const graph = page.locator('.graph-overlay');
+    await expect(graph).toBeVisible();
+
+    // 2 categories + 1 tag, and the tag's membership edge.
+    await expect(graph.locator('.graph-node-category')).toHaveCount(2);
+    await expect(graph.locator('.graph-node-tag')).toHaveCount(1);
+    await expect(graph.locator('.graph-canvas .graph-edge-member')).toHaveCount(1);
+    await expect(graph).toContainText('CHARACTERS');
+    await expect(graph).toContainText('Gura');
+
+    // Clicking the tag node closes the graph and opens the tag's page.
+    await graph.locator('.graph-node-tag circle').click({ force: true });
+    await expect(graph).toHaveCount(0);
+    await expect(page.locator('.right-sidebar')).toContainText('Usage');
+  });
+
+  test('Escape closes it', async () => {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Graph Esc');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.toolbar-btn[title="Graph view"]').click();
+    await expect(page.locator('.graph-overlay')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.graph-overlay')).toHaveCount(0);
   });
 });
 

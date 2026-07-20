@@ -442,6 +442,60 @@ await shot('18-section-tag-bar', {
   ],
 });
 
+// ── 4b. Filing and the graph ──────────────────────────────────────────────────
+
+// The Add Tag modal, with the create button and File under dropdown.
+await editor.click();
+await page.keyboard.press('Escape');
+await page.keyboard.press('Meta+A');
+await page.waitForTimeout(300);
+await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click({ force: true });
+await page.waitForTimeout(250);
+await shot('24-file-under', {
+  clip: '.modal',
+  pad: 210,
+  marks: [
+    { selector: '.create-tag-btn', label: 'Brand-new tag', place: 'right' },
+    { selector: '.modal .input-group', label: 'Optional — put it on a page too', place: 'right' },
+    { selector: '.autocomplete', label: 'Pick the tag', place: 'right' },
+  ],
+});
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
+// File the existing highlight under GURA > HISTORY, then show GURA's compiled page.
+await page.locator('.annotation-highlight').first().click({ button: 'right' });
+await page.locator('.context-menu-item', { hasText: 'File under…' }).click();
+const fileModal = page.locator('.modal', { hasText: 'File under' });
+const histVal = await fileModal.locator('select.input option', { hasText: 'HISTORY' }).first().getAttribute('value');
+await fileModal.locator('select.input').selectOption(histVal);
+await fileModal.locator('.btn-primary', { hasText: 'Save' }).click();
+await page.waitForTimeout(400);
+
+await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+await page.locator('.category-name-link', { hasText: 'GURA' }).first().click();
+await page.waitForTimeout(500);
+await shot('25-category-page', {
+  clip: '.right-sidebar',
+  pad: 300,
+  marks: [
+    { selector: '.placement-sort-bar', label: 'Order the page your way', place: 'left' },
+    { selector: '.placement-row', label: 'Filed excerpt — click to jump to it', place: 'left' },
+  ],
+});
+await page.keyboard.press('Escape');
+
+// The graph.
+await page.locator('.toolbar-btn[title="Graph view"]').click();
+await page.waitForTimeout(4500);
+await shot('26-graph', {
+  marks: [
+    { selector: '.graph-node-tag', label: 'A tag — click to open its page', place: 'right' },
+  ],
+});
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+
 // ── 5. Browse sidebar ─────────────────────────────────────────────────────────
 
 await shot('19-browse-modes', {

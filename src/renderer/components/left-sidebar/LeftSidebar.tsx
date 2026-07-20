@@ -25,7 +25,10 @@ export function LeftSidebar() {
   const tags = useStore(s => s.tags);
   const highlightsVisible = useStore(s => s.highlightsVisible);
   const setHighlightsVisible = useStore(s => s.setHighlightsVisible);
+  const hiddenTagIds = useStore(s => s.hiddenTagIds);
+  const toggleTagHighlight = useStore(s => s.toggleTagHighlight);
   const setFocusedTag = useStore(s => s.setFocusedTag);
+  const setFocusedCategory = useStore(s => s.setFocusedCategory);
   const focusedTagId = useStore(s => s.focusedTagId);
   const deleteTag = useStore(s => s.deleteTag);
   const documentAnnotations = useStore(s => s.documentAnnotations);
@@ -187,7 +190,17 @@ export function LeftSidebar() {
                       style={{ paddingLeft: `calc(var(--space-3) + ${depth * 16}px)` }}
                     >
                       <span className={`category-expand-icon${expanded ? ' expanded' : ''}`}>▶</span>
-                      <span className="category-name">{category.name}</span>
+                      <span
+                        className="category-name category-name-link"
+                        title="View this category's page"
+                        onClick={e => {
+                          // The row toggles expansion; the name opens the compiled page.
+                          e.stopPropagation();
+                          setFocusedCategory(category.id);
+                        }}
+                      >
+                        {category.name}
+                      </span>
                       <span className="category-count">{displayTags.length}</span>
                     </div>
                     {expanded && (
@@ -275,11 +288,20 @@ export function LeftSidebar() {
                         onChange={() => toggleFilter(cat.id, t.id)}
                       />
                       <span className="sidebar-filter-color" style={{ backgroundColor: t.color }} />
-                      <span
-                        style={{ cursor: 'pointer' }}
-                        onClick={(e) => { e.preventDefault(); setFocusedTag(t.id); }}
-                      >{t.name}</span>
+                      <span>{t.name}</span>
                       {renderUsageBadge(t.id)}
+                      <button
+                        className="tag-details-btn"
+                        title="View details"
+                        onClick={(e) => {
+                          // Keep the label from also toggling the checkbox.
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setFocusedTag(t.id);
+                        }}
+                      >
+                        &#8250;
+                      </button>
                     </label>
                   ))}
                 </div>
@@ -314,12 +336,16 @@ export function LeftSidebar() {
                     <div
                       key={t.id}
                       className={`sidebar-highlight-item${focusedTagId === t.id ? ' active' : ''}`}
-                      onClick={() => setFocusedTag(t.id)}
                       onContextMenu={(e) => handleContextMenu(e, t.id)}
-                      style={{ cursor: 'pointer' }}
                     >
+                      <input
+                        type="checkbox"
+                        checked={!hiddenTagIds.includes(t.id)}
+                        onChange={() => toggleTagHighlight(t.id)}
+                        title="Show this tag's highlights"
+                      />
                       <span className="sidebar-filter-color" style={{ backgroundColor: t.color }} />
-                      <span>{t.name}</span>
+                      <span style={{ cursor: 'pointer' }} onClick={() => setFocusedTag(t.id)}>{t.name}</span>
                       {renderUsageBadge(t.id)}
                     </div>
                   ))}

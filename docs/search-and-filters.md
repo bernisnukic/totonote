@@ -35,25 +35,25 @@ Tick tags here to **hide sections that don't use them**. A section survives if i
 one of the ticked tags as a section tag, or contains a highlight using one.
 
 Ticking several tags widens the net rather than narrowing it — you get every section
-matching *any* of them, not only sections matching all.
+matching *any* of them, not only sections matching all. The section tabs hide along with
+the sections.
 
 If nothing matches you'll see *"No sections match the active filters."* in the middle of
 the window. **Clear filters (N)** at the top puts everything back.
 
 > **Clear filters also empties the Search box.** If your search text vanishes, that's why.
 
-> Clicking a tag's **name** here opens its details instead of ticking it. Click the
-> checkbox or the colour dot to tick it.
+Clicking anywhere on a row ticks it. The small **›** at the row's end opens the tag's
+details instead.
 
 ## HL — highlights
 
 ![Highlight mode, with the Show all highlights tickbox](screenshots/21-highlight-mode.png)
 
-One tickbox: **Show all highlights**. Unticking it turns off the colouring on every
-highlight at once, everywhere, so you can read your writing plain. Nothing is deleted —
-tick it again and the colours come back.
-
-The tag list below it is just for browsing; there's no per-tag highlight switch.
+**Show all highlights** at the top turns every highlight off or on at once, so you can
+read your writing plain. Below it, **each tag has its own tickbox** — untick one to hide
+just that tag's colouring and leave the rest alone. Nothing is ever deleted; tick it back
+and the colours return.
 
 ## Sort
 
@@ -62,10 +62,12 @@ Four buttons — Name A-Z, Name Z-A, Date (Oldest), Date (Newest).
 > **These don't do anything yet.** The button highlights when clicked but nothing is
 > actually re-sorted. It's unfinished, not broken on your machine.
 
-## Clicking tags
+## Clicking things
 
-Clicking any tag anywhere in the Browse sidebar opens its details in the right-hand
-**Info** panel — usage counts, every phrase it's attached to, and a form to edit it.
+Clicking any tag anywhere in the Browse sidebar opens its page in the right-hand
+**Info** panel — usage counts, every phrase it's attached to grouped by where it's filed,
+and a form to edit it. In Search mode, clicking a **category's name** opens that
+category's compiled page — see [Filing and the graph](filing-and-graph.md).
 
 Once you've clicked one, **↑** and **↓** move through the list. **Escape** clears the
 selection.

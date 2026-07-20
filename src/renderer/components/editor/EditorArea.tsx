@@ -90,7 +90,7 @@ export function EditorArea() {
   return (
     <>
       <MainToolbar />
-      <SectionTabBar onTabClick={handleTabClick} />
+      <SectionTabBar onTabClick={handleTabClick} visibleSections={filteredSections} />
       <div className="editor-area" ref={editorContainerRef}>
         {sections.length === 0 ? (
           <div className="empty-state">

@@ -4,6 +4,8 @@ import type {
   Tag,
   Category,
   Annotation,
+  AnnotationPlacement,
+  FilingEdge,
   DocumentTagWithDetails,
   SectionTagWithDetails,
   BrowseCategory,
@@ -66,6 +68,14 @@ export interface IpcHandlerMap {
   'annotation:update': { args: UpdateAnnotationInput; result: Annotation };
   'annotation:delete': { args: { id: string }; result: void };
   'annotation:batch-update-positions': { args: { updates: PositionUpdate[] }; result: void };
+  /** Filed annotations with computed excerpts, for the compiled wiki views. */
+  'annotation:placements': {
+    args: { categoryIds?: string[]; tagId?: string };
+    result: AnnotationPlacement[];
+  };
+  'annotation:reorder-placements': { args: { categoryId: string; orderedIds: string[] }; result: void };
+  /** Distinct tag→category filings, for the graph. */
+  'annotation:filing-edges': { args: void; result: FilingEdge[] };
 
   // Section Tags
   'section-tag:list': { args: { sectionId: string }; result: SectionTagWithDetails[] };

@@ -15,6 +15,13 @@
       "when": 1784560024878,
       "tag": "0001_slimy_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784571948197,
+      "tag": "0002_old_jamie_braddock",
+      "breakpoints": true
     }
   ]
 }

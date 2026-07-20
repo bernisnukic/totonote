@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Tag } from '../../../shared/domain-types';
 import { ColorPicker } from '../common/ColorPicker';
 import { useStore } from '../../stores';
@@ -22,16 +22,46 @@ export function LabelOptionsPanel({ tag, onClose, hideHeader }: LabelOptionsPane
   const [saved, setSaved] = useState(false);
   const flatCategories = useMemo(() => flattenCategoryTree(categories), [categories]);
 
-  const handleSave = async () => {
-    await updateTag(tag.id, { name, description, color, categoryId });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
-  };
+  // Edits save themselves, like everything else in the app — there is no Save button
+  // to forget before switching tabs. Debounced while typing, flushed on unmount so the
+  // last keystrokes are never lost.
+  const mountedRef = useRef(false);
+  const pendingRef = useRef<{ name: string; description: string; color: string; categoryId: string } | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
+    // Never persist an empty name mid-edit; the pending payload keeps the last valid one.
+    if (!name.trim()) return;
+    pendingRef.current = { name: name.trim(), description, color, categoryId };
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      const payload = pendingRef.current;
+      pendingRef.current = null;
+      if (!payload) return;
+      await updateTag(tag.id, payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1400);
+    }, 600);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [name, description, color, categoryId]); // deliberately not tag.id — the key remounts us
+
+  // Flush anything still pending when the panel unmounts (tab switch, Escape, …).
+  useEffect(() => {
+    return () => {
+      const payload = pendingRef.current;
+      if (payload) updateTag(tag.id, payload);
+    };
+  }, []); // mount-scoped by design
 
   const handleDelete = async () => {
     // Deleting cascades to every annotation using this tag, in every document, with no
-    // undo — and this button sits right next to Save. The sidebar's own delete already
-    // confirms; these two paths should not differ.
+    // undo. The sidebar's own delete confirms; these two paths should not differ.
     if (!window.confirm(`Delete the tag "${tag.name}" and all of its highlights?`)) return;
     await deleteTag(tag.id);
     onClose();
@@ -76,11 +106,9 @@ export function LabelOptionsPanel({ tag, onClose, hideHeader }: LabelOptionsPane
         <label className="input-label">Color</label>
         <ColorPicker selectedColor={color} onSelect={setColor} />
       </div>
-      <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
-        <button className="btn btn-primary btn-sm" onClick={handleSave}>
-          {saved ? 'Saved' : 'Save'}
-        </button>
-        <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+        <span className="label-options-autosave">{saved ? 'Saved \u2713' : 'Changes save automatically'}</span>
+        <button className="btn btn-danger btn-sm" style={{ marginLeft: 'auto' }} onClick={handleDelete}>
           Delete
         </button>
       </div>

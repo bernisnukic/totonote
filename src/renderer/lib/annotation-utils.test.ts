@@ -10,6 +10,8 @@ function makeAnnotation(id: string, from: number, to: number): Annotation {
     fromPos: from,
     toPos: to,
     note: '',
+    categoryId: null,
+    placementOrder: 0,
     createdAt: '2024-01-01',
   };
 }

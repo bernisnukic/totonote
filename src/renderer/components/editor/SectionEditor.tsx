@@ -20,6 +20,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const saveContent = useStore(s => s.saveContent);
   const tags = useStore(s => s.tags);
   const highlightsVisible = useStore(s => s.highlightsVisible);
+  const hiddenTagIds = useStore(s => s.hiddenTagIds);
   const setSelection = useStore(s => s.setSelection);
   const clearSelection = useStore(s => s.clearSelection);
   const setSelectionToolbarPos = useStore(s => s.setSelectionToolbarPos);
@@ -149,11 +150,11 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     });
   }, [editor, section.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-sync decorations when highlights toggle or tags change
+  // Re-sync decorations when highlights toggle, per-tag visibility or tags change
   useEffect(() => {
     if (!editor) return;
     syncDecorations(annotationsRef.current);
-  }, [editor, highlightsVisible, tags]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editor, highlightsVisible, hiddenTagIds, tags]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When this section becomes active, push its annotations to global store
   useEffect(() => {
@@ -179,6 +180,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       // fallback colour until the app restarted.
       const withColors = highlightsVisible
         ? annotations.flatMap(a => {
+            if (hiddenTagIds.includes(a.tagId)) return [];
             const tag = tags.find(t => t.id === a.tagId);
             return tag ? [{ ...a, color: tag.color }] : [];
           })
@@ -188,7 +190,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
         return true;
       });
     },
-    [editor, highlightsVisible, tags]
+    [editor, highlightsVisible, tags, hiddenTagIds]
   );
 
   const handleContextMenu = (e: React.MouseEvent) => {

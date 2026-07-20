@@ -17,6 +17,9 @@ export interface UiSlice {
    */
   contextMenu: { x: number; y: number; type: string; annotationId?: string } | null;
   focusedTagId: string | null;
+  /** Category whose compiled wiki page is showing in the Info tab. Mutually exclusive with focusedTagId. */
+  focusedCategoryId: string | null;
+  graphOpen: boolean;
 
   setLeftSidebarWidth: (width: number) => void;
   setRightSidebarWidth: (width: number) => void;
@@ -27,6 +30,8 @@ export interface UiSlice {
   closeModal: (id: string) => void;
   setContextMenu: (menu: { x: number; y: number; type: string; annotationId?: string } | null) => void;
   setFocusedTag: (id: string | null) => void;
+  setFocusedCategory: (id: string | null) => void;
+  setGraphOpen: (open: boolean) => void;
 }
 
 export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
@@ -38,6 +43,8 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
   modals: {},
   contextMenu: null,
   focusedTagId: null,
+  focusedCategoryId: null,
+  graphOpen: false,
 
   setLeftSidebarWidth: (width) => set({ leftSidebarWidth: width }),
   setRightSidebarWidth: (width) => set({ rightSidebarWidth: width }),
@@ -47,5 +54,15 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
   openModal: (id) => set(s => ({ modals: { ...s.modals, [id]: true } })),
   closeModal: (id) => set(s => ({ modals: { ...s.modals, [id]: false } })),
   setContextMenu: (menu) => set({ contextMenu: menu }),
-  setFocusedTag: (id) => set({ focusedTagId: id, ...(id ? { activeRightTab: 'info' as RightTab } : {}) }),
+  setFocusedTag: (id) =>
+    set({
+      focusedTagId: id,
+      ...(id ? { activeRightTab: 'info' as RightTab, focusedCategoryId: null } : {}),
+    }),
+  setFocusedCategory: (id) =>
+    set({
+      focusedCategoryId: id,
+      ...(id ? { activeRightTab: 'info' as RightTab, focusedTagId: null } : {}),
+    }),
+  setGraphOpen: (open) => set({ graphOpen: open }),
 });

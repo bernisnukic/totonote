@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../stores';
 import { useClickOutside } from '../../hooks/useClickOutside';
-import { getActiveEditor } from '../../lib/editor-registry';
 import { findAdjacentAnnotations } from '../../lib/annotation-utils';
 import { Modal } from '../common/Modal';
 import { LabelAutocomplete } from '../right-sidebar/LabelAutocomplete';
+import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
 
 export function TagContextMenu() {
   const contextMenu = useStore(s => s.contextMenu);
@@ -18,9 +18,14 @@ export function TagContextMenu() {
   const tags = useStore(s => s.tags);
   const selectedRange = useStore(s => s.selectedRange);
   const loadAnnotations = useStore(s => s.loadAnnotations);
+  const categories = useStore(s => s.categories);
   const ref = useClickOutside<HTMLDivElement>(() => setContextMenu(null));
   const [showAddTagModal, setShowAddTagModal] = useState(false);
   const [showCombineMenu, setShowCombineMenu] = useState(false);
+  // File-under modal state, captured when the menu item is clicked — the menu (and its
+  // annotation id) are gone by the time the modal is interacted with.
+  const [fileModalAnnotationId, setFileModalAnnotationId] = useState<string | null>(null);
+  const [fileCategoryId, setFileCategoryId] = useState('');
 
   useEffect(() => {
     const handler = () => setContextMenu(null);
@@ -28,9 +33,49 @@ export function TagContextMenu() {
     return () => window.removeEventListener('scroll', handler, true);
   }, [setContextMenu]);
 
+  const flatCategories = flattenCategoryTree(categories);
+
+  const handleFileUnder = async (categoryId: string | null) => {
+    if (fileModalAnnotationId) {
+      await updateAnnotation(fileModalAnnotationId, { categoryId });
+    }
+    setFileModalAnnotationId(null);
+  };
+
+  const fileModal = fileModalAnnotationId ? (
+    <Modal title="File under" isOpen onClose={() => setFileModalAnnotationId(null)}>
+      <p className="rule-help">
+        Choose which page this excerpt is filed on. It stays highlighted in the text
+        either way.
+      </p>
+      <div className="input-group">
+        <label className="input-label">Category</label>
+        <select
+          className="input"
+          value={fileCategoryId}
+          onChange={e => setFileCategoryId(e.target.value)}
+          autoFocus
+        >
+          <option value="">&mdash; not filed &mdash;</option>
+          {flatCategories.map(({ category: cat, depth }) => (
+            <option key={cat.id} value={cat.id}>{optionIndent(depth)}{cat.name}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+        <button className="btn btn-primary btn-sm" onClick={() => handleFileUnder(fileCategoryId || null)}>
+          Save
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => setFileModalAnnotationId(null)}>
+          Cancel
+        </button>
+      </div>
+    </Modal>
+  ) : null;
+
   if (!contextMenu || contextMenu.type !== 'annotation') {
     // Check for text-selection context menu
-    if (!contextMenu || contextMenu.type !== 'text-selection') return null;
+    if (!contextMenu || contextMenu.type !== 'text-selection') return fileModal;
   }
 
   // Read the target from the menu's own state, not from activeAnnotationId — see the
@@ -107,6 +152,13 @@ export function TagContextMenu() {
     closeMenu();
   };
 
+  const openFileModal = () => {
+    if (!annotation) return;
+    setFileModalAnnotationId(annotation.id);
+    setFileCategoryId(annotation.categoryId ?? '');
+    closeMenu();
+  };
+
   const handleAddTagToSelection = async (tagId: string) => {
     if (!activeSectionId || !selectedRange) return;
     await createAnnotation(activeSectionId, tagId, selectedRange.from, selectedRange.to);
@@ -161,6 +213,11 @@ export function TagContextMenu() {
         <div className="context-menu-item" onClick={handleRemove}>
           Remove annotation
         </div>
+        {annotation && (
+          <div className="context-menu-item" onClick={openFileModal}>
+            File under&hellip;
+          </div>
+        )}
 
         {selectedRange && annotation && (
           <>

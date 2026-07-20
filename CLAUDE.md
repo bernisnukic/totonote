@@ -81,7 +81,7 @@ Slices pattern: each file exports an interface + `createXSlice` function. All co
 
 - **document-slice**: active doc/section, CRUD, content saving
 - **tag-slice**: tags, categories, document-tags
-- **annotation-slice**: annotations, highlight visibility
+- **annotation-slice**: annotations, highlight visibility, per-tag hidden highlights, placements
 - **selection-slice**: text selection range, active annotation
 - **ui-slice**: sidebar widths/collapsed, active right tab, modals, context menu
 - **filter-slice**: search, sort, filter, left sidebar mode
@@ -105,6 +105,19 @@ recursed into, which is what makes "apply to existing sub-categories" safe to re
 Annotations are **ProseMirror decorations**, NOT marks in the document JSON. They're stored as `(sectionId, tagId, fromPos, toPos)` in SQLite and rendered as colored inline decorations via a custom plugin (`extensions/annotation-decoration/`). Positions are mapped through edits using ProseMirror's transaction mapping.
 
 The `editor-registry.ts` maintains a Map of active TipTap editor instances by section ID, enabling cross-component annotation operations.
+
+### Filing & the Graph
+Annotations optionally carry a **filing** (`annotations.category_id` + `placement_order`): the
+category page the excerpt belongs to, independent of its tag. Compiled "wiki pages"
+(`CategoryPage.tsx`, plus the tag view in `InfoPanel.tsx`) list filed excerpts across **all**
+documents; excerpt text is computed **in the main process** from stored TipTap JSON by
+`src/shared/prosemirror-text.ts`, which replicates ProseMirror position arithmetic (containers
+cost 1 to enter/leave, text is 1/char, hard breaks are 1). Server excerpts trail the debounced
+save by ≤1s, so `PlacementRow` falls back to live editor text for open sections. Filing a
+category deleted → `ON DELETE SET NULL` (unfiles, never deletes) — note drizzle-kit dropped
+that clause from the generated 0002 ALTER and it was restored by hand; `migration.test.ts`
+guards it. `GraphView.tsx` (toolbar ◈) draws categories/tags/filings with a hand-rolled force
+layout — no graph library.
 
 ### Editor Structure
 All sections render as one scrollable page. Each section gets its own `SectionEditor` (TipTap instance). `useSectionScroll` uses IntersectionObserver for scroll-based tab switching. Content is debounce-saved (1000ms).

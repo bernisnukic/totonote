@@ -95,11 +95,18 @@ export const annotations = sqliteTable(
     fromPos: integer('from_pos').notNull(),
     toPos: integer('to_pos').notNull(),
     note: text('note').notNull().default(''),
+    // Filing: where this excerpt lives in the category tree, independent of its tag.
+    // The tag says what the text is about; the filing says which "wiki page" section it
+    // belongs to (GURA-tagged text filed under GURA > HISTORY). Nullable — unfiled
+    // annotations are just highlights. Deleting the category unfiles, never deletes.
+    categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    placementOrder: integer('placement_order').notNull().default(0),
     createdAt: text('created_at').notNull().default(isoNow),
   },
   t => ({
     sectionIdx: index('idx_annotations_section').on(t.sectionId),
     tagIdx: index('idx_annotations_tag').on(t.tagId),
+    categoryIdx: index('idx_annotations_category').on(t.categoryId),
   }),
 );
 

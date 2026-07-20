@@ -10,6 +10,7 @@ export function MainToolbar() {
   const activeSectionId = useStore(s => s.activeSectionId);
   const toggleLeftSidebar = useStore(s => s.toggleLeftSidebar);
   const toggleRightSidebar = useStore(s => s.toggleRightSidebar);
+  const setGraphOpen = useStore(s => s.setGraphOpen);
 
   const editor = getActiveEditor(activeSectionId);
 
@@ -68,6 +69,9 @@ export function MainToolbar() {
       <div className="toolbar-group">
         <button className="toolbar-btn" onClick={toggleLeftSidebar} title="Toggle left sidebar">
           &#9776;
+        </button>
+        <button className="toolbar-btn" onClick={() => setGraphOpen(true)} title="Graph view">
+          &#9672;
         </button>
         <button className="toolbar-btn" onClick={toggleRightSidebar} title="Toggle right sidebar">
           &#9776;
