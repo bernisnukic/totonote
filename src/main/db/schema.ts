@@ -32,11 +32,36 @@ export const sections = sqliteTable(
   }),
 );
 
-export const categories = sqliteTable('categories', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull().unique(),
-  sortOrder: integer('sort_order').notNull().default(0),
-  parentId: text('parent_id').references((): any => categories.id, { onDelete: 'set null' }),
+export const categories = sqliteTable(
+  'categories',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    parentId: text('parent_id').references((): any => categories.id, { onDelete: 'set null' }),
+  },
+  t => ({
+    // Names are unique per parent, not globally: CHARACTERS > GURA > HISTORY and
+    // CHARACTERS > PEKORA > HISTORY must both be able to exist.
+    parentNameUnique: uniqueIndex('idx_categories_parent_name').on(t.parentId, t.name),
+    // SQLite treats NULLs as distinct in a unique index, so the index above does not
+    // constrain root categories. This partial index covers them.
+    rootNameUnique: uniqueIndex('idx_categories_root_name')
+      .on(t.name)
+      .where(sql`parent_id is null`),
+  }),
+);
+
+// A category's rule: the sub-category skeleton stamped onto each new child of that
+// category. Stored as the raw indented text the user authored so it round-trips into
+// the editor unchanged; parseRuleTemplate() in shared/category-rule.ts turns it into a
+// tree. Primary key on category_id makes this 1:1 with a category.
+export const categoryRules = sqliteTable('category_rules', {
+  categoryId: text('category_id')
+    .primaryKey()
+    .references(() => categories.id, { onDelete: 'cascade' }),
+  template: text('template').notNull().default(''),
+  updatedAt: text('updated_at').notNull().default(isoNow),
 });
 
 export const tags = sqliteTable(

@@ -1,25 +1,176 @@
 import { randomUUID } from 'crypto';
-import { eq, max } from 'drizzle-orm';
+import { eq, inArray, isNull, max } from 'drizzle-orm';
 import { getDb } from '../connection';
 import { categories, browseCategories } from '../schema';
-import type { Category, BrowseCategory } from '../../../shared/domain-types';
+import { getCategoryRule } from './category-rule-repo';
+import { parseRuleTemplate, type RuleNode } from '../../../shared/category-rule';
+import type {
+  Category,
+  BrowseCategory,
+  CreateCategoryInput,
+  CreateCategoryResult,
+  ApplyRuleResult,
+  BulkAddSubcategoryInput,
+  BulkAddSubcategoryResult,
+} from '../../../shared/domain-types';
 
 export function listCategories(): Category[] {
   return getDb().select().from(categories).orderBy(categories.sortOrder).all();
 }
 
-export function createCategory(name: string, parentId?: string): Category {
+function getCategory(id: string): Category | null {
+  return getDb().select().from(categories).where(eq(categories.id, id)).get() ?? null;
+}
+
+function childrenOf(parentId: string | null): Category[] {
   const db = getDb();
-  const maxRow = db.select({ max: max(categories.sortOrder) }).from(categories).get();
-  const sortOrder = (maxRow?.max ?? 0) + 1;
-  const category: Category = {
-    id: `cat-${randomUUID()}`,
-    name,
-    parentId: parentId ?? null,
-    sortOrder,
-  };
-  db.insert(categories).values(category).run();
+  return db
+    .select()
+    .from(categories)
+    .where(parentId === null ? isNull(categories.parentId) : eq(categories.parentId, parentId))
+    .orderBy(categories.sortOrder)
+    .all();
+}
+
+/**
+ * Names are compared case-insensitively among siblings. The unique indexes in the
+ * schema are the exact-match backstop; this is the friendlier rule that stops
+ * "History" and "HISTORY" becoming two sub-categories.
+ */
+function findSibling(siblings: Category[], name: string): Category | undefined {
+  const needle = name.trim().toLowerCase();
+  return siblings.find(c => c.name.toLowerCase() === needle);
+}
+
+/** Hands out sort orders from one starting point, rather than re-querying max() per insert. */
+function makeSortOrderAllocator(): () => number {
+  const maxRow = getDb().select({ max: max(categories.sortOrder) }).from(categories).get();
+  let next = (maxRow?.max ?? 0) + 1;
+  return () => next++;
+}
+
+function insertCategory(name: string, parentId: string | null, sortOrder: number): Category {
+  const category: Category = { id: `cat-${randomUUID()}`, name, parentId, sortOrder };
+  getDb().insert(categories).values(category).run();
   return category;
+}
+
+/**
+ * Merge a parsed rule tree into `parentId`, creating only what is missing.
+ *
+ * Idempotent by design: an existing sub-category with a matching name is reused and
+ * recursed into rather than duplicated, which is what makes "apply to existing
+ * sub-categories" safe to run repeatedly.
+ */
+function applyTemplateUnder(
+  parentId: string,
+  nodes: RuleNode[],
+  nextSortOrder: () => number,
+  created: Category[],
+): void {
+  if (nodes.length === 0) return;
+  const existing = childrenOf(parentId);
+
+  for (const node of nodes) {
+    let child = findSibling(existing, node.name);
+    if (!child) {
+      child = insertCategory(node.name, parentId, nextSortOrder());
+      existing.push(child);
+      created.push(child);
+    }
+    applyTemplateUnder(child.id, node.children, nextSortOrder, created);
+  }
+}
+
+function ruleNodesFor(categoryId: string | null | undefined): RuleNode[] {
+  if (!categoryId) return [];
+  const rule = getCategoryRule(categoryId);
+  return rule ? parseRuleTemplate(rule.template) : [];
+}
+
+export function createCategory(input: CreateCategoryInput): CreateCategoryResult {
+  const name = input.name.trim();
+  if (!name) throw new Error('Category name is required');
+
+  const parentId = input.parentId ?? null;
+  if (parentId && !getCategory(parentId)) {
+    throw new Error(`Parent category not found: ${parentId}`);
+  }
+
+  const duplicate = findSibling(childrenOf(parentId), name);
+  if (duplicate) {
+    throw new Error(
+      parentId
+        ? `A sub-category named "${duplicate.name}" already exists here`
+        : `A category named "${duplicate.name}" already exists`,
+    );
+  }
+
+  return getDb().transaction(() => {
+    const nextSortOrder = makeSortOrderAllocator();
+    const category = insertCategory(name, parentId, nextSortOrder());
+
+    const descendants: Category[] = [];
+    if (input.applyRule) {
+      applyTemplateUnder(category.id, ruleNodesFor(parentId), nextSortOrder, descendants);
+    }
+
+    return { category, descendants };
+  });
+}
+
+/**
+ * Stamp a category's rule onto the sub-categories it already has — the "retroactive"
+ * option. Only missing nodes are created, so nothing is duplicated or reordered.
+ */
+export function applyRuleToExistingChildren(categoryId: string): ApplyRuleResult {
+  const nodes = ruleNodesFor(categoryId);
+  if (nodes.length === 0) return { created: [], childrenAffected: 0 };
+
+  return getDb().transaction(() => {
+    const nextSortOrder = makeSortOrderAllocator();
+    const created: Category[] = [];
+    let childrenAffected = 0;
+
+    for (const child of childrenOf(categoryId)) {
+      const before = created.length;
+      applyTemplateUnder(child.id, nodes, nextSortOrder, created);
+      if (created.length > before) childrenAffected++;
+    }
+
+    return { created, childrenAffected };
+  });
+}
+
+/** Add one sub-category to each of several categories at once. */
+export function bulkAddSubcategory(input: BulkAddSubcategoryInput): BulkAddSubcategoryResult {
+  const name = input.name.trim();
+  if (!name) throw new Error('Sub-category name is required');
+
+  return getDb().transaction(() => {
+    const nextSortOrder = makeSortOrderAllocator();
+    const created: Category[] = [];
+    const skipped: BulkAddSubcategoryResult['skipped'] = [];
+
+    for (const parentId of input.parentIds) {
+      const parent = getCategory(parentId);
+      if (!parent) continue;
+
+      if (findSibling(childrenOf(parentId), name)) {
+        skipped.push({ parentId, parentName: parent.name });
+        continue;
+      }
+
+      const child = insertCategory(name, parentId, nextSortOrder());
+      created.push(child);
+
+      if (input.applyRule) {
+        applyTemplateUnder(child.id, ruleNodesFor(parentId), nextSortOrder, created);
+      }
+    }
+
+    return { created, skipped };
+  });
 }
 
 export function updateCategory(
@@ -36,8 +187,32 @@ export function updateCategory(
   return db.select().from(categories).where(eq(categories.id, id)).get()!;
 }
 
-export function deleteCategory(id: string): void {
-  getDb().delete(categories).where(eq(categories.id, id)).run();
+/** Every descendant id of `id`, plus `id` itself. */
+export function collectCategoryIds(id: string): string[] {
+  const all = listCategories();
+  const ids = [id];
+  for (let i = 0; i < ids.length; i++) {
+    for (const c of all) {
+      if (c.parentId === ids[i]) ids.push(c.id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Delete a category and everything nested under it.
+ *
+ * The schema's `parent_id` foreign key is ON DELETE SET NULL, so deleting a parent on
+ * its own would quietly promote its children to the root instead of removing them —
+ * which is neither what the confirmation dialog promises nor what a nested rule tree
+ * makes sensible. Returns every id removed so the renderer can prune its store.
+ */
+export function deleteCategory(id: string): string[] {
+  const ids = collectCategoryIds(id);
+  getDb().transaction(() => {
+    getDb().delete(categories).where(inArray(categories.id, ids)).run();
+  });
+  return ids;
 }
 
 export function listBrowseCategories(): BrowseCategory[] {

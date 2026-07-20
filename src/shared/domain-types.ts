@@ -25,6 +25,16 @@ export interface Category {
   sortOrder: number;
 }
 
+/**
+ * The sub-category skeleton attached to a category. `template` is the raw indented
+ * text as authored — see shared/category-rule.ts for the parser.
+ */
+export interface CategoryRule {
+  categoryId: string;
+  template: string;
+  updatedAt: string;
+}
+
 export interface Tag {
   id: string;
   categoryId: string;
@@ -143,4 +153,36 @@ export interface PositionUpdate {
   id: string;
   fromPos: number;
   toPos: number;
+}
+
+export interface CreateCategoryInput {
+  name: string;
+  parentId?: string;
+  /** Stamp the parent's rule onto the new category. Ignored when the parent has none. */
+  applyRule?: boolean;
+}
+
+/** A category plus everything a rule created underneath it. */
+export interface CreateCategoryResult {
+  category: Category;
+  descendants: Category[];
+}
+
+export interface ApplyRuleResult {
+  created: Category[];
+  /** How many existing sub-categories gained at least one node. */
+  childrenAffected: number;
+}
+
+export interface BulkAddSubcategoryInput {
+  parentIds: string[];
+  name: string;
+  /** Also apply each selected category's own rule to the new child. */
+  applyRule?: boolean;
+}
+
+export interface BulkAddSubcategoryResult {
+  created: Category[];
+  /** Categories that already had a child by that name, so were left alone. */
+  skipped: { parentId: string; parentName: string }[];
 }

@@ -14,6 +14,7 @@ export function EditorArea() {
   const setActiveSection = useStore(s => s.setActiveSection);
   const loadTags = useStore(s => s.loadTags);
   const loadCategories = useStore(s => s.loadCategories);
+  const loadCategoryRules = useStore(s => s.loadCategoryRules);
   const activeDocument = useStore(s => s.activeDocument);
   const sectionTags = useStore(s => s.sectionTags);
   const loadSectionTagsByDocument = useStore(s => s.loadSectionTagsByDocument);
@@ -25,11 +26,12 @@ export function EditorArea() {
 
   const { scrollToSection } = useSectionScroll(editorContainerRef, scrollingByClickRef);
 
-  // Load tags and categories when editor mounts
+  // Load tags, categories and their rules when editor mounts
   useEffect(() => {
     loadTags();
     loadCategories();
-  }, [loadTags, loadCategories]);
+    loadCategoryRules();
+  }, [loadTags, loadCategories, loadCategoryRules]);
 
   // Load section tags and document annotations when document changes
   useEffect(() => {
