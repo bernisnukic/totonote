@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useStore } from '../../stores';
 import { getActiveEditor } from '../../lib/editor-registry';
+import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
 import { Modal } from '../common/Modal';
 import { LabelAutocomplete } from '../right-sidebar/LabelAutocomplete';
 import { ColorPicker } from '../common/ColorPicker';
@@ -12,6 +13,7 @@ export function SelectionToolbar() {
   const createAnnotation = useStore(s => s.createAnnotation);
   const tags = useStore(s => s.tags);
   const categories = useStore(s => s.categories);
+  const flatCategories = useMemo(() => flattenCategoryTree(categories), [categories]);
   const createTag = useStore(s => s.createTag);
   const loadAnnotations = useStore(s => s.loadAnnotations);
   const [showTagModal, setShowTagModal] = useState(false);
@@ -133,8 +135,8 @@ export function SelectionToolbar() {
                 value={newCategoryId}
                 onChange={e => setNewCategoryId(e.target.value)}
               >
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                {flatCategories.map(({ category: cat, depth }) => (
+                  <option key={cat.id} value={cat.id}>{optionIndent(depth)}{cat.name}</option>
                 ))}
               </select>
             </div>

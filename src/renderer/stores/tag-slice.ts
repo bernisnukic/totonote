@@ -80,7 +80,14 @@ export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) =>
 
   deleteTag: async (id) => {
     await invoke('tag:delete', { id });
-    set(s => ({ tags: s.tags.filter(t => t.id !== id) }));
+    // Deleting a tag cascades in the database — its annotations, section tags and
+    // document tags go with it. Mirror that here, or their badges linger in the UI
+    // until the next reload.
+    set(s => ({
+      tags: s.tags.filter(t => t.id !== id),
+      sectionTags: s.sectionTags.filter(st => st.tagId !== id),
+      documentTags: s.documentTags.filter(dt => dt.tagId !== id),
+    }));
   },
 
   searchTags: async (query) => {
