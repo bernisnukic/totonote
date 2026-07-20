@@ -9,7 +9,13 @@ export interface UiSlice {
   rightSidebarCollapsed: boolean;
   activeRightTab: RightTab;
   modals: Record<string, boolean>;
-  contextMenu: { x: number; y: number; type: string } | null;
+  /**
+   * `annotationId` is carried here rather than read from `activeAnnotationId` when the
+   * menu acts. Opening the menu also opens the TagPopover, whose click-outside handler
+   * runs on the *mousedown* of the click that picks a menu item and clears
+   * `activeAnnotationId` before the click handler ever fires.
+   */
+  contextMenu: { x: number; y: number; type: string; annotationId?: string } | null;
   focusedTagId: string | null;
 
   setLeftSidebarWidth: (width: number) => void;
@@ -19,7 +25,7 @@ export interface UiSlice {
   setActiveRightTab: (tab: RightTab) => void;
   openModal: (id: string) => void;
   closeModal: (id: string) => void;
-  setContextMenu: (menu: { x: number; y: number; type: string } | null) => void;
+  setContextMenu: (menu: { x: number; y: number; type: string; annotationId?: string } | null) => void;
   setFocusedTag: (id: string | null) => void;
 }
 

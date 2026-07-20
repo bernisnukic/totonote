@@ -889,6 +889,141 @@ test.describe('Deleting a tag', () => {
   });
 });
 
+test.describe('Working with an existing highlight', () => {
+  /** Doc + section + a highlight over the first sentence. */
+  async function setup() {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Highlight Ops');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Gura was born in Atlantis.', { delay: 15 });
+
+    // Drag-select the sentence, the way a user would.
+    const p = (await editor.locator('p').first().boundingBox())!;
+    await page.mouse.move(p.x + 2, p.y + p.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(p.x + p.width + 40, p.y + p.height / 2, { steps: 8 });
+    await page.mouse.up();
+
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('GURA');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+    return editor;
+  }
+
+  test('Remove annotation actually removes it', async () => {
+    // Reported as "none of these work". Opening the menu also opened the tag popup,
+    // whose click-outside handler cleared the active annotation on mousedown — before
+    // the menu item's click handler ran, so every action was a no-op.
+    const editor = await setup();
+
+    await page.locator('.annotation-highlight').click({ button: 'right' });
+    await expect(page.locator('.context-menu')).toBeVisible();
+    await page.locator('.context-menu-item', { hasText: 'Remove annotation' }).click();
+
+    await expect(page.locator('.annotation-highlight')).toHaveCount(0);
+    await expect(editor).toContainText('Gura was born in Atlantis.');
+  });
+
+  /** Put the caret after the last character by clicking past the end of the line. */
+  async function caretToEndOfLine() {
+    const box = await page.locator('.annotation-highlight').first().boundingBox();
+    await page.mouse.click(box!.x + box!.width + 30, box!.y + box!.height / 2);
+    await page.waitForTimeout(150);
+  }
+
+  test('typing after a highlight does not extend it', async () => {
+    // Reported as "it stays conjoined" — the next sentence was swallowed by the
+    // previous sentence's highlight.
+    const editor = await setup();
+    await caretToEndOfLine();
+    await editor.pressSequentially(' She later moved away.', { delay: 15 });
+    await page.waitForTimeout(1400); // let the debounced save settle
+
+    const after = await page.locator('.annotation-highlight').allTextContents();
+    expect(after).toEqual(['Gura was born in Atlantis.']);
+    await expect(editor).toContainText('She later moved away.');
+  });
+
+  test('a select-all highlight also stops at the text', async () => {
+    // Select-all yields a range covering the paragraph's own boundaries, so the
+    // annotation used to end past the last character and grew on every keystroke no
+    // matter what inclusiveEnd said.
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Select All');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Gura was born in Atlantis.', { delay: 15 });
+    await page.keyboard.press('Meta+A');
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('GURA');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+
+    await caretToEndOfLine();
+    await editor.pressSequentially(' She later moved away.', { delay: 15 });
+    await page.waitForTimeout(1400);
+
+    expect(await page.locator('.annotation-highlight').allTextContents())
+      .toEqual(['Gura was born in Atlantis.']);
+  });
+});
+
+test.describe('Tagging a selection', () => {
+  test('shows the tag list, not a create-from-sentence row', async () => {
+    // Reported by a user: selecting a sentence pre-filled it into the tag search
+    // box, so the tag list vanished behind `+ Create "<the whole sentence>"`.
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Picker Test');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    // Two tags to pick from.
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    for (const name of ['GURA', 'PEKORA']) {
+      await page.locator('.btn', { hasText: '+ New Tag' }).click();
+      await page.locator('.modal input.input').first().fill(name);
+      await page.locator('.modal .btn-primary', { hasText: 'Create' }).click();
+      await expect(page.locator('.badge', { hasText: name })).toBeVisible();
+    }
+
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Wild rabbits ran amok in Libestal.', { delay: 15 });
+    await page.keyboard.press('Meta+A');
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+
+    const modal = page.locator('.modal');
+    // The search box starts empty and both tags are offered.
+    await expect(modal.locator('.autocomplete input.input')).toHaveValue('');
+    await expect(modal.locator('.autocomplete-item', { hasText: 'GURA' })).toBeVisible();
+    await expect(modal.locator('.autocomplete-item', { hasText: 'PEKORA' })).toBeVisible();
+    await expect(modal.locator('.autocomplete-item-create')).toHaveCount(0);
+
+    // And there is an explicit way to make a new tag.
+    await expect(modal.locator('.create-tag-btn')).toBeVisible();
+    await modal.locator('.create-tag-btn').click();
+    await expect(modal).toContainText('Create New Tag');
+  });
+});
+
 test.describe('Category dropdowns', () => {
   test('indent nested categories in the tag-a-selection prompt', async () => {
     // Reported by a user: the sidebar's category dropdown indented sub-categories

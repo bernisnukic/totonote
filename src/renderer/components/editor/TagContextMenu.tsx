@@ -33,7 +33,11 @@ export function TagContextMenu() {
     if (!contextMenu || contextMenu.type !== 'text-selection') return null;
   }
 
-  const annotation = annotations.find(a => a.id === activeAnnotationId);
+  // Read the target from the menu's own state, not from activeAnnotationId — see the
+  // comment on contextMenu in ui-slice.ts for why that field is gone by the time a
+  // menu item is clicked.
+  const targetAnnotationId = contextMenu?.annotationId ?? activeAnnotationId;
+  const annotation = annotations.find(a => a.id === targetAnnotationId);
   const tag = annotation ? tags.find(t => t.id === annotation.tagId) : null;
   const adjacentAnnotations = annotation
     ? findAdjacentAnnotations(annotations, annotation.id, 2)
@@ -45,8 +49,8 @@ export function TagContextMenu() {
   };
 
   const handleRemove = () => {
-    if (activeAnnotationId) {
-      deleteAnnotation(activeAnnotationId);
+    if (targetAnnotationId) {
+      deleteAnnotation(targetAnnotationId);
     }
     closeMenu();
   };

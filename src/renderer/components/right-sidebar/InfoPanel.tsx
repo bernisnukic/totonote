@@ -151,7 +151,7 @@ export function InfoPanel() {
           </div>
         )}
 
-        <LabelOptionsPanel tag={focusedTag} onClose={() => setFocusedTag(null)} hideHeader />
+        <LabelOptionsPanel key={focusedTag.id} tag={focusedTag} onClose={() => setFocusedTag(null)} hideHeader />
       </div>
     );
   }
@@ -214,7 +214,7 @@ export function InfoPanel() {
       )}
 
       {selectedTag && (
-        <LabelOptionsPanel tag={selectedTag} onClose={() => setSelectedTag(null)} />
+        <LabelOptionsPanel key={selectedTag.id} tag={selectedTag} onClose={() => setSelectedTag(null)} />
       )}
     </div>
   );

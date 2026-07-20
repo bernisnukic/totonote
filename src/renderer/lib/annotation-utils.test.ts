@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectOverlaps, findAdjacentAnnotations, isPositionInAnnotation, hexToRgba } from './annotation-utils';
+import { detectOverlaps, findAdjacentAnnotations, isPositionInAnnotation, hexToRgba , clampRangeToText} from './annotation-utils';
 import type { Annotation } from '../../shared/domain-types';
 
 function makeAnnotation(id: string, from: number, to: number): Annotation {
@@ -103,5 +103,46 @@ describe('isPositionInAnnotation', () => {
 describe('hexToRgba', () => {
   it('converts hex to rgba', () => {
     expect(hexToRgba('#48dbfb', 0.25)).toBe('rgba(72, 219, 251, 0.25)');
+  });
+});
+
+describe('clampRangeToText', () => {
+  /**
+   * Stands in for a ProseMirror doc. `nodes` are [pos, size, isText] — a paragraph
+   * holding 26 characters looks like a text node at position 1 of size 26, with the
+   * paragraph's own open/close positions at 0 and 27.
+   */
+  function docOf(nodes: [number, number, boolean][]) {
+    return {
+      nodesBetween(from: number, to: number, f: (n: { isText: boolean; nodeSize: number }, pos: number) => void) {
+        for (const [pos, nodeSize, isText] of nodes) {
+          if (pos < to && pos + nodeSize > from) f({ isText, nodeSize }, pos);
+        }
+      },
+    };
+  }
+
+  const oneParagraph = docOf([[0, 28, false], [1, 26, true]]);
+
+  it('trims a select-all range back to the text', () => {
+    // AllSelection runs 0..doc.content.size and includes the paragraph boundaries.
+    expect(clampRangeToText(oneParagraph, 0, 28)).toEqual({ from: 1, to: 27 });
+  });
+
+  it('leaves an ordinary text selection alone', () => {
+    expect(clampRangeToText(oneParagraph, 1, 27)).toEqual({ from: 1, to: 27 });
+    expect(clampRangeToText(oneParagraph, 5, 11)).toEqual({ from: 5, to: 11 });
+  });
+
+  it('spans from the first text to the last across several blocks', () => {
+    const twoParagraphs = docOf([
+      [0, 12, false], [1, 10, true],
+      [12, 12, false], [13, 10, true],
+    ]);
+    expect(clampRangeToText(twoParagraphs, 0, 24)).toEqual({ from: 1, to: 23 });
+  });
+
+  it('returns null when the range covers no text', () => {
+    expect(clampRangeToText(docOf([[0, 2, false]]), 0, 2)).toBeNull();
   });
 });

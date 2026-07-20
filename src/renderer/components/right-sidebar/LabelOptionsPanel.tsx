@@ -29,6 +29,10 @@ export function LabelOptionsPanel({ tag, onClose, hideHeader }: LabelOptionsPane
   };
 
   const handleDelete = async () => {
+    // Deleting cascades to every annotation using this tag, in every document, with no
+    // undo — and this button sits right next to Save. The sidebar's own delete already
+    // confirms; these two paths should not differ.
+    if (!window.confirm(`Delete the tag "${tag.name}" and all of its highlights?`)) return;
     await deleteTag(tag.id);
     onClose();
   };

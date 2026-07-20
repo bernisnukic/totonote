@@ -5,6 +5,13 @@ import { SidebarModeBar } from './SidebarModeBar';
 import { CategoryTree } from './CategoryTree';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
+/** True for anywhere the user could be typing — the editor, an input or a textarea. */
+function isTypingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el || typeof el.closest !== 'function') return false;
+  return Boolean(el.closest('input, textarea, [contenteditable="true"], .tiptap'));
+}
+
 export function LeftSidebar() {
   const searchQuery = useStore(s => s.searchQuery);
   const setSearch = useStore(s => s.setSearch);
@@ -120,9 +127,14 @@ export function LeftSidebar() {
     if (!focusedTagId || visibleTagIds.length === 0) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-      e.preventDefault();
+      // This listener is on `document`, so without this guard it swallows the arrow
+      // keys everywhere — including the editor, where it stops the caret moving at all
+      // for as long as a tag stays focused.
+      if (isTypingTarget(e.target)) return;
       const idx = visibleTagIds.indexOf(focusedTagId);
+      // preventDefault only once we know we are actually going to navigate.
       if (idx === -1) return;
+      e.preventDefault();
       const next = e.key === 'ArrowDown'
         ? visibleTagIds[(idx + 1) % visibleTagIds.length]
         : visibleTagIds[(idx - 1 + visibleTagIds.length) % visibleTagIds.length];

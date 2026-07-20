@@ -6,11 +6,10 @@ interface LabelAutocompleteProps {
   onSelect: (tagId: string) => void;
   placeholder?: string;
   onCreateNew?: (name: string) => void;
-  initialQuery?: string;
 }
 
-export function LabelAutocomplete({ tags, onSelect, placeholder, onCreateNew, initialQuery }: LabelAutocompleteProps) {
-  const [query, setQuery] = useState(initialQuery || '');
+export function LabelAutocomplete({ tags, onSelect, placeholder, onCreateNew }: LabelAutocompleteProps) {
+  const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
