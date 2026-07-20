@@ -146,7 +146,24 @@ Dark theme. CSS custom properties in `tokens.css`. Key tokens:
 8. **Foreign keys must be OFF across `migrate()`** — `connection.ts` and `test-helpers.ts` toggle the pragma around the call, not inside it. Drizzle Kit emits any table alteration as a rebuild (`DROP TABLE` + rename), and with enforcement on that DROP cascades and silently empties tags/annotations/document_tags. The `PRAGMA foreign_keys=OFF` inside the generated `.sql` cannot help — the migrator wraps every statement in one `BEGIN`, and SQLite ignores that pragma inside a transaction. `src/main/db/migration.test.ts` guards this.
 9. **Node builtins must be externalized in `e2e/build-for-test.mjs` under both spellings** — listing `fs` does not cover drizzle-orm's `node:fs` import, and Vite silently replaces the unmatched builtin with `{}`. That produced `crypto$1.existsSync is not a function` at startup, so the window never opened and *every* E2E test failed in `beforeEach`. The script now externalizes `builtinModules` plus their `node:`-prefixed forms.
 10. **Category names are unique per parent, not globally** — enforced by `idx_categories_parent_name` plus a partial `idx_categories_root_name` for root rows (SQLite treats NULLs as distinct in a unique index, so the first index alone would not constrain roots). Repository checks are case-insensitive; the indexes are the exact-match backstop.
-11. **Databases from v1.0.4 and earlier need adopting** — they track migrations in `_migrations`, not `__drizzle_migrations`, so the migrator would re-run `0000_initial` and crash on "table already exists". `src/main/db/legacy-baseline.ts` rebuilds `categories` (its inline `UNIQUE` is an implicit autoindex that cannot be dropped) and records 0000 as applied, before `migrate()` runs.
+11. **`npm run make` clobbers the E2E build** — Forge writes its own production `.vite/build/index.js`, which loads the prebuilt renderer from `.vite/renderer/` instead of the dev server. E2E tests and the screenshot generator then run against a **stale renderer bundle** and silently test old code — no error, just confusing results. Always re-run `npm run test:e2e:build` after `npm run make`. Quick check: `grep -o 'http://localhost:[0-9]*' .vite/build/index.js` should print the dev server URL.
+12. **Databases from v1.0.4 and earlier need adopting** — they track migrations in `_migrations`, not `__drizzle_migrations`, so the migrator would re-run `0000_initial` and crash on "table already exists". `src/main/db/legacy-baseline.ts` rebuilds `categories` (its inline `UNIQUE` is an implicit autoindex that cannot be dropped) and records 0000 as applied, before `migrate()` runs.
+
+## Documentation
+
+End-user docs live in `docs/` as markdown, so the same files render on GitHub and can be
+bundled into an in-app help panel later. `CLAUDE.md` and the README's dev section are for
+contributors and stay separate.
+
+Screenshots are **generated, not hand-taken**. `docs/screenshots/generate.mjs` drives a real
+build with Playwright, draws the orange callout rings and labels as DOM overlays, and writes
+`docs/screenshots/*.png`. Re-run it after any UI change the docs describe:
+
+```bash
+npm run test:e2e:build                     # build main + preload
+node node_modules/vite/bin/vite.js --config vite.renderer.config.ts --port 5173 --strictPort &
+node docs/screenshots/generate.mjs
+```
 
 ## Window Configuration
 
