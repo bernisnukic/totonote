@@ -3,10 +3,12 @@ import * as documentRepo from '../db/repositories/document-repo';
 import * as sectionRepo from '../db/repositories/section-repo';
 import * as tagRepo from '../db/repositories/tag-repo';
 import * as categoryRepo from '../db/repositories/category-repo';
+import * as categoryRuleRepo from '../db/repositories/category-rule-repo';
 import * as annotationRepo from '../db/repositories/annotation-repo';
 import * as sectionTagRepo from '../db/repositories/section-tag-repo';
 import * as preferenceRepo from '../db/repositories/preference-repo';
 import { checkForUpdates } from '../services/update-checker';
+import type { CreateCategoryInput, BulkAddSubcategoryInput } from '../../shared/domain-types';
 
 const ALLOWED_EXTERNAL_PREFIX = 'https://github.com/bernisnukic/totonote/';
 
@@ -35,9 +37,20 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('tag:delete', (_, args: { id: string }) => tagRepo.deleteTag(args.id));
   ipcMain.handle('tag:search', (_, args: { query: string }) => tagRepo.searchTags(args.query));
   ipcMain.handle('category:list', () => categoryRepo.listCategories());
-  ipcMain.handle('category:create', (_, args: { name: string; parentId?: string }) => categoryRepo.createCategory(args.name, args.parentId));
+  ipcMain.handle('category:create', (_, args: CreateCategoryInput) => categoryRepo.createCategory(args));
   ipcMain.handle('category:update', (_, args: { id: string; name?: string; parentId?: string | null }) => categoryRepo.updateCategory(args.id, { name: args.name, parentId: args.parentId }));
   ipcMain.handle('category:delete', (_, args: { id: string }) => categoryRepo.deleteCategory(args.id));
+  ipcMain.handle('category:bulk-add-child', (_, args: BulkAddSubcategoryInput) => categoryRepo.bulkAddSubcategory(args));
+
+  // Category Rules
+  ipcMain.handle('category:rule-list', () => categoryRuleRepo.listCategoryRules());
+  ipcMain.handle('category:rule-get', (_, args: { categoryId: string }) => categoryRuleRepo.getCategoryRule(args.categoryId));
+  ipcMain.handle('category:rule-set', (_, args: { categoryId: string; template: string }) =>
+    categoryRuleRepo.setCategoryRule(args.categoryId, args.template)
+  );
+  ipcMain.handle('category:rule-apply-existing', (_, args: { categoryId: string }) =>
+    categoryRepo.applyRuleToExistingChildren(args.categoryId)
+  );
 
   // Annotations
   ipcMain.handle('annotation:list', (_, args: { sectionId: string }) => annotationRepo.listAnnotations(args.sectionId));

@@ -841,6 +841,261 @@ test.describe('Tag Category Edit', () => {
   });
 });
 
+// ─── Category Rules ──────────────────────────────────────────────────
+
+test.describe('Category Rules', () => {
+  /** Open a document so the right sidebar's Edit tab is reachable. */
+  async function openEditPanel() {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Rule Test');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+    await expect(page.locator('.tiptap')).toBeVisible();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+  }
+
+  const row = (name: string) => page.locator('.category-row', { hasText: name });
+
+  /**
+   * The node wrapping a category row, which also holds its children. Reached via the
+   * row's parent rather than by filtering `.category-node` — nodes nest, so a filter
+   * would match every ancestor of the row as well.
+   */
+  const node = (name: string) => row(name).locator('..');
+
+  async function createRootCategory(name: string) {
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill(name);
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await expect(row(name)).toBeVisible();
+  }
+
+  /** Create a sub-category via the row's "+" button. */
+  async function createSubCategory(parent: string, name: string, applyRule = true) {
+    await row(parent).locator('.category-row-btn', { hasText: '+' }).click();
+    const form = page.locator('.category-new-form');
+    await form.locator('input.input').fill(name);
+    const checkbox = form.locator('.rule-checkbox input[type="checkbox"]');
+    if (await checkbox.count()) {
+      if (applyRule) await checkbox.check();
+      else await checkbox.uncheck();
+    }
+    await form.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(row(name)).toBeVisible();
+  }
+
+  async function setRule(category: string, template: string) {
+    await row(category).click({ button: 'right' });
+    await page.locator('.context-menu-item', { hasText: /rule…/ }).click();
+    const modal = page.locator('.modal');
+    await expect(modal).toBeVisible();
+    await modal.locator('.rule-textarea').fill(template);
+    await modal.locator('.btn-primary', { hasText: 'Save' }).click();
+    await expect(modal).not.toBeVisible();
+  }
+
+  test.beforeEach(async () => {
+    await openEditPanel();
+  });
+
+  test('saves a rule and shows how many sub-categories it creates', async () => {
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY\nABILITIES\nCOLOUR PALETTE');
+
+    await expect(row('CHARACTERS').locator('.rule-chip')).toHaveText('rule 3');
+  });
+
+  test('previews the rule tree as it is typed', async () => {
+    await createRootCategory('CHARACTERS');
+    await row('CHARACTERS').click({ button: 'right' });
+    await page.locator('.context-menu-item', { hasText: 'Create rule…' }).click();
+
+    const modal = page.locator('.modal');
+    await modal.locator('.rule-textarea').fill('HISTORY\nABILITIES\n  COMBAT');
+
+    const preview = modal.locator('.rule-preview');
+    await expect(preview).toContainText('new sub-category');
+    await expect(preview).toContainText('HISTORY');
+    await expect(preview).toContainText('COMBAT');
+    await expect(modal.locator('.rule-preview-row')).toHaveCount(4); // root + 3 nodes
+  });
+
+  test('auto-creates the rule sub-categories under a new sub-category', async () => {
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY\nABILITIES\nCOLOUR PALETTE');
+    await createSubCategory('CHARACTERS', 'GURA');
+
+    const gura = node('GURA');
+    await expect(gura.locator('.category-row', { hasText: 'HISTORY' })).toBeVisible();
+    await expect(gura.locator('.category-row', { hasText: 'ABILITIES' })).toBeVisible();
+    await expect(gura.locator('.category-row', { hasText: 'COLOUR PALETTE' })).toBeVisible();
+  });
+
+  test('creates the same sub-category names again under a second sibling', async () => {
+    // Category names used to be globally unique, which made this impossible.
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY\nABILITIES\nCOLOUR PALETTE');
+    await createSubCategory('CHARACTERS', 'GURA');
+    await createSubCategory('CHARACTERS', 'PEKORA');
+
+    await expect(node('GURA').locator('.category-row', { hasText: 'HISTORY' })).toBeVisible();
+    await expect(node('PEKORA').locator('.category-row', { hasText: 'HISTORY' })).toBeVisible();
+    await expect(page.locator('.category-row', { hasText: 'HISTORY' })).toHaveCount(2);
+  });
+
+  test('skips the rule when the checkbox is unticked', async () => {
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY\nABILITIES\nCOLOUR PALETTE');
+    await createSubCategory('CHARACTERS', 'PLAIN', false);
+
+    await expect(node('PLAIN').locator('.category-row')).toHaveCount(1);
+    await expect(page.locator('.category-row', { hasText: 'HISTORY' })).toHaveCount(0);
+  });
+
+  test('creates nested sub-categories from an indented rule', async () => {
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY\nABILITIES\n  COMBAT\n  MAGIC');
+    await createSubCategory('CHARACTERS', 'GURA');
+
+    const abilities = node('ABILITIES');
+    await expect(abilities.locator('.category-row', { hasText: 'COMBAT' })).toBeVisible();
+    await expect(abilities.locator('.category-row', { hasText: 'MAGIC' })).toBeVisible();
+  });
+
+  test('applies a rule retroactively to sub-categories that already exist', async () => {
+    await createRootCategory('CHARACTERS');
+    await createSubCategory('CHARACTERS', 'GURA');
+    await createSubCategory('CHARACTERS', 'PEKORA');
+    await expect(page.locator('.category-row', { hasText: 'HISTORY' })).toHaveCount(0);
+
+    await setRule('CHARACTERS', 'HISTORY\nABILITIES');
+    await row('CHARACTERS').click({ button: 'right' });
+    await page.locator('.context-menu-item', { hasText: 'Apply rule to existing' }).click();
+
+    await expect(page.locator('.category-status')).toContainText('Added 4 sub-categories');
+    await expect(node('GURA').locator('.category-row', { hasText: 'HISTORY' })).toBeVisible();
+    await expect(node('PEKORA').locator('.category-row', { hasText: 'ABILITIES' })).toBeVisible();
+  });
+
+  test('retroactive apply is safe to run twice', async () => {
+    await createRootCategory('CHARACTERS');
+    await createSubCategory('CHARACTERS', 'GURA');
+    await setRule('CHARACTERS', 'HISTORY\nABILITIES');
+
+    for (let i = 0; i < 2; i++) {
+      await row('CHARACTERS').click({ button: 'right' });
+      await page.locator('.context-menu-item', { hasText: 'Apply rule to existing' }).click();
+    }
+
+    await expect(page.locator('.category-status')).toContainText('already matches');
+    await expect(page.locator('.category-row', { hasText: 'HISTORY' })).toHaveCount(1);
+  });
+
+  test('edits an existing rule', async () => {
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY');
+    await expect(row('CHARACTERS').locator('.rule-chip')).toHaveText('rule 1');
+
+    await row('CHARACTERS').locator('.rule-chip').click();
+    const modal = page.locator('.modal');
+    await expect(modal.locator('.rule-textarea')).toHaveValue('HISTORY');
+    await modal.locator('.rule-textarea').fill('HISTORY\nABILITIES\nCOLOUR PALETTE');
+    await modal.locator('.btn-primary', { hasText: 'Save' }).click();
+
+    await expect(row('CHARACTERS').locator('.rule-chip')).toHaveText('rule 3');
+  });
+
+  test('removes a rule', async () => {
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY');
+
+    await row('CHARACTERS').locator('.rule-chip').click();
+    await page.locator('.modal .btn-ghost', { hasText: 'Remove rule' }).click();
+
+    await expect(row('CHARACTERS').locator('.rule-chip')).toHaveCount(0);
+  });
+
+  test('adds a sub-category to several categories at once', async () => {
+    await createRootCategory('CHARACTERS');
+    await createRootCategory('LOCATIONS');
+
+    await page.locator('.btn', { hasText: 'Select' }).click();
+    await row('CHARACTERS').locator('.category-select-box').check();
+    await row('LOCATIONS').locator('.category-select-box').check();
+    await expect(page.locator('.category-select-bar')).toContainText('2 selected');
+
+    await page.locator('.btn', { hasText: 'Add sub-category…' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('input.input').fill('NOTES');
+    await modal.locator('.btn-primary', { hasText: 'Add' }).click();
+
+    await expect(page.locator('.category-status')).toContainText('Added "NOTES" to 2 categories');
+    await expect(node('CHARACTERS').locator('.category-row', { hasText: 'NOTES' })).toBeVisible();
+    await expect(node('LOCATIONS').locator('.category-row', { hasText: 'NOTES' })).toBeVisible();
+  });
+
+  test('bulk add reports categories that already had the sub-category', async () => {
+    await createRootCategory('CHARACTERS');
+    await createRootCategory('LOCATIONS');
+    await createSubCategory('CHARACTERS', 'NOTES');
+
+    await page.locator('.btn', { hasText: 'Select' }).click();
+    await row('CHARACTERS').locator('.category-select-box').check();
+    await row('LOCATIONS').locator('.category-select-box').check();
+    await page.locator('.btn', { hasText: 'Add sub-category…' }).click();
+
+    const modal = page.locator('.modal');
+    await modal.locator('input.input').fill('NOTES');
+    await modal.locator('.btn-primary', { hasText: 'Add' }).click();
+
+    await expect(page.locator('.category-status')).toContainText('1 already had it (CHARACTERS)');
+    await expect(page.locator('.category-row', { hasText: 'NOTES' })).toHaveCount(2);
+  });
+
+  test('rejects a duplicate sub-category name with a readable error', async () => {
+    await createRootCategory('CHARACTERS');
+    await createSubCategory('CHARACTERS', 'GURA');
+
+    await row('CHARACTERS').locator('.category-row-btn', { hasText: '+' }).click();
+    const form = page.locator('.category-new-form');
+    await form.locator('input.input').fill('gura');
+    await form.locator('.btn-primary', { hasText: 'Create' }).click();
+
+    await expect(form.locator('.rule-error')).toContainText('already exists');
+    await expect(page.locator('.category-row', { hasText: 'GURA' })).toHaveCount(1);
+  });
+
+  test('a rule only applies to direct children, not deeper descendants', async () => {
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY');
+    await createSubCategory('CHARACTERS', 'GURA');
+
+    // HISTORY has no rule of its own, so its own children get nothing stamped.
+    await row('HISTORY').locator('.category-row-btn', { hasText: '+' }).click();
+    const form = page.locator('.category-new-form');
+    await expect(form.locator('.rule-checkbox')).toHaveCount(0);
+    await form.locator('input.input').fill('EARLY LIFE');
+    await form.locator('.btn-primary', { hasText: 'Create' }).click();
+
+    await expect(node('EARLY LIFE').locator('.category-row')).toHaveCount(1);
+    await expect(page.locator('.category-row', { hasText: 'HISTORY' })).toHaveCount(1);
+  });
+
+  test('rules survive a restart', async () => {
+    await createRootCategory('CHARACTERS');
+    await setRule('CHARACTERS', 'HISTORY\nABILITIES');
+
+    await page.reload();
+    await page.waitForSelector('.app-container');
+    await page.locator('.document-card', { hasText: 'Rule Test' }).click();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+
+    await expect(row('CHARACTERS').locator('.rule-chip')).toHaveText('rule 2');
+  });
+});
+
 // ─── Status Bar ───────────────────────────────────────────────────────
 
 test.describe('Status Bar', () => {

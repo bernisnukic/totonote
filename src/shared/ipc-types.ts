@@ -7,6 +7,12 @@ import type {
   DocumentTagWithDetails,
   SectionTagWithDetails,
   BrowseCategory,
+  CategoryRule,
+  CreateCategoryInput,
+  CreateCategoryResult,
+  ApplyRuleResult,
+  BulkAddSubcategoryInput,
+  BulkAddSubcategoryResult,
   CreateDocumentInput,
   UpdateDocumentInput,
   CreateSectionInput,
@@ -41,9 +47,17 @@ export interface IpcHandlerMap {
   'tag:delete': { args: { id: string }; result: void };
   'tag:search': { args: { query: string }; result: Tag[] };
   'category:list': { args: void; result: Category[] };
-  'category:create': { args: { name: string; parentId?: string }; result: Category };
+  'category:create': { args: CreateCategoryInput; result: CreateCategoryResult };
   'category:update': { args: { id: string; name?: string; parentId?: string | null }; result: Category };
-  'category:delete': { args: { id: string }; result: void };
+  /** Returns every id removed — the category and all its descendants. */
+  'category:delete': { args: { id: string }; result: string[] };
+  'category:bulk-add-child': { args: BulkAddSubcategoryInput; result: BulkAddSubcategoryResult };
+
+  // Category Rules (sub-category skeletons)
+  'category:rule-list': { args: void; result: CategoryRule[] };
+  'category:rule-get': { args: { categoryId: string }; result: CategoryRule | null };
+  'category:rule-set': { args: { categoryId: string; template: string }; result: CategoryRule | null };
+  'category:rule-apply-existing': { args: { categoryId: string }; result: ApplyRuleResult };
 
   // Annotations
   'annotation:list': { args: { sectionId: string }; result: Annotation[] };

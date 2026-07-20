@@ -90,6 +90,17 @@ Slices pattern: each file exports an interface + `createXSlice` function. All co
 ### Repositories
 Plain exported functions (no classes). Use `getDb()` from connection.ts to access the Drizzle query builder (`db.select().from(...).where(eq(...))` etc). No hand-written SQL strings; no `rowToEntity` mappers — schema declares `text('section_label')` with JS field `sectionLabel`, so Drizzle returns camelCase rows directly. UUID for IDs (uuid v4 for most, `cat-<uuid>` prefix for categories), ISO strings for timestamps.
 
+### Category Rules
+A category can own a **rule**: a sub-category skeleton stamped onto each new child of that
+category (`CHARACTERS` → every new child gets `HISTORY / ABILITIES / COLOUR PALETTE`). Stored in
+`category_rules` as the raw indented text the user typed, one row per category; parsed by
+`parseRuleTemplate()` in `src/shared/category-rule.ts` (shared — main applies it, the renderer
+previews it). Indentation nests, so rules can be trees.
+
+Rules apply to **direct children only**; grandchildren follow their own parent's rule. Applying a
+rule merges rather than duplicates — a sub-category whose name already exists is reused and
+recursed into, which is what makes "apply to existing sub-categories" safe to re-run.
+
 ### Annotations (Core Feature)
 Annotations are **ProseMirror decorations**, NOT marks in the document JSON. They're stored as `(sectionId, tagId, fromPos, toPos)` in SQLite and rendered as colored inline decorations via a custom plugin (`extensions/annotation-decoration/`). Positions are mapped through edits using ProseMirror's transaction mapping.
 
@@ -102,7 +113,7 @@ All sections render as one scrollable page. Each section gets its own `SectionEd
 
 SQLite with WAL mode and foreign keys ON. Schema lives in `src/main/db/schema.ts` (Drizzle `sqliteTable()` declarations). On app start, the Drizzle migrator applies any new migrations from `src/main/db/migrations/` and records them in the `__drizzle_migrations` table.
 
-**Tables**: documents, sections, categories, tags, annotations, document_tags, section_tags, browse_categories, preferences, __drizzle_migrations
+**Tables**: documents, sections, categories, tags, annotations, document_tags, section_tags, browse_categories, category_rules, preferences, __drizzle_migrations
 
 **Default seed**: One "General" category (`cat-general`). Inserted post-migrate in `connection.ts` via `INSERT OR IGNORE` so it's idempotent across launches.
 
@@ -132,6 +143,10 @@ Dark theme. CSS custom properties in `tokens.css`. Key tokens:
 5. **Annotation decorations must re-sync** — when annotations change globally (e.g., from SelectionToolbar), SectionEditor must watch the global store and re-apply decorations. Don't rely only on mount-time loading.
 6. **E2E build is separate from Forge build** — `e2e/build-for-test.mjs` builds main+preload independently. After changing main process code, rebuild with `npm run test:e2e:build` before running E2E tests.
 7. **Electron Forge dev vs E2E** — Forge's `npm start` uses its own Vite plugin to build main/preload. E2E tests use the separate build script. Keep both paths working.
+8. **Foreign keys must be OFF across `migrate()`** — `connection.ts` and `test-helpers.ts` toggle the pragma around the call, not inside it. Drizzle Kit emits any table alteration as a rebuild (`DROP TABLE` + rename), and with enforcement on that DROP cascades and silently empties tags/annotations/document_tags. The `PRAGMA foreign_keys=OFF` inside the generated `.sql` cannot help — the migrator wraps every statement in one `BEGIN`, and SQLite ignores that pragma inside a transaction. `src/main/db/migration.test.ts` guards this.
+9. **Node builtins must be externalized in `e2e/build-for-test.mjs` under both spellings** — listing `fs` does not cover drizzle-orm's `node:fs` import, and Vite silently replaces the unmatched builtin with `{}`. That produced `crypto$1.existsSync is not a function` at startup, so the window never opened and *every* E2E test failed in `beforeEach`. The script now externalizes `builtinModules` plus their `node:`-prefixed forms.
+10. **Category names are unique per parent, not globally** — enforced by `idx_categories_parent_name` plus a partial `idx_categories_root_name` for root rows (SQLite treats NULLs as distinct in a unique index, so the first index alone would not constrain roots). Repository checks are case-insensitive; the indexes are the exact-match backstop.
+11. **Databases from v1.0.4 and earlier need adopting** — they track migrations in `_migrations`, not `__drizzle_migrations`, so the migrator would re-run `0000_initial` and crash on "table already exists". `src/main/db/legacy-baseline.ts` rebuilds `categories` (its inline `UNIQUE` is an implicit autoindex that cannot be dropped) and records 0000 as applied, before `migrate()` runs.
 
 ## Window Configuration
 

@@ -1,23 +1,40 @@
 import type { StateCreator } from 'zustand';
-import type { Tag, Category, DocumentTagWithDetails, SectionTagWithDetails } from '../../shared/domain-types';
+import type {
+  Tag,
+  Category,
+  DocumentTagWithDetails,
+  SectionTagWithDetails,
+  ApplyRuleResult,
+  BulkAddSubcategoryResult,
+} from '../../shared/domain-types';
 import { invoke } from '../lib/ipc-client';
 
 export interface TagSlice {
   tags: Tag[];
   categories: Category[];
+  /** categoryId → raw rule template. Absent means the category has no rule. */
+  categoryRules: Record<string, string>;
   documentTags: DocumentTagWithDetails[];
   sectionTags: SectionTagWithDetails[];
 
   loadTags: (categoryId?: string) => Promise<void>;
   loadCategories: () => Promise<void>;
+  loadCategoryRules: () => Promise<void>;
   createTag: (categoryId: string, name: string, color?: string) => Promise<Tag>;
   updateTag: (id: string, updates: { name?: string; color?: string; description?: string; categoryId?: string }) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
   searchTags: (query: string) => Promise<Tag[]>;
 
-  createCategory: (name: string, parentId?: string) => Promise<Category>;
+  createCategory: (name: string, parentId?: string, applyRule?: boolean) => Promise<Category>;
   updateCategory: (id: string, updates: { name?: string; parentId?: string | null }) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  setCategoryRule: (categoryId: string, template: string) => Promise<void>;
+  applyRuleToExisting: (categoryId: string) => Promise<ApplyRuleResult>;
+  bulkAddSubcategory: (
+    parentIds: string[],
+    name: string,
+    applyRule: boolean,
+  ) => Promise<BulkAddSubcategoryResult>;
 
   loadDocumentTags: (documentId: string) => Promise<void>;
   addDocumentTag: (documentId: string, tagId: string, categoryId: string) => Promise<void>;
@@ -31,6 +48,7 @@ export interface TagSlice {
 export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) => ({
   tags: [],
   categories: [],
+  categoryRules: {},
   documentTags: [],
   sectionTags: [],
 
@@ -42,6 +60,11 @@ export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) =>
   loadCategories: async () => {
     const categories = await invoke('category:list');
     set({ categories });
+  },
+
+  loadCategoryRules: async () => {
+    const rules = await invoke('category:rule-list');
+    set({ categoryRules: Object.fromEntries(rules.map(r => [r.categoryId, r.template])) });
   },
 
   createTag: async (categoryId, name, color) => {
@@ -64,9 +87,9 @@ export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) =>
     return invoke('tag:search', { query });
   },
 
-  createCategory: async (name, parentId) => {
-    const category = await invoke('category:create', { name, parentId });
-    set(s => ({ categories: [...s.categories, category] }));
+  createCategory: async (name, parentId, applyRule) => {
+    const { category, descendants } = await invoke('category:create', { name, parentId, applyRule });
+    set(s => ({ categories: [...s.categories, category, ...descendants] }));
     return category;
   },
 
@@ -76,11 +99,40 @@ export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) =>
   },
 
   deleteCategory: async (id) => {
-    await invoke('category:delete', { id });
-    set(s => ({
-      categories: s.categories.filter(c => c.id !== id),
-      tags: s.tags.filter(t => t.categoryId !== id),
-    }));
+    // The main process deletes descendants too, and returns every id it removed.
+    const removed = new Set(await invoke('category:delete', { id }));
+    set(s => {
+      const categoryRules = { ...s.categoryRules };
+      for (const removedId of removed) delete categoryRules[removedId];
+      return {
+        categories: s.categories.filter(c => !removed.has(c.id)),
+        tags: s.tags.filter(t => !removed.has(t.categoryId)),
+        categoryRules,
+      };
+    });
+  },
+
+  setCategoryRule: async (categoryId, template) => {
+    const rule = await invoke('category:rule-set', { categoryId, template });
+    set(s => {
+      const categoryRules = { ...s.categoryRules };
+      // A template with nothing usable in it clears the rule.
+      if (rule) categoryRules[categoryId] = rule.template;
+      else delete categoryRules[categoryId];
+      return { categoryRules };
+    });
+  },
+
+  applyRuleToExisting: async (categoryId) => {
+    const result = await invoke('category:rule-apply-existing', { categoryId });
+    set(s => ({ categories: [...s.categories, ...result.created] }));
+    return result;
+  },
+
+  bulkAddSubcategory: async (parentIds, name, applyRule) => {
+    const result = await invoke('category:bulk-add-child', { parentIds, name, applyRule });
+    set(s => ({ categories: [...s.categories, ...result.created] }));
+    return result;
   },
 
   loadDocumentTags: async (documentId) => {
