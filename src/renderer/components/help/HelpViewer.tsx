@@ -45,6 +45,7 @@ const CONTENT: Record<string, string> = {
 const ORDER = [
   'README',
   'getting-started',
+  'workspaces',
   'documents-and-sections',
   'tags-and-annotations',
   'categories-and-rules',

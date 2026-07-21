@@ -1258,7 +1258,11 @@ test.describe('Sidebar UX', () => {
     const editor2 = page.locator('.tiptap').nth(1);
     await editor2.click();
     await editor2.pressSequentially('A lair beneath the mountain', { delay: 15 });
+    await expect(editor2).toContainText('A lair beneath the mountain');
     await page.keyboard.press('Meta+A');
+    // Wait for the floating toolbar rather than racing it — under full-suite load the
+    // selection can take a moment to register.
+    await expect(page.locator('.selection-toolbar')).toBeVisible();
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
     await modal.locator('.autocomplete input.input').fill('Lair');
@@ -1512,6 +1516,46 @@ test.describe('Help', () => {
 
     await page.keyboard.press('Escape');
     await expect(page.locator('.help-overlay')).toHaveCount(0);
+  });
+
+  test('overlays clear the macOS traffic lights in windowed mode', async () => {
+    // Reported: the "HELP" label sat underneath the window buttons unless the app was
+    // fullscreen. Both overlays now start below the reserved title-bar strip.
+    await app.evaluate(({ BrowserWindow }) => {
+      const w = BrowserWindow.getAllWindows()[0];
+      w.setFullScreen(false);
+      w.setSize(1100, 760);
+    });
+    await page.waitForTimeout(400);
+
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].webContents.send('menu:open-help', 'README'),
+    );
+    await expect(page.locator('.help-overlay')).toBeVisible();
+    const helpTitle = await page.locator('.help-title').boundingBox();
+    expect(helpTitle!.y).toBeGreaterThanOrEqual(38);
+    await page.keyboard.press('Escape');
+
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Overlay Test');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.toolbar-btn[aria-label="Graph view"]').click();
+    await expect(page.locator('.graph-overlay')).toBeVisible();
+    const graphTitle = await page.locator('.graph-title').boundingBox();
+    expect(graphTitle!.y).toBeGreaterThanOrEqual(38);
+  });
+
+  test('lists guide pages in reading order', async () => {
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].webContents.send('menu:open-help', 'README'),
+    );
+    const items = await page.locator('.help-nav-item').allTextContents();
+    expect(items[0]).toBe('Overview');
+    expect(items[1]).toBe('Getting started');
+    expect(items[2]).toBe('Workspaces');
+    expect(items[items.length - 1]).toBe("What's New");
+    // Titles come from each page's own heading, not from CSS mangling the filename.
+    expect(items).toContain('Documents and sections');
   });
 
   test('has a real application menu, not the Electron default', async () => {

@@ -612,7 +612,8 @@
 
 .graph-overlay {
   position: fixed;
-  inset: 0;
+  /* Same as .help-overlay — clear of the traffic lights. */
+  inset: var(--title-bar-height) 0 0 0;
   z-index: 900;
   display: flex;
   flex-direction: column;
@@ -625,11 +626,6 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3) var(--space-4);
-  -webkit-app-region: drag;
-}
-
-.graph-header .btn {
-  -webkit-app-region: no-drag;
 }
 
 .graph-title {
@@ -900,7 +896,9 @@
 
 .help-overlay {
   position: fixed;
-  inset: 0;
+  /* Starts below the title bar strip, like .app-content does. Covering it would put
+     this header underneath the macOS traffic lights in windowed mode. */
+  inset: var(--title-bar-height) 0 0 0;
   z-index: 960;
   display: flex;
   flex-direction: column;
@@ -913,11 +911,6 @@
   justify-content: space-between;
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border-default);
-  -webkit-app-region: drag;
-}
-
-.help-header .btn {
-  -webkit-app-region: no-drag;
 }
 
 .help-title {
@@ -949,7 +942,6 @@
   font-family: inherit;
   font-size: var(--font-size-xs);
   text-align: left;
-  text-transform: capitalize;
   color: var(--text-muted);
   background: transparent;
   border: none;
