@@ -6,6 +6,8 @@ import { createSelectionSlice, type SelectionSlice } from './selection-slice';
 import { createUiSlice, type UiSlice } from './ui-slice';
 import { createFilterSlice, type FilterSlice } from './filter-slice';
 import { createPreferenceSlice, type PreferenceSlice } from './preference-slice';
+import { createUndoSlice, type UndoSlice } from './undo-slice';
+import { createWorkspaceSlice, type WorkspaceSlice } from './workspace-slice';
 
 export type AppStore = DocumentSlice &
   TagSlice &
@@ -13,7 +15,9 @@ export type AppStore = DocumentSlice &
   SelectionSlice &
   UiSlice &
   FilterSlice &
-  PreferenceSlice;
+  PreferenceSlice &
+  UndoSlice &
+  WorkspaceSlice;
 
 export const useStore = create<AppStore>()((...a) => ({
   ...createDocumentSlice(...a),
@@ -23,4 +27,6 @@ export const useStore = create<AppStore>()((...a) => ({
   ...createUiSlice(...a),
   ...createFilterSlice(...a),
   ...createPreferenceSlice(...a),
+  ...createUndoSlice(...a),
+  ...createWorkspaceSlice(...a),
 }));

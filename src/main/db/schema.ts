@@ -4,14 +4,35 @@ import { sql } from 'drizzle-orm';
 // SQLite timestamps are ISO strings (matches the existing schema and domain-types).
 const isoNow = sql`(datetime('now'))`;
 
-export const documents = sqliteTable('documents', {
+/**
+ * Top-level grouping — a "world". Documents and the whole category/tag taxonomy belong
+ * to exactly one workspace, so two projects can each have a CHARACTERS tree without
+ * seeing each other's.
+ */
+export const workspaces = sqliteTable('workspaces', {
   id: text('id').primaryKey(),
-  title: text('title').notNull(),
-  description: text('description').notNull().default(''),
-  sectionLabel: text('section_label').notNull().default('Section'),
+  name: text('name').notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
   createdAt: text('created_at').notNull().default(isoNow),
-  updatedAt: text('updated_at').notNull().default(isoNow),
 });
+
+export const documents = sqliteTable(
+  'documents',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description').notNull().default(''),
+    sectionLabel: text('section_label').notNull().default('Section'),
+    createdAt: text('created_at').notNull().default(isoNow),
+    updatedAt: text('updated_at').notNull().default(isoNow),
+  },
+  t => ({
+    workspaceIdx: index('idx_documents_workspace').on(t.workspaceId),
+  }),
+);
 
 export const sections = sqliteTable(
   'sections',
@@ -36,6 +57,9 @@ export const categories = sqliteTable(
   'categories',
   {
     id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     sortOrder: integer('sort_order').notNull().default(0),
     parentId: text('parent_id').references((): any => categories.id, { onDelete: 'set null' }),
@@ -44,11 +68,12 @@ export const categories = sqliteTable(
     // Names are unique per parent, not globally: CHARACTERS > GURA > HISTORY and
     // CHARACTERS > PEKORA > HISTORY must both be able to exist.
     parentNameUnique: uniqueIndex('idx_categories_parent_name').on(t.parentId, t.name),
-    // SQLite treats NULLs as distinct in a unique index, so the index above does not
-    // constrain root categories. This partial index covers them.
+    // Root categories have a NULL parent, and SQLite treats NULLs as distinct in a
+    // unique index — so roots are scoped per workspace by this partial index instead.
     rootNameUnique: uniqueIndex('idx_categories_root_name')
-      .on(t.name)
+      .on(t.workspaceId, t.name)
       .where(sql`parent_id is null`),
+    workspaceIdx: index('idx_categories_workspace').on(t.workspaceId),
   }),
 );
 

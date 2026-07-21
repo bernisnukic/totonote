@@ -886,3 +886,17 @@
   font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
+
+/* Drag-reordering filed excerpts */
+.placement-row-wrap[draggable='true'] .placement-row {
+  cursor: grab;
+}
+
+.placement-row-wrap.dragging {
+  opacity: 0.4;
+}
+
+.placement-row-wrap.drop-target .placement-row {
+  border-left-color: var(--accent-primary);
+  box-shadow: 0 -2px 0 var(--accent-primary);
+}

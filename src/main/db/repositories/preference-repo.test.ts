@@ -13,9 +13,9 @@ function initTestDb() {
   const { db, sqlite } = createTestDb();
   testDb = db;
   sqlite.exec(`
-    INSERT INTO documents (id, title) VALUES ('doc-1', 'Test Doc');
-    INSERT INTO categories (id, name, sort_order) VALUES ('cat-1', 'Member', 1);
-    INSERT INTO categories (id, name, sort_order) VALUES ('cat-2', 'Location', 2);
+    INSERT INTO documents (id, workspace_id, title) VALUES ('doc-1', 'ws-default', 'Test Doc');
+    INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-1', 'ws-default', 'Member', 1);
+    INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-2', 'ws-default', 'Location', 2);
     INSERT INTO tags (id, category_id, name, color) VALUES ('tag-1', 'cat-1', 'Gura', '#ff0000');
     INSERT INTO tags (id, category_id, name, color) VALUES ('tag-2', 'cat-2', 'Tokyo', '#00ff00');
   `);

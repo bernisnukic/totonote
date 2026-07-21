@@ -1,9 +1,11 @@
 import { ipcMain, shell } from 'electron';
+import * as workspaceRepo from '../db/repositories/workspace-repo';
 import * as documentRepo from '../db/repositories/document-repo';
 import * as sectionRepo from '../db/repositories/section-repo';
 import * as tagRepo from '../db/repositories/tag-repo';
 import * as categoryRepo from '../db/repositories/category-repo';
 import * as categoryRuleRepo from '../db/repositories/category-rule-repo';
+import * as undoRepo from '../db/repositories/undo-repo';
 import * as annotationRepo from '../db/repositories/annotation-repo';
 import * as sectionTagRepo from '../db/repositories/section-tag-repo';
 import * as preferenceRepo from '../db/repositories/preference-repo';
@@ -13,8 +15,18 @@ import type { CreateCategoryInput, BulkAddSubcategoryInput } from '../../shared/
 const ALLOWED_EXTERNAL_PREFIX = 'https://github.com/bernisnukic/totonote/';
 
 export function registerIpcHandlers(): void {
+  // Workspaces
+  ipcMain.handle('workspace:list', () => workspaceRepo.listWorkspaces());
+  ipcMain.handle('workspace:create', (_, args: { name: string }) => workspaceRepo.createWorkspace(args.name));
+  ipcMain.handle('workspace:rename', (_, args: { id: string; name: string }) =>
+    workspaceRepo.renameWorkspace(args.id, args.name)
+  );
+  ipcMain.handle('workspace:delete', (_, args: { id: string }) => workspaceRepo.deleteWorkspace(args.id));
+
   // Documents
-  ipcMain.handle('document:list', () => documentRepo.listDocuments());
+  ipcMain.handle('document:list', (_, args: { workspaceId?: string }) =>
+    documentRepo.listDocuments(args?.workspaceId)
+  );
   ipcMain.handle('document:get', (_, args: { id: string }) => documentRepo.getDocument(args.id));
   ipcMain.handle('document:create', (_, args) => documentRepo.createDocument(args));
   ipcMain.handle('document:update', (_, args) => documentRepo.updateDocument(args));
@@ -36,7 +48,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('tag:update', (_, args) => tagRepo.updateTag(args));
   ipcMain.handle('tag:delete', (_, args: { id: string }) => tagRepo.deleteTag(args.id));
   ipcMain.handle('tag:search', (_, args: { query: string }) => tagRepo.searchTags(args.query));
-  ipcMain.handle('category:list', () => categoryRepo.listCategories());
+  ipcMain.handle('category:list', (_, args: { workspaceId?: string }) =>
+    categoryRepo.listCategories(args?.workspaceId)
+  );
   ipcMain.handle('category:create', (_, args: CreateCategoryInput) => categoryRepo.createCategory(args));
   ipcMain.handle('category:update', (_, args: { id: string; name?: string; parentId?: string | null }) => categoryRepo.updateCategory(args.id, { name: args.name, parentId: args.parentId }));
   ipcMain.handle('category:delete', (_, args: { id: string }) => categoryRepo.deleteCategory(args.id));
@@ -92,6 +106,11 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('preference:set', (_, args: { key: string; value: string }) => preferenceRepo.setPreference(args.key, args.value));
 
   // App / Updates
+  // Undo
+  ipcMain.handle('undo:restore', (_, args: { snapshot: Parameters<typeof undoRepo.restoreSnapshot>[0] }) =>
+    undoRepo.restoreSnapshot(args.snapshot)
+  );
+
   ipcMain.handle('app:check-for-updates', () => checkForUpdates());
   ipcMain.handle('app:open-external', (_, args: { url: string }) => {
     if (!args.url.startsWith(ALLOWED_EXTERNAL_PREFIX)) {

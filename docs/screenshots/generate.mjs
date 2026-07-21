@@ -200,6 +200,14 @@ await shot('01-documents-screen', {
   marks: [{ selector: '.document-card-new', label: 'Start a new document here', place: 'right' }],
 });
 
+await shot('27-workspace-bar', {
+  clip: '.workspace-bar',
+  pad: 40,
+  marks: [
+    { selector: '.workspace-bar__current', label: 'Click to switch, rename or add a world', place: 'below' },
+  ],
+});
+
 await page.locator('.document-card-new').click();
 await page.locator('.modal input.input').first().fill('Hololore');
 await page.locator('.modal textarea, .modal .textarea').first().fill('Characters, places and history.');
@@ -261,7 +269,7 @@ await shot('04b-toolbar', {
   marks: [
     { selector: '.toolbar-back-btn', label: 'Back to your documents', place: 'below' },
     { selector: '.toolbar-group', nth: 1, label: 'Headings', place: 'below' },
-    { selector: '.toolbar-btn[title=\"Settings\"]', label: 'Settings', place: 'below' },
+    { selector: '.toolbar-btn[aria-label=\"Settings\"]', label: 'Settings', place: 'below' },
   ],
 });
 
@@ -486,7 +494,7 @@ await shot('25-category-page', {
 await page.keyboard.press('Escape');
 
 // The graph.
-await page.locator('.toolbar-btn[title="Graph view"]').click();
+await page.locator('.toolbar-btn[aria-label="Graph view"]').click();
 await page.waitForTimeout(4500);
 await shot('26-graph', {
   marks: [
@@ -537,7 +545,7 @@ await shot('22-arrange-tab', {
   ],
 });
 
-await page.locator('.toolbar-btn[title="Settings"]').click();
+await page.locator('.toolbar-btn[aria-label="Settings"]').click();
 await page.waitForTimeout(400);
 await shot('23-settings', {
   clip: '.modal',

@@ -42,6 +42,29 @@ export function TagContextMenu() {
     setFileModalAnnotationId(null);
   };
 
+  const handleAddTagToSelection = async (tagId: string) => {
+    if (!activeSectionId || !selectedRange) return;
+    await createAnnotation(activeSectionId, tagId, selectedRange.from, selectedRange.to);
+    if (activeSectionId) loadAnnotations(activeSectionId);
+    setShowAddTagModal(false);
+    setContextMenu(null);
+    setShowCombineMenu(false);
+  };
+
+  const addTagModal = (
+    <Modal
+      title={contextMenu?.type === 'annotation' ? 'Add Tag' : 'Add Tag to Selection'}
+      isOpen={showAddTagModal}
+      onClose={() => setShowAddTagModal(false)}
+    >
+      <LabelAutocomplete
+        tags={tags}
+        onSelect={handleAddTagToSelection}
+        placeholder="Search tags..."
+      />
+    </Modal>
+  );
+
   const fileModal = fileModalAnnotationId ? (
     <Modal title="File under" isOpen onClose={() => setFileModalAnnotationId(null)}>
       <p className="rule-help">
@@ -73,9 +96,19 @@ export function TagContextMenu() {
     </Modal>
   ) : null;
 
+  // Both modals are opened *by* a menu item, which also closes the menu — so they must
+  // live outside the branch returns below. Rendering them only inside a branch meant
+  // "Add tag to selection" appeared to do nothing: the click closed the menu and
+  // unmounted the modal in the same tick. It reappeared only on the next right-click.
   if (!contextMenu || contextMenu.type !== 'annotation') {
-    // Check for text-selection context menu
-    if (!contextMenu || contextMenu.type !== 'text-selection') return fileModal;
+    if (!contextMenu || contextMenu.type !== 'text-selection') {
+      return (
+        <>
+          {addTagModal}
+          {fileModal}
+        </>
+      );
+    }
   }
 
   // Read the target from the menu's own state, not from activeAnnotationId — see the
@@ -159,14 +192,6 @@ export function TagContextMenu() {
     closeMenu();
   };
 
-  const handleAddTagToSelection = async (tagId: string) => {
-    if (!activeSectionId || !selectedRange) return;
-    await createAnnotation(activeSectionId, tagId, selectedRange.from, selectedRange.to);
-    if (activeSectionId) loadAnnotations(activeSectionId);
-    setShowAddTagModal(false);
-    closeMenu();
-  };
-
   // Text selection context menu (no active annotation)
   if (contextMenu.type === 'text-selection') {
     return (
@@ -180,17 +205,7 @@ export function TagContextMenu() {
             Add tag to selection
           </div>
         </div>
-        <Modal
-          title="Add Tag to Selection"
-          isOpen={showAddTagModal}
-          onClose={() => setShowAddTagModal(false)}
-        >
-          <LabelAutocomplete
-            tags={tags}
-            onSelect={handleAddTagToSelection}
-            placeholder="Search tags..."
-          />
-        </Modal>
+        {addTagModal}
       </>
     );
   }

@@ -13,8 +13,8 @@ function initTestDb() {
   const { db, sqlite } = createTestDb();
   testDb = db;
   sqlite.exec(`
-    INSERT INTO categories (id, name, sort_order) VALUES ('cat-1', 'Member', 1);
-    INSERT INTO categories (id, name, sort_order) VALUES ('cat-2', 'Location', 2);
+    INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-1', 'ws-default', 'Member', 1);
+    INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-2', 'ws-default', 'Location', 2);
   `);
 }
 

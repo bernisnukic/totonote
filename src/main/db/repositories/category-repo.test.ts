@@ -26,9 +26,9 @@ function initTestDb() {
   testDb = db;
   sqliteHandle = sqlite;
   sqlite.exec(`
-    INSERT INTO categories (id, name, sort_order) VALUES ('cat-1', 'Member', 1);
-    INSERT INTO categories (id, name, sort_order) VALUES ('cat-2', 'Location', 2);
-    INSERT INTO categories (id, name, sort_order) VALUES ('cat-3', 'Game', 3);
+    INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-1', 'ws-default', 'Member', 1);
+    INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-2', 'ws-default', 'Location', 2);
+    INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-3', 'ws-default', 'Game', 3);
     INSERT INTO browse_categories (id, name, sort_order) VALUES ('bc-gen', 'Gen', 1);
     INSERT INTO browse_categories (id, name, sort_order) VALUES ('bc-group', 'Group', 2);
     INSERT INTO browse_categories (id, name, parent_id, sort_order) VALUES ('bc-sub', 'Sub Group', 'bc-group', 3);
@@ -66,6 +66,7 @@ describe('category-repo', () => {
       const cats = listCategories();
       expect(cats[0]).toEqual({
         id: 'cat-1',
+        workspaceId: 'ws-default',
         name: 'Member',
         parentId: null,
         sortOrder: 1,
@@ -75,30 +76,30 @@ describe('category-repo', () => {
 
   describe('createCategory', () => {
     it('creates a root category', () => {
-      const { category, descendants } = createCategory({ name: 'CHARACTERS' });
+      const { category, descendants } = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' });
       expect(category.parentId).toBeNull();
       expect(category.name).toBe('CHARACTERS');
       expect(descendants).toEqual([]);
     });
 
     it('creates a sub-category under a parent', () => {
-      const parent = createCategory({ name: 'CHARACTERS' }).category;
+      const parent = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const { category } = createCategory({ name: 'GURA', parentId: parent.id });
       expect(category.parentId).toBe(parent.id);
     });
 
     it('trims the name and rejects a blank one', () => {
-      expect(createCategory({ name: '  SPACED  ' }).category.name).toBe('SPACED');
-      expect(() => createCategory({ name: '   ' })).toThrow(/name is required/i);
+      expect(createCategory({ workspaceId: 'ws-default', name: '  SPACED  ' }).category.name).toBe('SPACED');
+      expect(() => createCategory({ workspaceId: 'ws-default', name: '   ' })).toThrow(/name is required/i);
     });
 
     it('rejects a duplicate sibling with a readable message', () => {
-      const parent = createCategory({ name: 'CHARACTERS' }).category;
+      const parent = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       createCategory({ name: 'GURA', parentId: parent.id });
       expect(() => createCategory({ name: 'gura', parentId: parent.id })).toThrow(
         /sub-category named "GURA" already exists/i,
       );
-      expect(() => createCategory({ name: 'characters' })).toThrow(/category named "CHARACTERS" already exists/i);
+      expect(() => createCategory({ workspaceId: 'ws-default', name: 'characters' })).toThrow(/category named "CHARACTERS" already exists/i);
     });
 
     it('rejects an unknown parent', () => {
@@ -108,7 +109,7 @@ describe('category-repo', () => {
 
   describe('createCategory with a rule', () => {
     it('stamps the parent rule onto a new sub-category', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       setCategoryRule(chars.id, CHARACTER_RULE);
 
       const { category: gura, descendants } = createCategory({
@@ -122,7 +123,7 @@ describe('category-repo', () => {
     });
 
     it('does not apply the rule when the checkbox is off', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       setCategoryRule(chars.id, CHARACTER_RULE);
 
       const { category: gura, descendants } = createCategory({ name: 'GURA', parentId: chars.id });
@@ -132,7 +133,7 @@ describe('category-repo', () => {
     });
 
     it('is a no-op when the parent has no rule', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const { descendants } = createCategory({ name: 'GURA', parentId: chars.id, applyRule: true });
       expect(descendants).toEqual([]);
     });
@@ -140,7 +141,7 @@ describe('category-repo', () => {
     it('allows the same sub-category names under different siblings', () => {
       // The whole point of the feature — and impossible before the unique index moved
       // from `name` to `(parent_id, name)`.
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       setCategoryRule(chars.id, CHARACTER_RULE);
 
       const gura = createCategory({ name: 'GURA', parentId: chars.id, applyRule: true }).category;
@@ -152,7 +153,7 @@ describe('category-repo', () => {
     });
 
     it('applies a nested rule to full depth', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       setCategoryRule(chars.id, 'HISTORY\nABILITIES\n  COMBAT\n  MAGIC');
 
       const gura = createCategory({ name: 'GURA', parentId: chars.id, applyRule: true }).category;
@@ -163,7 +164,7 @@ describe('category-repo', () => {
     });
 
     it('only applies the immediate parent rule, not an ancestor rule', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       setCategoryRule(chars.id, CHARACTER_RULE);
       const gura = createCategory({ name: 'GURA', parentId: chars.id, applyRule: true }).category;
       const history = findByName('HISTORY', gura.id)!;
@@ -176,7 +177,7 @@ describe('category-repo', () => {
 
   describe('applyRuleToExistingChildren', () => {
     it('back-fills sub-categories created before the rule existed', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const gura = createCategory({ name: 'GURA', parentId: chars.id }).category;
       const pekora = createCategory({ name: 'PEKORA', parentId: chars.id }).category;
 
@@ -190,7 +191,7 @@ describe('category-repo', () => {
     });
 
     it('is idempotent — a second run creates nothing', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       createCategory({ name: 'GURA', parentId: chars.id });
       setCategoryRule(chars.id, CHARACTER_RULE);
 
@@ -203,7 +204,7 @@ describe('category-repo', () => {
     });
 
     it('adds only the missing nodes and leaves existing ones alone', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const gura = createCategory({ name: 'GURA', parentId: chars.id }).category;
       const existingHistory = createCategory({ name: 'HISTORY', parentId: gura.id }).category;
 
@@ -216,7 +217,7 @@ describe('category-repo', () => {
     });
 
     it('matches existing sub-categories case-insensitively', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const gura = createCategory({ name: 'GURA', parentId: chars.id }).category;
       createCategory({ name: 'History', parentId: gura.id });
 
@@ -228,7 +229,7 @@ describe('category-repo', () => {
     });
 
     it('does nothing when the category has no rule', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       createCategory({ name: 'GURA', parentId: chars.id });
       expect(applyRuleToExistingChildren(chars.id)).toEqual({ created: [], childrenAffected: 0 });
     });
@@ -236,8 +237,8 @@ describe('category-repo', () => {
 
   describe('bulkAddSubcategory', () => {
     it('adds the same sub-category to several categories at once', () => {
-      const a = createCategory({ name: 'CHARACTERS' }).category;
-      const b = createCategory({ name: 'LOCATIONS' }).category;
+      const a = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
+      const b = createCategory({ workspaceId: 'ws-default', name: 'LOCATIONS' }).category;
 
       const result = bulkAddSubcategory({ parentIds: [a.id, b.id], name: 'NOTES' });
 
@@ -248,8 +249,8 @@ describe('category-repo', () => {
     });
 
     it('skips categories that already have that sub-category', () => {
-      const a = createCategory({ name: 'CHARACTERS' }).category;
-      const b = createCategory({ name: 'LOCATIONS' }).category;
+      const a = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
+      const b = createCategory({ workspaceId: 'ws-default', name: 'LOCATIONS' }).category;
       createCategory({ name: 'NOTES', parentId: a.id });
 
       const result = bulkAddSubcategory({ parentIds: [a.id, b.id], name: 'notes' });
@@ -260,8 +261,8 @@ describe('category-repo', () => {
     });
 
     it('applies each parent’s own rule to the new child', () => {
-      const a = createCategory({ name: 'CHARACTERS' }).category;
-      const b = createCategory({ name: 'LOCATIONS' }).category;
+      const a = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
+      const b = createCategory({ workspaceId: 'ws-default', name: 'LOCATIONS' }).category;
       setCategoryRule(a.id, CHARACTER_RULE);
       setCategoryRule(b.id, 'MAP\nCLIMATE');
 
@@ -272,7 +273,7 @@ describe('category-repo', () => {
     });
 
     it('ignores unknown parent ids', () => {
-      const a = createCategory({ name: 'CHARACTERS' }).category;
+      const a = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const result = bulkAddSubcategory({ parentIds: [a.id, 'ghost'], name: 'NOTES' });
       expect(result.created.length).toBe(1);
       expect(result.skipped).toEqual([]);
@@ -285,11 +286,11 @@ describe('category-repo', () => {
 
   describe('deleteCategory', () => {
     it('deletes descendants rather than promoting them to root', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       setCategoryRule(chars.id, CHARACTER_RULE);
       const gura = createCategory({ name: 'GURA', parentId: chars.id, applyRule: true }).category;
 
-      const removed = deleteCategory(chars.id);
+      const { removedIds: removed } = deleteCategory(chars.id);
 
       expect(removed).toContain(chars.id);
       expect(removed).toContain(gura.id);
@@ -300,10 +301,10 @@ describe('category-repo', () => {
     });
 
     it('deletes tags and annotations belonging to removed descendants', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const gura = createCategory({ name: 'GURA', parentId: chars.id }).category;
       sqliteHandle.exec(`
-        INSERT INTO documents (id, title) VALUES ('doc-1', 'Lore');
+        INSERT INTO documents (id, workspace_id, title) VALUES ('doc-1', 'ws-default', 'Lore');
         INSERT INTO sections (id, document_id, title, abbreviation, sort_order)
           VALUES ('sec-1', 'doc-1', 'Intro', 'IN', 1);
         INSERT INTO tags (id, category_id, name) VALUES ('tag-1', '${gura.id}', 'Shark');
@@ -320,9 +321,9 @@ describe('category-repo', () => {
     });
 
     it('deletes document_tags pointing at a removed category', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       sqliteHandle.exec(`
-        INSERT INTO documents (id, title) VALUES ('doc-1', 'Lore');
+        INSERT INTO documents (id, workspace_id, title) VALUES ('doc-1', 'ws-default', 'Lore');
         INSERT INTO tags (id, category_id, name) VALUES ('tag-1', '${chars.id}', 'Shark');
         INSERT INTO document_tags (document_id, tag_id, category_id)
           VALUES ('doc-1', 'tag-1', '${chars.id}');
@@ -334,7 +335,7 @@ describe('category-repo', () => {
     });
 
     it('removes the rules of every deleted category', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const gura = createCategory({ name: 'GURA', parentId: chars.id }).category;
       setCategoryRule(chars.id, CHARACTER_RULE);
       setCategoryRule(gura.id, 'EARLY\nLATE');
@@ -345,7 +346,7 @@ describe('category-repo', () => {
     });
 
     it('leaves siblings alone', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       const gura = createCategory({ name: 'GURA', parentId: chars.id }).category;
       const pekora = createCategory({ name: 'PEKORA', parentId: chars.id }).category;
 
@@ -358,7 +359,7 @@ describe('category-repo', () => {
 
   describe('collectCategoryIds', () => {
     it('returns the category plus every descendant', () => {
-      const chars = createCategory({ name: 'CHARACTERS' }).category;
+      const chars = createCategory({ workspaceId: 'ws-default', name: 'CHARACTERS' }).category;
       setCategoryRule(chars.id, 'ABILITIES\n  COMBAT');
       const gura = createCategory({ name: 'GURA', parentId: chars.id, applyRule: true }).category;
 

@@ -2,9 +2,11 @@ import React, { useCallback, useRef, useEffect } from 'react';
 
 interface PanelDividerProps {
   onResize: (delta: number) => void;
+  /** Double-clicking the divider restores the panel's default width. */
+  onReset?: () => void;
 }
 
-export function PanelDivider({ onResize }: PanelDividerProps) {
+export function PanelDivider({ onResize, onReset }: PanelDividerProps) {
   const isDragging = useRef(false);
   const lastX = useRef(0);
   const dividerRef = useRef<HTMLDivElement>(null);
@@ -41,5 +43,14 @@ export function PanelDivider({ onResize }: PanelDividerProps) {
     };
   }, [onResize]);
 
-  return <div ref={dividerRef} className="panel-divider" onMouseDown={handleMouseDown} />;
+  return (
+    <div
+      ref={dividerRef}
+      className="panel-divider"
+      onMouseDown={handleMouseDown}
+      onDoubleClick={onReset}
+      data-tip={onReset ? 'Drag to resize · double-click to reset' : undefined}
+      aria-label="Resize panel"
+    />
+  );
 }

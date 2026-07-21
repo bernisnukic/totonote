@@ -142,7 +142,13 @@ describe('adoptLegacyDatabase', () => {
     runStartupMigration(sqlite);
 
     const gura = sqlite.prepare(`SELECT * FROM categories WHERE id = 'cat-gura'`).get();
-    expect(gura).toEqual({ id: 'cat-gura', name: 'GURA', sort_order: 3, parent_id: 'cat-chars' });
+    expect(gura).toEqual({
+      id: 'cat-gura',
+      workspace_id: 'ws-default',
+      name: 'GURA',
+      sort_order: 3,
+      parent_id: 'cat-chars',
+    });
   });
 
   it('sheds the un-droppable inline UNIQUE so per-parent names become possible', () => {
@@ -150,9 +156,9 @@ describe('adoptLegacyDatabase', () => {
     seed(sqlite);
     runStartupMigration(sqlite);
 
-    sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-peko', 'PEKORA', 4, 'cat-chars')`);
-    sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('h1', 'HISTORY', 5, 'cat-gura')`);
-    sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('h2', 'HISTORY', 6, 'cat-peko')`);
+    sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('cat-peko', 'ws-default', 'PEKORA', 4, 'cat-chars')`);
+    sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('h1', 'ws-default', 'HISTORY', 5, 'cat-gura')`);
+    sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('h2', 'ws-default', 'HISTORY', 6, 'cat-peko')`);
 
     expect(count(sqlite, 'categories')).toBe(6);
   });
@@ -162,9 +168,9 @@ describe('adoptLegacyDatabase', () => {
     seed(sqlite);
     runStartupMigration(sqlite);
 
-    sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('h1', 'HISTORY', 5, 'cat-gura')`);
+    sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('h1', 'ws-default', 'HISTORY', 5, 'cat-gura')`);
     expect(() =>
-      sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('h2', 'HISTORY', 6, 'cat-gura')`),
+      sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('h2', 'ws-default', 'HISTORY', 6, 'cat-gura')`),
     ).toThrow(/UNIQUE/i);
   });
 

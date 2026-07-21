@@ -3,8 +3,10 @@ import { eq, inArray, isNull, max } from 'drizzle-orm';
 import { getDb } from '../connection';
 import { categories, browseCategories } from '../schema';
 import { getCategoryRule } from './category-rule-repo';
+import { captureCategory } from './undo-repo';
 import { parseRuleTemplate, type RuleNode } from '../../../shared/category-rule';
 import type {
+  DeletionSnapshot,
   Category,
   BrowseCategory,
   CreateCategoryInput,
@@ -14,22 +16,29 @@ import type {
   BulkAddSubcategoryResult,
 } from '../../../shared/domain-types';
 
-export function listCategories(): Category[] {
-  return getDb().select().from(categories).orderBy(categories.sortOrder).all();
+/** Categories in one workspace, or all of them when no workspace is given. */
+export function listCategories(workspaceId?: string): Category[] {
+  const q = getDb().select().from(categories).orderBy(categories.sortOrder);
+  return (workspaceId ? q.where(eq(categories.workspaceId, workspaceId)) : q).all();
 }
 
 function getCategory(id: string): Category | null {
   return getDb().select().from(categories).where(eq(categories.id, id)).get() ?? null;
 }
 
-function childrenOf(parentId: string | null): Category[] {
+/**
+ * Direct children of a category. Root-level lookups (`parentId === null`) must also be
+ * scoped by workspace, or one world's roots collide with another's.
+ */
+function childrenOf(parentId: string | null, workspaceId?: string): Category[] {
   const db = getDb();
-  return db
+  const rows = db
     .select()
     .from(categories)
     .where(parentId === null ? isNull(categories.parentId) : eq(categories.parentId, parentId))
     .orderBy(categories.sortOrder)
     .all();
+  return workspaceId ? rows.filter(c => c.workspaceId === workspaceId) : rows;
 }
 
 /**
@@ -49,8 +58,13 @@ function makeSortOrderAllocator(): () => number {
   return () => next++;
 }
 
-function insertCategory(name: string, parentId: string | null, sortOrder: number): Category {
-  const category: Category = { id: `cat-${randomUUID()}`, name, parentId, sortOrder };
+function insertCategory(
+  name: string,
+  parentId: string | null,
+  sortOrder: number,
+  workspaceId: string,
+): Category {
+  const category: Category = { id: `cat-${randomUUID()}`, workspaceId, name, parentId, sortOrder };
   getDb().insert(categories).values(category).run();
   return category;
 }
@@ -67,6 +81,7 @@ function applyTemplateUnder(
   nodes: RuleNode[],
   nextSortOrder: () => number,
   created: Category[],
+  workspaceId: string,
 ): void {
   if (nodes.length === 0) return;
   const existing = childrenOf(parentId);
@@ -74,11 +89,11 @@ function applyTemplateUnder(
   for (const node of nodes) {
     let child = findSibling(existing, node.name);
     if (!child) {
-      child = insertCategory(node.name, parentId, nextSortOrder());
+      child = insertCategory(node.name, parentId, nextSortOrder(), workspaceId);
       existing.push(child);
       created.push(child);
     }
-    applyTemplateUnder(child.id, node.children, nextSortOrder, created);
+    applyTemplateUnder(child.id, node.children, nextSortOrder, created, workspaceId);
   }
 }
 
@@ -93,11 +108,16 @@ export function createCategory(input: CreateCategoryInput): CreateCategoryResult
   if (!name) throw new Error('Category name is required');
 
   const parentId = input.parentId ?? null;
-  if (parentId && !getCategory(parentId)) {
+  const parent = parentId ? getCategory(parentId) : null;
+  if (parentId && !parent) {
     throw new Error(`Parent category not found: ${parentId}`);
   }
 
-  const duplicate = findSibling(childrenOf(parentId), name);
+  // A child always lives in its parent's workspace; a root needs to be told which.
+  const workspaceId = parent?.workspaceId ?? input.workspaceId;
+  if (!workspaceId) throw new Error('A root category needs a workspace');
+
+  const duplicate = findSibling(childrenOf(parentId, workspaceId), name);
   if (duplicate) {
     throw new Error(
       parentId
@@ -108,11 +128,11 @@ export function createCategory(input: CreateCategoryInput): CreateCategoryResult
 
   return getDb().transaction(() => {
     const nextSortOrder = makeSortOrderAllocator();
-    const category = insertCategory(name, parentId, nextSortOrder());
+    const category = insertCategory(name, parentId, nextSortOrder(), workspaceId);
 
     const descendants: Category[] = [];
     if (input.applyRule) {
-      applyTemplateUnder(category.id, ruleNodesFor(parentId), nextSortOrder, descendants);
+      applyTemplateUnder(category.id, ruleNodesFor(parentId), nextSortOrder, descendants, workspaceId);
     }
 
     return { category, descendants };
@@ -126,6 +146,8 @@ export function createCategory(input: CreateCategoryInput): CreateCategoryResult
 export function applyRuleToExistingChildren(categoryId: string): ApplyRuleResult {
   const nodes = ruleNodesFor(categoryId);
   if (nodes.length === 0) return { created: [], childrenAffected: 0 };
+  const owner = getCategory(categoryId);
+  if (!owner) return { created: [], childrenAffected: 0 };
 
   return getDb().transaction(() => {
     const nextSortOrder = makeSortOrderAllocator();
@@ -134,7 +156,7 @@ export function applyRuleToExistingChildren(categoryId: string): ApplyRuleResult
 
     for (const child of childrenOf(categoryId)) {
       const before = created.length;
-      applyTemplateUnder(child.id, nodes, nextSortOrder, created);
+      applyTemplateUnder(child.id, nodes, nextSortOrder, created, owner.workspaceId);
       if (created.length > before) childrenAffected++;
     }
 
@@ -161,11 +183,11 @@ export function bulkAddSubcategory(input: BulkAddSubcategoryInput): BulkAddSubca
         continue;
       }
 
-      const child = insertCategory(name, parentId, nextSortOrder());
+      const child = insertCategory(name, parentId, nextSortOrder(), parent.workspaceId);
       created.push(child);
 
       if (input.applyRule) {
-        applyTemplateUnder(child.id, ruleNodesFor(parentId), nextSortOrder, created);
+        applyTemplateUnder(child.id, ruleNodesFor(parentId), nextSortOrder, created, parent.workspaceId);
       }
     }
 
@@ -207,12 +229,13 @@ export function collectCategoryIds(id: string): string[] {
  * which is neither what the confirmation dialog promises nor what a nested rule tree
  * makes sensible. Returns every id removed so the renderer can prune its store.
  */
-export function deleteCategory(id: string): string[] {
+export function deleteCategory(id: string): { removedIds: string[]; snapshot: DeletionSnapshot } {
   const ids = collectCategoryIds(id);
+  const snapshot = captureCategory(id, ids);
   getDb().transaction(() => {
     getDb().delete(categories).where(inArray(categories.id, ids)).run();
   });
-  return ids;
+  return { removedIds: ids, snapshot };
 }
 
 export function listBrowseCategories(): BrowseCategory[] {

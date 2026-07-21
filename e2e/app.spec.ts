@@ -1317,7 +1317,7 @@ test.describe('Graph view', () => {
     await page.locator('.modal .btn-primary', { hasText: 'Create' }).click();
     await expect(page.locator('.badge', { hasText: 'Gura' })).toBeVisible();
 
-    await page.locator('.toolbar-btn[title="Graph view"]').click();
+    await page.locator('.toolbar-btn[aria-label="Graph view"]').click();
     const graph = page.locator('.graph-overlay');
     await expect(graph).toBeVisible();
 
@@ -1338,10 +1338,190 @@ test.describe('Graph view', () => {
     await page.locator('.document-card-new').click();
     await page.locator('.modal input.input').first().fill('Graph Esc');
     await page.locator('.modal .btn-primary').click();
-    await page.locator('.toolbar-btn[title="Graph view"]').click();
+    await page.locator('.toolbar-btn[aria-label="Graph view"]').click();
     await expect(page.locator('.graph-overlay')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.locator('.graph-overlay')).toHaveCount(0);
+  });
+});
+
+
+// ─── Workspaces ──────────────────────────────────────────────────────
+
+test.describe('Workspaces', () => {
+  const bar = () => page.locator('.workspace-bar');
+
+  async function newWorkspace(name: string) {
+    await page.locator('.workspace-bar__current').click();
+    await page.locator('.workspace-bar__item', { hasText: '+ New workspace' }).click();
+    await page.locator('.workspace-bar__input').fill(name);
+    await page.locator('.workspace-bar .btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.workspace-bar__current')).toContainText(name);
+  }
+
+  test('starts in a default workspace', async () => {
+    await expect(bar()).toBeVisible();
+    await expect(page.locator('.workspace-bar__current')).toContainText('My World');
+  });
+
+  test('documents and categories are isolated between workspaces', async () => {
+    // A document and a category in the default workspace.
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('World One Doc');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill('WORLD ONE ONLY');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.category-row', { hasText: 'WORLD ONE ONLY' })).toBeVisible();
+    await page.locator('.toolbar-back-btn').click();
+    await expect(page.locator('.document-card')).toHaveCount(1);
+
+    await newWorkspace('Game 2');
+
+    // The new world is empty — no documents carried over.
+    await expect(page.locator('.document-card')).toHaveCount(0);
+
+    // And its category tree is its own.
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('World Two Doc');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await expect(page.locator('.category-row', { hasText: 'WORLD ONE ONLY' })).toHaveCount(0);
+  });
+
+  test('the same category name can exist in two workspaces', async () => {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Doc A');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill('CHARACTERS');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.category-row', { hasText: 'CHARACTERS' })).toBeVisible();
+    await page.locator('.toolbar-back-btn').click();
+
+    await newWorkspace('Game 2');
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Doc B');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill('CHARACTERS');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+
+    // Would have collided when root names were globally unique.
+    await expect(page.locator('.category-row', { hasText: 'CHARACTERS' })).toHaveCount(1);
+    await expect(page.locator('.category-new-form .rule-error')).toHaveCount(0);
+  });
+
+  test('switching back shows the first workspace again', async () => {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Original');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.toolbar-back-btn').click();
+
+    await newWorkspace('Game 2');
+    await expect(page.locator('.document-card')).toHaveCount(0);
+
+    await page.locator('.workspace-bar__current').click();
+    await page.locator('.workspace-bar__item', { hasText: 'My World' }).click();
+    await expect(page.locator('.document-card')).toHaveCount(1);
+    await expect(page.locator('.document-card-title')).toHaveText('Original');
+  });
+});
+
+// ─── Undo ────────────────────────────────────────────────────────────
+
+test.describe('Undo', () => {
+  test('putting back a deleted tag restores its highlights', async () => {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Undo Test');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('The dragon sleeps', { delay: 15 });
+    await page.keyboard.press('Meta+A');
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('Dragon');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+
+    // Delete the tag from the sidebar.
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.sidebar-search-input').fill('Dragon');
+    page.once('dialog', d => d.accept());
+    await page.locator('.tag-tree-item', { hasText: 'Dragon' }).first().click({ button: 'right' });
+    await page.locator('.context-menu-item', { hasText: 'Delete' }).click();
+    await expect(page.locator('.annotation-highlight')).toHaveCount(0);
+
+    // The toast offers it back.
+    const toast = page.locator('.undo-toast');
+    await expect(toast).toBeVisible();
+    await expect(toast).toContainText('Dragon');
+    await toast.locator('.undo-toast__btn').click();
+
+    await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.undo-toast')).toHaveCount(0);
+  });
+
+  test('restores a deleted category and everything under it', async () => {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Undo Cat');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill('CHARACTERS');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await page.locator('.category-row', { hasText: 'CHARACTERS' })
+      .locator('.category-row-btn', { hasText: '+' }).click();
+    await page.locator('.category-new-form input.input').fill('GURA');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.category-row', { hasText: 'GURA' })).toBeVisible();
+
+    page.once('dialog', d => d.accept());
+    await page.locator('.category-row', { hasText: 'CHARACTERS' })
+      .locator('.category-row-btn', { hasText: '×' }).click();
+    await expect(page.locator('.category-row', { hasText: 'GURA' })).toHaveCount(0);
+
+    await page.locator('.undo-toast__btn').click();
+    await expect(page.locator('.category-row', { hasText: 'CHARACTERS' })).toBeVisible();
+    await expect(page.locator('.category-row', { hasText: 'GURA' })).toBeVisible();
+  });
+});
+
+// ─── Help ────────────────────────────────────────────────────────────
+
+test.describe('Help', () => {
+  test('the guide opens in the app and links between pages', async () => {
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].webContents.send('menu:open-help', 'README'),
+    );
+    const help = page.locator('.help-overlay');
+    await expect(help).toBeVisible();
+    await expect(help.locator('.help-nav-item')).not.toHaveCount(0);
+
+    await help.locator('.help-nav-item', { hasText: "What's New" }).click();
+    await expect(help.locator('.help-content h1')).toContainText("What's New");
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.help-overlay')).toHaveCount(0);
+  });
+
+  test('has a real application menu, not the Electron default', async () => {
+    const labels = await app.evaluate(({ Menu }) =>
+      (Menu.getApplicationMenu()?.items ?? []).map(i => i.label),
+    );
+    expect(labels).toContain('Edit');
+    expect(labels).toContain('Help');
+    expect(labels).not.toContain('Electron');
+    expect(await app.evaluate(({ app: a }) => a.getName())).toBe('TotoNote');
   });
 });
 

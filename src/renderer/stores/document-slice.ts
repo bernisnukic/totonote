@@ -1,6 +1,8 @@
 import type { StateCreator } from 'zustand';
 import type { Document, Section } from '../../shared/domain-types';
 import { invoke } from '../lib/ipc-client';
+// Typed against the whole store so deletions can offer an undo (type-only import).
+import type { AppStore } from './index';
 
 export interface DocumentSlice {
   documents: Document[];
@@ -27,7 +29,7 @@ export interface DocumentSlice {
   saveContent: (sectionId: string, content: string) => Promise<void>;
 }
 
-export const createDocumentSlice: StateCreator<DocumentSlice, [], [], DocumentSlice> = (set, get) => ({
+export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> = (set, get) => ({
   documents: [],
   activeDocumentId: null,
   activeDocument: null,
@@ -37,7 +39,8 @@ export const createDocumentSlice: StateCreator<DocumentSlice, [], [], DocumentSl
   isSaving: false,
 
   loadDocuments: async () => {
-    const documents = await invoke('document:list');
+    // Scoped to the active workspace — documents in other worlds stay out of sight.
+    const documents = await invoke('document:list', { workspaceId: get().activeWorkspaceId ?? undefined });
     set({ documents });
   },
 
@@ -66,7 +69,9 @@ export const createDocumentSlice: StateCreator<DocumentSlice, [], [], DocumentSl
   },
 
   createDocument: async (title, description) => {
-    const doc = await invoke('document:create', { title, description });
+    const workspaceId = get().activeWorkspaceId;
+    if (!workspaceId) throw new Error('No workspace selected');
+    const doc = await invoke('document:create', { workspaceId, title, description });
     set(s => ({ documents: [doc, ...s.documents] }));
     return doc;
   },
@@ -80,7 +85,8 @@ export const createDocumentSlice: StateCreator<DocumentSlice, [], [], DocumentSl
   },
 
   deleteDocument: async (id) => {
-    await invoke('document:delete', { id });
+    const snapshot = await invoke('document:delete', { id });
+    get().offerUndo(snapshot);
     set(s => ({
       documents: s.documents.filter(d => d.id !== id),
       activeDocumentId: s.activeDocumentId === id ? null : s.activeDocumentId,
@@ -119,11 +125,17 @@ export const createDocumentSlice: StateCreator<DocumentSlice, [], [], DocumentSl
   },
 
   deleteSection: async (id) => {
-    await invoke('section:delete', { id });
-    set(s => ({
-      sections: s.sections.filter(sec => sec.id !== id),
-      activeSectionId: s.activeSectionId === id ? (s.sections[0]?.id ?? null) : s.activeSectionId,
-    }));
+    const snapshot = await invoke('section:delete', { id });
+    get().offerUndo(snapshot);
+    set(s => {
+      const remaining = s.sections.filter(sec => sec.id !== id);
+      return {
+        sections: remaining,
+        // Pick the replacement from what's left — reading s.sections here would hand
+        // back the id of the section just deleted.
+        activeSectionId: s.activeSectionId === id ? (remaining[0]?.id ?? null) : s.activeSectionId,
+      };
+    });
   },
 
   reorderSections: async (orderedIds) => {

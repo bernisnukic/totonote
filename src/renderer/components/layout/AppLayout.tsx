@@ -16,6 +16,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const rightCollapsed = useStore(s => s.rightSidebarCollapsed);
   const setLeftWidth = useStore(s => s.setLeftSidebarWidth);
   const setRightWidth = useStore(s => s.setRightSidebarWidth);
+  const resetLeftSidebarWidth = useStore(s => s.resetLeftSidebarWidth);
+  const resetRightSidebarWidth = useStore(s => s.resetRightSidebarWidth);
   const activeDocumentId = useStore(s => s.activeDocumentId);
 
   const handleLeftResize = useCallback(
@@ -45,7 +47,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               >
                 <LeftSidebar />
               </div>
-              {!leftCollapsed && <PanelDivider onResize={handleLeftResize} />}
+              {!leftCollapsed && <PanelDivider onResize={handleLeftResize} onReset={resetLeftSidebarWidth} />}
             </>
           )}
 
@@ -53,7 +55,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           {activeDocumentId && (
             <>
-              {!rightCollapsed && <PanelDivider onResize={handleRightResize} />}
+              {!rightCollapsed && <PanelDivider onResize={handleRightResize} onReset={resetRightSidebarWidth} />}
               <div
                 className={`right-sidebar${rightCollapsed ? ' collapsed' : ''}`}
                 style={{ width: rightCollapsed ? 0 : rightWidth }}

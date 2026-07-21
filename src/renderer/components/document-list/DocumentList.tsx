@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../../stores';
+import { WorkspaceBar } from './WorkspaceBar';
 import { DocumentCard } from './DocumentCard';
 import { Modal } from '../common/Modal';
 
 export function DocumentList() {
   const documents = useStore(s => s.documents);
   const loadDocuments = useStore(s => s.loadDocuments);
+  const activeWorkspaceId = useStore(s => s.activeWorkspaceId);
   const createDocument = useStore(s => s.createDocument);
   const deleteDocument = useStore(s => s.deleteDocument);
   const openDocument = useStore(s => s.openDocument);
@@ -15,8 +17,10 @@ export function DocumentList() {
   const [newDescription, setNewDescription] = useState('');
 
   useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments]);
+    // Re-runs on workspace switch; skipped until one is known, so we never fetch
+    // every document across every world.
+    if (activeWorkspaceId) loadDocuments();
+  }, [loadDocuments, activeWorkspaceId]);
 
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
@@ -28,12 +32,20 @@ export function DocumentList() {
   };
 
   const handleDelete = async (id: string) => {
+    // Documents are the biggest unit — deleting one takes every section, highlight and
+    // filing inside it. Smaller deletions rely on the undo toast instead of a prompt.
+    const doc = documents.find(d => d.id === id);
+    const confirmed = window.confirm(
+      `Delete "${doc?.title ?? 'this document'}" and everything in it?\n\nAll of its sections and highlights go too.`,
+    );
+    if (!confirmed) return;
     await deleteDocument(id);
   };
 
   return (
     <div className="home-view">
       <div className="home-header">
+        <WorkspaceBar />
         <h1 className="home-title">Documents</h1>
       </div>
       <div className="document-grid">

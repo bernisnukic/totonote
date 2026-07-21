@@ -51,8 +51,9 @@ the row expands and collapses as before. Its page opens in the Info tab:
 
 The sort bar at the top of a page offers:
 
-- **Custom** — your own order. ▲ / ▼ buttons appear beside each excerpt; the order is
-  saved and is completely independent of where the text sits in your documents.
+- **Custom** — your own order. **Drag excerpts** into the order you want, or use the
+  ▲ / ▼ buttons beside each one. The order is saved and is completely independent of
+  where the text sits in your documents.
 - **Newest** / **Oldest** — by when the excerpt was filed.
 - **Document order** — the order the text appears in your writing.
 

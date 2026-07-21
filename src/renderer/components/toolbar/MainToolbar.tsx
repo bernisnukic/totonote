@@ -18,7 +18,8 @@ export function MainToolbar() {
     <button
       className={`toolbar-btn${isActive ? ' active' : ''}`}
       onClick={action}
-      title={label}
+      data-tip={label}
+      aria-label={label}
     >
       {label}
     </button>
@@ -26,7 +27,7 @@ export function MainToolbar() {
 
   return (
     <div className="main-toolbar">
-      <button className="toolbar-back-btn" onClick={closeDocument} title="Back to documents">
+      <button className="toolbar-back-btn" onClick={closeDocument} data-tip="Back to documents" aria-label="Back to documents">
         &larr; Back
       </button>
 
@@ -67,16 +68,16 @@ export function MainToolbar() {
       )}
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={toggleLeftSidebar} title="Toggle left sidebar">
+        <button className="toolbar-btn" onClick={toggleLeftSidebar} data-tip="Toggle left sidebar" aria-label="Toggle left sidebar">
           &#9776;
         </button>
-        <button className="toolbar-btn" onClick={() => setGraphOpen(true)} title="Graph view">
+        <button className="toolbar-btn" onClick={() => setGraphOpen(true)} data-tip="Graph view" aria-label="Graph view">
           &#9672;
         </button>
-        <button className="toolbar-btn" onClick={toggleRightSidebar} title="Toggle right sidebar">
+        <button className="toolbar-btn" onClick={toggleRightSidebar} data-tip="Toggle right sidebar" aria-label="Toggle right sidebar">
           &#9776;
         </button>
-        <button className="toolbar-btn" onClick={() => setShowSettings(true)} title="Settings">
+        <button className="toolbar-btn" onClick={() => setShowSettings(true)} data-tip="Settings" aria-label="Settings">
           &#9881;
         </button>
       </div>

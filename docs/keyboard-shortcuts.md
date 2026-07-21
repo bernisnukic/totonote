@@ -49,6 +49,12 @@ paragraph.
 | Undo | `⌘Z` | `Ctrl+Z` |
 | Redo | `⌘⇧Z` or `⌘Y` | `Ctrl+Shift+Z` or `Ctrl+Y` |
 
+## System shortcuts
+
+The menu bar now provides the standard **Edit** menu, so cut, copy, paste, select-all,
+undo and redo behave normally everywhere in the app — including in text boxes outside the
+editor, where they previously did nothing.
+
 ## Elsewhere in the app
 
 | Key | What it does |
