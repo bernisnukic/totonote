@@ -1,5 +1,11 @@
 # What's New
 
+## 1.3.1
+
+- The **Help** window's title sat underneath the macOS window buttons unless the app was
+  fullscreen. The graph view had the same problem.
+- Help pages are listed in reading order, with their proper titles.
+
 ## 1.3.0
 
 **Workspaces.** Documents and their categories now live inside a **workspace** — a
