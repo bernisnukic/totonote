@@ -50,16 +50,29 @@ they are.
 The **×** dismisses that particular version for good; a later version will still tell you.
 There's no "check for updates" button, and if the check fails it stays quiet.
 
+## Why do my categories show up in every document?
+
+Because they're shared across the whole **workspace** — that's what makes a category page
+able to collect excerpts from all your documents at once. If you want a clean slate for a
+different project, make a new workspace. See [Workspaces](workspaces.md).
+
+## I deleted something by accident — can I get it back?
+
+Deleting a tag, category or section shows an **Undo** button for a few seconds in the
+bottom of the window. That puts back everything the delete took with it, including
+highlights in other documents.
+
+Once the toast disappears, it's gone. Deleting a **document** or a **workspace** asks you
+to confirm instead, and cannot be undone.
+
+## Where's the user guide?
+
+**Help** in the menu bar, at the top of the screen. It has this whole guide and a
+**What's New** page, and works offline.
+
 ## Can I rename a document or a section?
 
 Not at the moment. Titles are fixed once created. Categories and tags *can* be renamed.
-
-## I deleted something by accident. Can I undo it?
-
-No. Deleting a document, section, category or tag is immediate and permanent. `⌘Z` undoes
-typing inside a section, but not deletions.
-
-This is the main reason to keep a backup.
 
 ## Why did my last sentence not save?
 

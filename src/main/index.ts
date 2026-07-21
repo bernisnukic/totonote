@@ -2,6 +2,12 @@ import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import { initDb, closeDb } from './db/connection';
 import { registerIpcHandlers } from './ipc/handlers';
+import { buildAppMenu } from './menu';
+
+// Set before anything reads it. Without this the app identifies itself as "Electron":
+// the macOS menu bar shows "Electron" beside the Apple logo, and app.getPath('userData')
+// lands in ~/Library/Application Support/Electron. Must run before app 'ready'.
+app.setName('TotoNote');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -52,6 +58,10 @@ app.whenReady().then(() => {
 
   // Register IPC handlers
   registerIpcHandlers();
+
+  // Application menu — also what puts the real app name in the macOS menu bar and
+  // gives the editor its Cmd+C/V/Z roles.
+  buildAppMenu();
 
   // Create main window
   createWindow();

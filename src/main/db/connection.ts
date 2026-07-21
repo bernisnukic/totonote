@@ -41,11 +41,14 @@ export function initDb(): Db {
   migrate(db, { migrationsFolder });
   sqlite.pragma('foreign_keys = ON');
 
-  // Default seed: ensure the General category always exists.
-  // Drizzle migrations only handle schema; this is idempotent data.
+  // Default seed: one workspace, and a General category inside it. Drizzle migrations
+  // only handle schema; this is idempotent data that must survive every launch.
   sqlite
-    .prepare(`INSERT OR IGNORE INTO categories (id, name, sort_order) VALUES (?, ?, ?)`)
-    .run('cat-general', 'General', 1);
+    .prepare(`INSERT OR IGNORE INTO workspaces (id, name, sort_order) VALUES (?, ?, ?)`)
+    .run('ws-default', 'My World', 1);
+  sqlite
+    .prepare(`INSERT OR IGNORE INTO categories (id, workspace_id, name, sort_order) VALUES (?, ?, ?, ?)`)
+    .run('cat-general', 'ws-default', 'General', 1);
 
   return db;
 }

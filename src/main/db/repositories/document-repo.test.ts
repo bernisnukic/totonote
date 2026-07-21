@@ -20,7 +20,7 @@ describe('document-repo', () => {
 
   describe('createDocument', () => {
     it('creates a document and returns it', () => {
-      const doc = createDocument({ title: 'Test Doc' });
+      const doc = createDocument({ workspaceId: 'ws-default', title: 'Test Doc' });
       expect(doc.title).toBe('Test Doc');
       expect(doc.id).toBeTruthy();
       expect(doc.description).toBe('');
@@ -29,6 +29,7 @@ describe('document-repo', () => {
 
     it('creates with description and sectionLabel', () => {
       const doc = createDocument({
+        workspaceId: 'ws-default',
         title: 'Lore',
         description: 'My lore notes',
         sectionLabel: 'Time Period',
@@ -44,7 +45,7 @@ describe('document-repo', () => {
     });
 
     it('returns the document by id', () => {
-      const created = createDocument({ title: 'Find Me' });
+      const created = createDocument({ workspaceId: 'ws-default', title: 'Find Me' });
       const found = getDocument(created.id);
       expect(found).not.toBeNull();
       expect(found!.title).toBe('Find Me');
@@ -57,8 +58,8 @@ describe('document-repo', () => {
     });
 
     it('returns all documents', () => {
-      createDocument({ title: 'Doc A' });
-      createDocument({ title: 'Doc B' });
+      createDocument({ workspaceId: 'ws-default', title: 'Doc A' });
+      createDocument({ workspaceId: 'ws-default', title: 'Doc B' });
       const docs = listDocuments();
       expect(docs.length).toBe(2);
     });
@@ -66,14 +67,14 @@ describe('document-repo', () => {
 
   describe('updateDocument', () => {
     it('updates title', () => {
-      const doc = createDocument({ title: 'Old Title' });
+      const doc = createDocument({ workspaceId: 'ws-default', title: 'Old Title' });
       const updated = updateDocument({ id: doc.id, title: 'New Title' });
       expect(updated.title).toBe('New Title');
       expect(updated.description).toBe('');
     });
 
     it('updates only provided fields', () => {
-      const doc = createDocument({ title: 'Title', description: 'Desc' });
+      const doc = createDocument({ workspaceId: 'ws-default', title: 'Title', description: 'Desc' });
       const updated = updateDocument({ id: doc.id, description: 'New Desc' });
       expect(updated.title).toBe('Title');
       expect(updated.description).toBe('New Desc');
@@ -86,7 +87,7 @@ describe('document-repo', () => {
 
   describe('deleteDocument', () => {
     it('deletes a document', () => {
-      const doc = createDocument({ title: 'Delete Me' });
+      const doc = createDocument({ workspaceId: 'ws-default', title: 'Delete Me' });
       deleteDocument(doc.id);
       expect(getDocument(doc.id)).toBeNull();
     });

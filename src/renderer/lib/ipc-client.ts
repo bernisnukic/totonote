@@ -4,6 +4,7 @@ declare global {
   interface Window {
     api: {
       invoke: (channel: string, args?: unknown) => Promise<unknown>;
+      onMenu: (channel: string, listener: (payload?: unknown) => void) => () => void;
     };
   }
 }

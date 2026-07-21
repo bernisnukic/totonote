@@ -1,6 +1,8 @@
 import { v4 as uuid } from 'uuid';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../connection';
+import { captureSection } from './undo-repo';
+import type { DeletionSnapshot } from '../../../shared/domain-types';
 import { sections } from '../schema';
 import type { Section, CreateSectionInput, UpdateSectionInput } from '../../../shared/domain-types';
 
@@ -50,8 +52,10 @@ export function updateSection(input: UpdateSectionInput): Section {
   return updated;
 }
 
-export function deleteSection(id: string): void {
+export function deleteSection(id: string): DeletionSnapshot {
+  const snapshot = captureSection(id);
   getDb().delete(sections).where(eq(sections.id, id)).run();
+  return snapshot;
 }
 
 export function reorderSections(documentId: string, orderedIds: string[]): void {

@@ -4,6 +4,7 @@ import type { Category } from '../../shared/domain-types';
 
 const cat = (id: string, name: string, parentId: string | null = null): Category => ({
   id,
+  workspaceId: 'ws-default',
   name,
   parentId,
   sortOrder: 0,

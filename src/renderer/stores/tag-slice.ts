@@ -8,6 +8,9 @@ import type {
   BulkAddSubcategoryResult,
 } from '../../shared/domain-types';
 import { invoke } from '../lib/ipc-client';
+// Typed against the whole store so deletions can offer an undo; type-only, so no
+// runtime cycle with stores/index.ts.
+import type { AppStore } from './index';
 
 export interface TagSlice {
   tags: Tag[];
@@ -45,7 +48,7 @@ export interface TagSlice {
   removeSectionTag: (sectionId: string, tagId: string, documentId: string) => Promise<void>;
 }
 
-export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) => ({
+export const createTagSlice: StateCreator<AppStore, [], [], TagSlice> = (set, get) => ({
   tags: [],
   categories: [],
   categoryRules: {},
@@ -58,7 +61,7 @@ export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) =>
   },
 
   loadCategories: async () => {
-    const categories = await invoke('category:list');
+    const categories = await invoke('category:list', { workspaceId: get().activeWorkspaceId ?? undefined });
     set({ categories });
   },
 
@@ -79,7 +82,8 @@ export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) =>
   },
 
   deleteTag: async (id) => {
-    await invoke('tag:delete', { id });
+    const snapshot = await invoke('tag:delete', { id });
+    get().offerUndo(snapshot);
     // Deleting a tag cascades in the database — its annotations, section tags and
     // document tags go with it. Mirror that here, or their badges linger in the UI
     // until the next reload.
@@ -95,7 +99,13 @@ export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) =>
   },
 
   createCategory: async (name, parentId, applyRule) => {
-    const { category, descendants } = await invoke('category:create', { name, parentId, applyRule });
+    // Roots need a workspace; children inherit their parent's.
+    const { category, descendants } = await invoke('category:create', {
+      name,
+      parentId,
+      applyRule,
+      workspaceId: get().activeWorkspaceId ?? undefined,
+    });
     set(s => ({ categories: [...s.categories, category, ...descendants] }));
     return category;
   },
@@ -107,7 +117,9 @@ export const createTagSlice: StateCreator<TagSlice, [], [], TagSlice> = (set) =>
 
   deleteCategory: async (id) => {
     // The main process deletes descendants too, and returns every id it removed.
-    const removed = new Set(await invoke('category:delete', { id }));
+    const { removedIds, snapshot } = await invoke('category:delete', { id });
+    get().offerUndo(snapshot);
+    const removed = new Set(removedIds);
     set(s => {
       const categoryRules = { ...s.categoryRules };
       for (const removedId of removed) delete categoryRules[removedId];

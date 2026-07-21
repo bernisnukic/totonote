@@ -12,7 +12,7 @@ import { listSections, getSection, createSection, updateSection, deleteSection, 
 function initTestDb() {
   const { db, sqlite } = createTestDb();
   testDb = db;
-  sqlite.exec(`INSERT INTO documents (id, title) VALUES ('doc-1', 'Test Doc');`);
+  sqlite.exec(`INSERT INTO documents (id, workspace_id, title) VALUES ('doc-1', 'ws-default', 'Test Doc');`);
 }
 
 describe('section-repo', () => {

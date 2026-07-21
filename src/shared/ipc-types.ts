@@ -5,6 +5,8 @@ import type {
   Category,
   Annotation,
   AnnotationPlacement,
+  Workspace,
+  DeletionSnapshot,
   FilingEdge,
   DocumentTagWithDetails,
   SectionTagWithDetails,
@@ -27,32 +29,40 @@ import type {
 } from './domain-types';
 
 export interface IpcHandlerMap {
+  // Workspaces
+  'workspace:list': { args: void; result: Workspace[] };
+  'workspace:create': { args: { name: string }; result: Workspace };
+  'workspace:rename': { args: { id: string; name: string }; result: Workspace };
+  'workspace:delete': { args: { id: string }; result: { remainingId: string } };
+
   // Documents
-  'document:list': { args: void; result: Document[] };
+  'document:list': { args: { workspaceId?: string }; result: Document[] };
   'document:get': { args: { id: string }; result: Document | null };
   'document:create': { args: CreateDocumentInput; result: Document };
   'document:update': { args: UpdateDocumentInput; result: Document };
-  'document:delete': { args: { id: string }; result: void };
+  'document:delete': { args: { id: string }; result: DeletionSnapshot };
 
   // Sections
   'section:list': { args: { documentId: string }; result: Section[] };
   'section:get': { args: { id: string }; result: Section | null };
   'section:create': { args: CreateSectionInput; result: Section };
   'section:update': { args: UpdateSectionInput; result: Section };
-  'section:delete': { args: { id: string }; result: void };
+  'section:delete': { args: { id: string }; result: DeletionSnapshot };
   'section:reorder': { args: { documentId: string; orderedIds: string[] }; result: void };
 
   // Tags & Categories
   'tag:list': { args: { categoryId?: string }; result: Tag[] };
   'tag:create': { args: CreateTagInput; result: Tag };
   'tag:update': { args: UpdateTagInput; result: Tag };
-  'tag:delete': { args: { id: string }; result: void };
+  'tag:delete': { args: { id: string }; result: DeletionSnapshot };
   'tag:search': { args: { query: string }; result: Tag[] };
-  'category:list': { args: void; result: Category[] };
+  'category:list': { args: { workspaceId?: string }; result: Category[] };
   'category:create': { args: CreateCategoryInput; result: CreateCategoryResult };
   'category:update': { args: { id: string; name?: string; parentId?: string | null }; result: Category };
-  /** Returns every id removed — the category and all its descendants. */
-  'category:delete': { args: { id: string }; result: string[] };
+  /** Returns every id removed — the category and all its descendants — plus an undo snapshot. */
+  'category:delete': { args: { id: string }; result: { removedIds: string[]; snapshot: DeletionSnapshot } };
+  /** Put back everything a delete destroyed. */
+  'undo:restore': { args: { snapshot: DeletionSnapshot }; result: void };
   'category:bulk-add-child': { args: BulkAddSubcategoryInput; result: BulkAddSubcategoryResult };
 
   // Category Rules (sub-category skeletons)

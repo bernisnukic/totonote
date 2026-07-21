@@ -13,9 +13,8 @@ new one.
 
 Each tile shows the title, the description if you gave one, a date, and a **Delete** link.
 
-> **Delete has no "are you sure?".** One click and the document and all its sections are
-> gone, with no undo. The link sits right next to the date and looks just as quiet, so
-> take care.
+> Deleting a document asks you to confirm first, and takes all of its sections and
+> highlights with it. It cannot be undone.
 
 > The date on a tile is the date the document was *created*, not when you last wrote in
 > it. Editing your text doesn't update it.
@@ -56,8 +55,8 @@ Leave the abbreviation blank and it gets made up from the title: `Ancient` → `
 - The section you're currently in shows its **full title**.
 - All the others show their **abbreviation**.
 - **`+`** adds a section.
-- Hover a tab and a small **`×`** appears to delete that section — again with **no
-  confirmation**, and it takes that section's highlights with it.
+- Hover a tab and a small **`×`** appears to delete that section. It takes that section's
+  highlights with it, but an **Undo** button appears for a few seconds afterwards.
 
 ## How sections are laid out
 
@@ -78,6 +77,9 @@ and the gear for [Settings](#settings). The formatting buttons only appear once 
 section.
 
 ## Reordering sections, and the section label
+
+You can also **double-click the divider** between a sidebar and the editor to snap that
+sidebar back to its default width.
 
 Both live in the **Arrange** tab on the right.
 

@@ -81,6 +81,7 @@ and **colour**. **Edits save themselves** — there is no Save button; the panel
 flashes *Saved ✓* as you go.
 
 Deleting a tag — from the sidebar's right-click menu or the Info panel's Delete button —
-always asks you to confirm first. It's permanent, and it removes that tag **everywhere** — in every document, not
-just the one you have open. All of its highlights disappear with it (your text stays, only
-the colouring goes).
+asks you to confirm, then shows an **Undo** button for a few seconds in case you change
+your mind. It removes that tag **everywhere** — in every document, not just the one you
+have open — and all of its highlights go with it (your text stays, only the colouring
+goes).

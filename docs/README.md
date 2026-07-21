@@ -9,6 +9,7 @@ offline.
 | Page | What's in it |
 |------|--------------|
 | [Getting started](getting-started.md) | Your first document, and how the screen is laid out |
+| [Workspaces](workspaces.md) | Keeping separate worlds separate |
 | [Documents and sections](documents-and-sections.md) | Creating documents, splitting them into sections, saving |
 | [Tags and annotations](tags-and-annotations.md) | Highlighting text, tagging it, and the three kinds of tag |
 | [Categories and rules](categories-and-rules.md) | Organising tags, and auto-creating sub-category skeletons |

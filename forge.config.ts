@@ -35,6 +35,8 @@ function collectRuntimeDeps(seeds: string[], nodeModulesRoot: string): Set<strin
 
 const config: ForgeConfig = {
   packagerConfig: {
+    // Without this, packager falls back to com.electron.<name>.
+    appBundleId: 'com.bernisnukic.totonote',
     asar: {
       // Native .node files can't be loaded from inside an asar — unpack them.
       unpack: '**/*.node',

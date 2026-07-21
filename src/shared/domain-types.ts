@@ -1,4 +1,13 @@
+/** Top-level grouping — a "world". Documents and categories belong to exactly one. */
+export interface Workspace {
+  id: string;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export interface Document {
+  workspaceId: string;
   id: string;
   title: string;
   description: string;
@@ -20,6 +29,7 @@ export interface Section {
 
 export interface Category {
   id: string;
+  workspaceId: string;
   name: string;
   parentId: string | null;
   sortOrder: number;
@@ -83,6 +93,26 @@ export interface AnnotationPlacement {
   excerpt: string;
 }
 
+/**
+ * Everything a delete destroyed, captured so it can be put back. Rows are raw table
+ * records; see main/db/repositories/undo-repo.ts.
+ */
+export interface DeletionSnapshot {
+  kind: 'document' | 'section' | 'tag' | 'category';
+  /** Human name of the thing deleted, for the undo toast. */
+  label: string;
+  rows: {
+    categories: Category[];
+    categoryRules: CategoryRule[];
+    documents: Document[];
+    sections: Section[];
+    tags: Tag[];
+    annotations: Annotation[];
+    documentTags: DocumentTag[];
+    sectionTags: { sectionId: string; tagId: string; createdAt: string }[];
+  };
+}
+
 /** One tag→category filing relationship, aggregated for the graph view. */
 export interface FilingEdge {
   tagId: string;
@@ -126,6 +156,7 @@ export interface Preference {
 
 // Input types for creation/update
 export interface CreateDocumentInput {
+  workspaceId: string;
   title: string;
   description?: string;
   sectionLabel?: string;
@@ -198,6 +229,8 @@ export interface PositionUpdate {
 export interface CreateCategoryInput {
   name: string;
   parentId?: string;
+  /** Required for a root category; children inherit their parent's workspace. */
+  workspaceId?: string;
   /** Stamp the parent's rule onto the new category. Ignored when the parent has none. */
   applyRule?: boolean;
 }

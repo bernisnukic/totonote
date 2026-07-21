@@ -2,6 +2,10 @@ import type { StateCreator } from 'zustand';
 
 export type RightTab = 'info' | 'arrange' | 'edit';
 
+/** Default panel widths — also what "reset" restores. */
+export const DEFAULT_LEFT_SIDEBAR_WIDTH = 260;
+export const DEFAULT_RIGHT_SIDEBAR_WIDTH = 260;
+
 export interface UiSlice {
   leftSidebarWidth: number;
   rightSidebarWidth: number;
@@ -23,6 +27,9 @@ export interface UiSlice {
 
   setLeftSidebarWidth: (width: number) => void;
   setRightSidebarWidth: (width: number) => void;
+  resetSidebarWidths: () => void;
+  resetLeftSidebarWidth: () => void;
+  resetRightSidebarWidth: () => void;
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
   setActiveRightTab: (tab: RightTab) => void;
@@ -35,8 +42,8 @@ export interface UiSlice {
 }
 
 export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
-  leftSidebarWidth: 260,
-  rightSidebarWidth: 260,
+  leftSidebarWidth: DEFAULT_LEFT_SIDEBAR_WIDTH,
+  rightSidebarWidth: DEFAULT_RIGHT_SIDEBAR_WIDTH,
   leftSidebarCollapsed: false,
   rightSidebarCollapsed: false,
   activeRightTab: 'info',
@@ -48,6 +55,15 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
 
   setLeftSidebarWidth: (width) => set({ leftSidebarWidth: width }),
   setRightSidebarWidth: (width) => set({ rightSidebarWidth: width }),
+  resetSidebarWidths: () =>
+    set({
+      leftSidebarWidth: DEFAULT_LEFT_SIDEBAR_WIDTH,
+      rightSidebarWidth: DEFAULT_RIGHT_SIDEBAR_WIDTH,
+      leftSidebarCollapsed: false,
+      rightSidebarCollapsed: false,
+    }),
+  resetLeftSidebarWidth: () => set({ leftSidebarWidth: DEFAULT_LEFT_SIDEBAR_WIDTH }),
+  resetRightSidebarWidth: () => set({ rightSidebarWidth: DEFAULT_RIGHT_SIDEBAR_WIDTH }),
   toggleLeftSidebar: () => set(s => ({ leftSidebarCollapsed: !s.leftSidebarCollapsed })),
   toggleRightSidebar: () => set(s => ({ rightSidebarCollapsed: !s.rightSidebarCollapsed })),
   setActiveRightTab: (tab) => set({ activeRightTab: tab }),

@@ -45,6 +45,10 @@ function dbAtInitialMigration() {
   return { sqlite, entries };
 }
 
+/**
+ * Seeds the *pre-migration* schema, so these columns are deliberately the old ones —
+ * workspace_id does not exist until 0003 back-fills it.
+ */
 function seedRealisticData(sqlite: Database.Database) {
   sqlite.exec(`
     INSERT INTO categories (id, name, sort_order) VALUES ('cat-general', 'General', 1);
@@ -120,10 +124,10 @@ describe('migrations', () => {
     migrate(db, { migrationsFolder: MIGRATIONS_DIR });
     sqlite.pragma('foreign_keys = ON');
 
-    sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-peko', 'PEKORA', 4, 'cat-chars')`);
-    sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('h1', 'HISTORY', 5, 'cat-gura')`);
+    sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('cat-peko', 'ws-default', 'PEKORA', 4, 'cat-chars')`);
+    sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('h1', 'ws-default', 'HISTORY', 5, 'cat-gura')`);
     // The same name under a different parent — rejected before this migration.
-    sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('h2', 'HISTORY', 6, 'cat-peko')`);
+    sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('h2', 'ws-default', 'HISTORY', 6, 'cat-peko')`);
 
     expect(count(sqlite, 'categories')).toBe(6);
   });
@@ -131,11 +135,11 @@ describe('migrations', () => {
   it('still rejects duplicate names under the same parent', () => {
     const { sqlite } = createTestDb();
     sqlite.exec(`
-      INSERT INTO categories (id, name, sort_order) VALUES ('cat-chars', 'CHARACTERS', 1);
-      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('h1', 'HISTORY', 2, 'cat-chars');
+      INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-chars', 'ws-default', 'CHARACTERS', 1);
+      INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('h1', 'ws-default', 'HISTORY', 2, 'cat-chars');
     `);
     expect(() =>
-      sqlite.exec(`INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('h2', 'HISTORY', 3, 'cat-chars')`),
+      sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('h2', 'ws-default', 'HISTORY', 3, 'cat-chars')`),
     ).toThrow(/UNIQUE/i);
   });
 
@@ -143,9 +147,9 @@ describe('migrations', () => {
     // Root rows have parent_id NULL, and SQLite treats NULLs as distinct in a unique
     // index — so this relies on the separate partial index.
     const { sqlite } = createTestDb();
-    sqlite.exec(`INSERT INTO categories (id, name, sort_order) VALUES ('c1', 'CHARACTERS', 1)`);
+    sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('c1', 'ws-default', 'CHARACTERS', 1)`);
     expect(() =>
-      sqlite.exec(`INSERT INTO categories (id, name, sort_order) VALUES ('c2', 'CHARACTERS', 2)`),
+      sqlite.exec(`INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('c2', 'ws-default', 'CHARACTERS', 2)`),
     ).toThrow(/UNIQUE/i);
   });
 
@@ -155,9 +159,9 @@ describe('migrations', () => {
     // category that has filed annotations fails the FK constraint outright.
     const { sqlite } = createTestDb();
     sqlite.exec(`
-      INSERT INTO categories (id, name, sort_order) VALUES ('cat-chars', 'CHARACTERS', 1);
-      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-hist', 'HISTORY', 2, 'cat-chars');
-      INSERT INTO documents (id, title) VALUES ('doc-1', 'Lore');
+      INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-chars', 'ws-default', 'CHARACTERS', 1);
+      INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('cat-hist', 'ws-default', 'HISTORY', 2, 'cat-chars');
+      INSERT INTO documents (id, workspace_id, title) VALUES ('doc-1', 'ws-default', 'Lore');
       INSERT INTO sections (id, document_id, title, abbreviation, sort_order)
         VALUES ('sec-1', 'doc-1', 'Intro', 'IN', 1);
       INSERT INTO tags (id, category_id, name) VALUES ('tag-1', 'cat-chars', 'Gura');

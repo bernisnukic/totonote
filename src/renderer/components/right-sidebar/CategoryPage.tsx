@@ -119,6 +119,9 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
 
   const [placements, setPlacements] = useState<AnnotationPlacement[]>([]);
   const [sort, setSort] = useState<PlacementSort>('custom');
+  // Drag reordering, only meaningful in custom order.
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   const category = categories.find(c => c.id === categoryId);
   const children = useMemo(
@@ -160,13 +163,32 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
     return byCategory;
   }, [placements]);
 
+  const persistOrder = async (group: AnnotationPlacement[], ids: string[]) => {
+    const categoryId = group[0]?.categoryId;
+    if (!categoryId) return;
+    await reorderPlacements(categoryId, ids);
+    refresh();
+  };
+
   const move = async (group: AnnotationPlacement[], index: number, delta: -1 | 1) => {
     const target = index + delta;
     if (target < 0 || target >= group.length) return;
     const ids = group.map(p => p.id);
     [ids[index], ids[target]] = [ids[target], ids[index]];
-    await reorderPlacements(group[0].categoryId!, ids);
-    refresh();
+    await persistOrder(group, ids);
+  };
+
+  /** Drop `dragId` where `targetId` currently sits, keeping everything else in order. */
+  const dropOnto = async (group: AnnotationPlacement[], targetId: string) => {
+    const from = group.findIndex(p => p.id === dragId);
+    const to = group.findIndex(p => p.id === targetId);
+    setDragId(null);
+    setDropTargetId(null);
+    if (from === -1 || to === -1 || from === to) return;
+    const ids = group.map(p => p.id);
+    const [moved] = ids.splice(from, 1);
+    ids.splice(to, 0, moved);
+    await persistOrder(group, ids);
   };
 
   const renderGroup = (owner: Category, rows: AnnotationPlacement[] | undefined, heading: boolean) => {
@@ -184,7 +206,28 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
           </div>
         )}
         {sorted.map((p, i) => (
-          <div key={p.id} className="placement-row-wrap">
+          <div
+            key={p.id}
+            className={`placement-row-wrap${dropTargetId === p.id ? ' drop-target' : ''}${
+              dragId === p.id ? ' dragging' : ''
+            }`}
+            draggable={sort === 'custom' && sorted.length > 1}
+            onDragStart={() => setDragId(p.id)}
+            onDragEnd={() => {
+              setDragId(null);
+              setDropTargetId(null);
+            }}
+            onDragOver={e => {
+              if (!dragId || dragId === p.id) return;
+              e.preventDefault();
+              setDropTargetId(p.id);
+            }}
+            onDragLeave={() => setDropTargetId(t => (t === p.id ? null : t))}
+            onDrop={e => {
+              e.preventDefault();
+              dropOnto(sorted, p.id);
+            }}
+          >
             <PlacementRow placement={p} onNavigate={navigate} />
             {sort === 'custom' && sorted.length > 1 && (
               <div className="placement-reorder">

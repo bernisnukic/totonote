@@ -25,9 +25,9 @@ function initTestDb() {
   testDb = db;
   sqliteHandle = sqlite;
   sqlite.exec(`
-    INSERT INTO documents (id, title) VALUES ('doc-1', 'Test Doc');
+    INSERT INTO documents (id, workspace_id, title) VALUES ('doc-1', 'ws-default', 'Test Doc');
     INSERT INTO sections (id, document_id, title, abbreviation, sort_order) VALUES ('sec-1', 'doc-1', 'Section 1', 'S1', 0);
-    INSERT INTO categories (id, name, sort_order) VALUES ('cat-1', 'Member', 1);
+    INSERT INTO categories (id, workspace_id, name, sort_order) VALUES ('cat-1', 'ws-default', 'Member', 1);
     INSERT INTO tags (id, category_id, name) VALUES ('tag-1', 'cat-1', 'Gura');
     INSERT INTO tags (id, category_id, name) VALUES ('tag-2', 'cat-1', 'Ame');
   `);
@@ -159,10 +159,10 @@ describe('filing', () => {
   function seedFilingWorld() {
     const sqlite = sqliteHandle;
     sqlite.exec(`
-      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-gura', 'GURA', 2, 'cat-1');
-      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-hist', 'HISTORY', 3, 'cat-gura');
-      INSERT INTO categories (id, name, sort_order, parent_id) VALUES ('cat-abil', 'ABILITIES', 4, 'cat-gura');
-      INSERT INTO documents (id, title) VALUES ('doc-2', 'Other Doc');
+      INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('cat-gura', 'ws-default', 'GURA', 2, 'cat-1');
+      INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('cat-hist', 'ws-default', 'HISTORY', 3, 'cat-gura');
+      INSERT INTO categories (id, workspace_id, name, sort_order, parent_id) VALUES ('cat-abil', 'ws-default', 'ABILITIES', 4, 'cat-gura');
+      INSERT INTO documents (id, workspace_id, title) VALUES ('doc-2', 'ws-default', 'Other Doc');
       INSERT INTO sections (id, document_id, title, abbreviation, sort_order)
         VALUES ('sec-2', 'doc-2', 'Elsewhere', 'EL', 0);
     `);

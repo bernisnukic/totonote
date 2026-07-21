@@ -1,6 +1,8 @@
 import { v4 as uuid } from 'uuid';
 import { eq, like } from 'drizzle-orm';
 import { getDb } from '../connection';
+import { captureTag } from './undo-repo';
+import type { DeletionSnapshot } from '../../../shared/domain-types';
 import { tags } from '../schema';
 import type { Tag, CreateTagInput, UpdateTagInput } from '../../../shared/domain-types';
 
@@ -37,8 +39,10 @@ export function updateTag(input: UpdateTagInput): Tag {
   return updated;
 }
 
-export function deleteTag(id: string): void {
+export function deleteTag(id: string): DeletionSnapshot {
+  const snapshot = captureTag(id);
   getDb().delete(tags).where(eq(tags.id, id)).run();
+  return snapshot;
 }
 
 export function searchTags(query: string): Tag[] {
