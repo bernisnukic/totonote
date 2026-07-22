@@ -1,5 +1,11 @@
 # What's New
 
+## 1.6.0
+
+**Editor updated to TipTap 3.** The rich-text editor moved to the current major version
+for better performance and ongoing support. Everything works as before — the change is
+under the hood.
+
 ## 1.5.0
 
 **Filter now collapses the page to just the tagged text.** Ticking tags in Filter mode

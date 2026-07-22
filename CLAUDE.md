@@ -10,7 +10,7 @@ Electron desktop app for organizing lore/world-building notes. Rich text editor 
 |-------|--------|
 | Shell | Electron Forge + Vite |
 | Frontend | React 19 + TypeScript |
-| Editor | TipTap (ProseMirror) |
+| Editor | TipTap 3 (ProseMirror) |
 | Database | SQLite (better-sqlite3) + Drizzle ORM |
 | State | Zustand (slices pattern) |
 | Styling | Plain CSS + custom properties |

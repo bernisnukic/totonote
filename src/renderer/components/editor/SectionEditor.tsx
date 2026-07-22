@@ -1,8 +1,8 @@
 import React, { useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import Placeholder from '@tiptap/extension-placeholder';
+// v3: StarterKit now bundles Underline (and Link); Placeholder moved to @tiptap/extensions.
+import { Placeholder } from '@tiptap/extensions';
 import { AnnotationDecoration, annotationPluginKey } from '../../extensions/annotation-decoration';
 import { useStore } from '../../stores';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -62,7 +62,6 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      Underline,
       Placeholder.configure({ placeholder: 'Start writing...' }),
       AnnotationDecoration,
     ],
@@ -130,7 +129,11 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       content = undefined;
     }
     contentLoadedRef.current = false;
-    editor.commands.setContent(content || { type: 'doc', content: [{ type: 'paragraph' }] });
+    // v3 emits an update from setContent by default; suppress it so loading a section's
+    // saved content never counts as an edit (which would trigger a spurious save).
+    editor.commands.setContent(content || { type: 'doc', content: [{ type: 'paragraph' }] }, {
+      emitUpdate: false,
+    });
     // Small delay to avoid triggering save from setContent
     requestAnimationFrame(() => {
       contentLoadedRef.current = true;
