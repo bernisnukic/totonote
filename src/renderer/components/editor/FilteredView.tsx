@@ -19,11 +19,11 @@ export function FilteredView({ filterTagIds }: { filterTagIds: Set<string> }) {
   const clearFilters = useStore(s => s.clearFilters);
   const setActiveSection = useStore(s => s.setActiveSection);
 
-  // The underlying editors may still be settling their content on first paint; nudge one
-  // re-read shortly after mount so freshly loaded text is picked up.
-  const [, bump] = useState(0);
+  // The underlying editors may still be settling their content on first paint; bump once
+  // after mount (and include `tick` in the memo deps) so a re-read picks it up.
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    const t = setTimeout(() => bump(n => n + 1), 150);
+    const t = setTimeout(() => setTick(n => n + 1), 150);
     return () => clearTimeout(t);
   }, []);
 
@@ -49,9 +49,7 @@ export function FilteredView({ filterTagIds }: { filterTagIds: Set<string> }) {
         return { section, items };
       })
       .filter(group => group.items.length > 0);
-    // Depends on the timer bump too, so a re-read after mount takes effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sections, documentAnnotations, filterTagIds, tagById]);
+  }, [sections, documentAnnotations, filterTagIds, tagById, tick]);
 
   const total = groups.reduce((n, g) => n + g.items.length, 0);
 
