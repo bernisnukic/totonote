@@ -22,6 +22,8 @@ interface GraphNode {
   kind: 'category' | 'tag';
   refId: string;
   label: string;
+  /** Full breadcrumb / name, shown on hover. */
+  title: string;
   color: string;
   x: number;
   y: number;
@@ -80,6 +82,37 @@ export function GraphView() {
     return result;
   }, [categories, tags, filingEdges]);
 
+  // Category names collide constantly — every character has a HISTORY, ABILITIES, etc.
+  // A name shared by more than one category shows its parent for context ("GURA ›
+  // HISTORY"); unique names stay plain. The full path is on the title (hover) either way.
+  const categoryById = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
+  const ambiguousNames = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of categories) {
+      const key = c.name.toLowerCase();
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return new Set([...counts].filter(([, n]) => n > 1).map(([name]) => name));
+  }, [categories]);
+
+  const categoryPath = useMemo(
+    () =>
+      (c: { id: string; name: string; parentId: string | null }): string => {
+        const parts: string[] = [];
+        let current: { name: string; parentId: string | null } | undefined = c;
+        const seen = new Set<string>();
+        let id: string | null = c.id;
+        while (current && id && !seen.has(id)) {
+          seen.add(id);
+          parts.unshift(current.name);
+          id = current.parentId;
+          current = id ? categoryById.get(id) : undefined;
+        }
+        return parts.join(' › ');
+      },
+    [categoryById],
+  );
+
   // (Re)build nodes when the data changes, keeping positions of survivors.
   useEffect(() => {
     const existing = new Map(nodesRef.current.map(n => [n.id, n]));
@@ -96,12 +129,25 @@ export function GraphView() {
     };
     for (const c of categories) {
       const id = `c:${c.id}`;
-      next.push({ id, kind: 'category', refId: c.id, label: c.name, color: '', ...place(id), vx: 0, vy: 0 });
+      const parent = c.parentId ? categoryById.get(c.parentId) : undefined;
+      const label =
+        ambiguousNames.has(c.name.toLowerCase()) && parent ? `${parent.name} › ${c.name}` : c.name;
+      next.push({
+        id,
+        kind: 'category',
+        refId: c.id,
+        label,
+        title: categoryPath(c),
+        color: '',
+        ...place(id),
+        vx: 0,
+        vy: 0,
+      });
       i++;
     }
     for (const t of tags) {
       const id = `t:${t.id}`;
-      next.push({ id, kind: 'tag', refId: t.id, label: t.name, color: t.color, ...place(id), vx: 0, vy: 0 });
+      next.push({ id, kind: 'tag', refId: t.id, label: t.name, title: t.name, color: t.color, ...place(id), vx: 0, vy: 0 });
       i++;
     }
     nodesRef.current = next;
@@ -284,6 +330,7 @@ export function GraphView() {
               {nodes.map(n =>
                 n.kind === 'category' ? (
                   <g key={n.id} data-node-id={n.id} className="graph-node graph-node-category">
+                    <title>{n.title}</title>
                     <rect x={n.x - 10} y={n.y - 8} width={20} height={16} rx={3} />
                     <text x={n.x} y={n.y + 22} textAnchor="middle">
                       {n.label}
@@ -291,6 +338,7 @@ export function GraphView() {
                   </g>
                 ) : (
                   <g key={n.id} data-node-id={n.id} className="graph-node graph-node-tag">
+                    <title>{n.title}</title>
                     <circle cx={n.x} cy={n.y} r={7} fill={n.color} />
                     <text x={n.x} y={n.y + 20} textAnchor="middle">
                       {n.label}

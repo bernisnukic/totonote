@@ -1,4 +1,4 @@
-import { ipcMain, shell } from 'electron';
+import { ipcMain, shell, app } from 'electron';
 import * as workspaceRepo from '../db/repositories/workspace-repo';
 import * as documentRepo from '../db/repositories/document-repo';
 import * as sectionRepo from '../db/repositories/section-repo';
@@ -112,6 +112,7 @@ export function registerIpcHandlers(): void {
   );
 
   ipcMain.handle('app:check-for-updates', () => checkForUpdates());
+  ipcMain.handle('app:version', () => app.getVersion());
   ipcMain.handle('app:open-external', (_, args: { url: string }) => {
     if (!args.url.startsWith(ALLOWED_EXTERNAL_PREFIX)) {
       throw new Error('External URL not allowed');

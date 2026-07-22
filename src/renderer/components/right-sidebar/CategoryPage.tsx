@@ -32,13 +32,17 @@ export function sortPlacements(rows: AnnotationPlacement[], sort: PlacementSort)
   }
 }
 
-/** Jump to a filed excerpt — opening its document first when it lives elsewhere. */
+/**
+ * Jump to a filed excerpt — opening its document first when it lives elsewhere.
+ *
+ * The panel you clicked from (a tag's page or a category's page) stays open, so you can
+ * click straight through a list of excerpts. It used to clear the focus here, which
+ * collapsed the whole panel back to the plain view on the first click.
+ */
 export function usePlacementNavigation() {
   const activeDocumentId = useStore(s => s.activeDocumentId);
   const openDocument = useStore(s => s.openDocument);
   const setActiveSection = useStore(s => s.setActiveSection);
-  const setFocusedTag = useStore(s => s.setFocusedTag);
-  const setFocusedCategory = useStore(s => s.setFocusedCategory);
 
   return useCallback(
     async (placement: AnnotationPlacement) => {
@@ -46,8 +50,6 @@ export function usePlacementNavigation() {
         await openDocument(placement.documentId);
       }
       setActiveSection(placement.sectionId);
-      setFocusedTag(null);
-      setFocusedCategory(null);
       // Two frames: one for the view switch, one for the section editors to mount.
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
@@ -57,7 +59,7 @@ export function usePlacementNavigation() {
         }),
       );
     },
-    [activeDocumentId, openDocument, setActiveSection, setFocusedTag, setFocusedCategory],
+    [activeDocumentId, openDocument, setActiveSection],
   );
 }
 

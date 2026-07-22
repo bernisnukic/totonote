@@ -263,6 +263,11 @@ export function LeftSidebar() {
       {/* Filter mode */}
       {leftSidebarMode === 'filter' && (
         <div className="sidebar-panel">
+          <p className="sidebar-mode-hint">
+            {activeFilterCount > 0
+              ? 'Showing only ticked highlights, and hiding sections without them.'
+              : 'Tick tags to show only their highlights and hide sections without them.'}
+          </p>
           {activeFilterCount > 0 && (
             <button className="sidebar-clear-btn" onClick={clearFilters}>
               Clear filters ({activeFilterCount})

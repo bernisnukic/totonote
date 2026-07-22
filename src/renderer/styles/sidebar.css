@@ -900,3 +900,12 @@
   border-left-color: var(--accent-primary);
   box-shadow: 0 -2px 0 var(--accent-primary);
 }
+
+/* Explains what a sidebar mode does, at the top of its panel */
+.sidebar-mode-hint {
+  padding: var(--space-2) var(--space-3);
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
