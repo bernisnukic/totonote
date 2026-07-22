@@ -3,17 +3,13 @@ import { useStore } from '../../stores';
 import { SectionTab } from './SectionTab';
 import { Modal } from '../common/Modal';
 import { generateAbbreviation } from '../../lib/section-utils';
-import type { Section } from '../../../shared/domain-types';
 
 interface SectionTabBarProps {
   onTabClick: (sectionId: string) => void;
-  /** Sections currently shown in the editor — tag filters hide the rest here too. */
-  visibleSections?: Section[];
 }
 
-export function SectionTabBar({ onTabClick, visibleSections }: SectionTabBarProps) {
-  const allSections = useStore(s => s.sections);
-  const sections = visibleSections ?? allSections;
+export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
+  const sections = useStore(s => s.sections);
   const activeSectionId = useStore(s => s.activeSectionId);
   const createSection = useStore(s => s.createSection);
   const deleteSection = useStore(s => s.deleteSection);

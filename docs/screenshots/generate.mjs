@@ -520,6 +520,21 @@ await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
 await page.waitForTimeout(300);
 await shot('20-filter-mode', { clip: '.left-sidebar' });
 
+// Filtered reading view: tick a tag, capture the main page showing only its excerpts.
+const firstFilter = page.locator('.sidebar-filter-item input[type="checkbox"]').first();
+if (await firstFilter.count()) await firstFilter.check().catch(() => {});
+await page.waitForTimeout(500);
+if (await page.locator('.filtered-view').count()) {
+  await shot('28-filtered-view', {
+    clip: '.editor-area',
+    marks: [
+      { selector: '.filtered-excerpt', nth: 0, label: 'Only the tagged text, untagged hidden', place: 'below' },
+    ],
+  });
+  await page.locator('.filtered-view__bar .btn').click().catch(() => {});
+  await page.waitForTimeout(200);
+}
+
 await page.locator('.sidebar-mode-btn', { hasText: 'HL' }).click();
 await page.waitForTimeout(300);
 await shot('21-highlight-mode', {

@@ -8,6 +8,10 @@ export interface PreferenceSlice {
   loadPreferences: () => Promise<void>;
   updateShortcut: (action: string, keybinding: string) => Promise<void>;
   setTheme: (theme: string) => Promise<void>;
+  /** Read/write an arbitrary persisted flag (stored in the SQLite preferences table,
+   *  so it travels with the user's database rather than resetting on a re-download). */
+  readPreference: (key: string) => Promise<string | null>;
+  writePreference: (key: string, value: string) => Promise<void>;
 }
 
 export const createPreferenceSlice: StateCreator<PreferenceSlice, [], [], PreferenceSlice> = (set) => ({
@@ -37,4 +41,7 @@ export const createPreferenceSlice: StateCreator<PreferenceSlice, [], [], Prefer
     await invoke('preference:set', { key: 'theme', value: theme });
     set({ theme });
   },
+
+  readPreference: (key) => invoke('preference:get', { key }),
+  writePreference: (key, value) => invoke('preference:set', { key, value }),
 });
