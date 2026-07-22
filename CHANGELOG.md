@@ -1,5 +1,16 @@
 # What's New
 
+## 1.5.0
+
+**Filter now collapses the page to just the tagged text.** Ticking tags in Filter mode
+turns the main page into a reading view showing only those tags' passages — the untagged
+text is hidden, several tags at once. Click any passage to jump back and edit it. (This
+replaces the earlier version that only dimmed highlights.)
+
+**The changelog shows itself after an update, reliably.** What's New now opens on the
+first launch of a new version, and the intro plays only once — both remembered in your
+database, so they work even when you download a fresh copy each time.
+
 ## 1.4.0
 
 **Filter now hides highlights, not just sections.** Ticking tags in Filter mode shows

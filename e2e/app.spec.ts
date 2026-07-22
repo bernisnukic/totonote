@@ -1235,7 +1235,7 @@ test.describe('Sidebar UX', () => {
     await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
   }
 
-  test('clicking anywhere on a filter row toggles it, and filters the tabs too', async () => {
+  test('clicking anywhere on a filter row toggles it, and opens the reading view', async () => {
     await setup();
     await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
 
@@ -1243,19 +1243,18 @@ test.describe('Sidebar UX', () => {
     await page.locator('.sidebar-filter-item span', { hasText: 'Dragon' }).click();
     await expect(page.locator('.sidebar-filter-item input[type="checkbox"]')).toBeChecked();
 
-    // Only the annotated section remains, in the editor AND the tab bar.
-    await expect(page.locator('.section-header')).toHaveCount(1);
-    await expect(page.locator('.section-tab')).toHaveCount(1);
+    // The main page switches to the filtered reading view.
+    await expect(page.locator('.filtered-view')).toBeVisible();
 
     // The details affordance still exists, as its own button.
     await page.locator('.tag-details-btn').click();
     await expect(page.locator('.right-sidebar')).toContainText('Usage');
   });
 
-  test('Filter shows only ticked highlights', async () => {
-    // Two sections, one highlight each — the proven, non-flaky setup.
+  test('Filter collapses the page to only the ticked tags\' excerpts', async () => {
+    // Two sections; tag each with a different tag.
     await page.locator('.document-card-new').click();
-    await page.locator('.modal input.input').first().fill('Filter HL');
+    await page.locator('.modal input.input').first().fill('Filter View');
     await page.locator('.modal .btn-primary').click();
     for (const t of ['S1', 'S2']) {
       await page.locator('.tab-add').click();
@@ -1263,13 +1262,16 @@ test.describe('Sidebar UX', () => {
       await page.locator('.modal .btn-primary').click();
       await page.waitForTimeout(500);
     }
-
     await page.locator('.tiptap').nth(0).click();
-    await page.locator('.tiptap').nth(0).pressSequentially('Dragon here', { delay: 15 });
+    await page.locator('.tiptap').nth(0).pressSequentially('The dragon sleeps here', { delay: 15 });
     await page.locator('.tiptap').nth(1).click();
-    await page.locator('.tiptap').nth(1).pressSequentially('Gold here', { delay: 15 });
+    await page.locator('.tiptap').nth(1).pressSequentially('A hoard of gold', { delay: 15 });
 
-    const tagSection = async (idx: number, tag: string) => {
+    const tagSection = async (idx: number, title: string, tag: string) => {
+      // Switch via the tab and wait out the scroll guard so activeSection is this one
+      // before we tag — otherwise the annotation can land in the previous section.
+      await page.locator('.section-tab', { hasText: title }).click();
+      await page.waitForTimeout(750);
       await page.locator('.tiptap').nth(idx).click();
       await page.keyboard.press('Meta+A');
       await expect(page.locator('.selection-toolbar')).toBeVisible();
@@ -1280,20 +1282,29 @@ test.describe('Sidebar UX', () => {
       await modal.locator('.btn-primary', { hasText: 'Create' }).click();
       await page.waitForTimeout(400);
     };
-    await tagSection(0, 'Dragon');
-    await tagSection(1, 'Gold');
-    await expect(page.locator('.annotation-highlight')).toHaveCount(2);
+    await tagSection(0, 'S1', 'Dragon');
+    await tagSection(1, 'S2', 'Gold');
 
-    // Filter to Dragon — Gold's section hides and only Dragon's highlight remains.
+    // Filter to Dragon — the reading view shows only that excerpt; untagged text gone.
     await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
     await page.locator('.sidebar-filter-item', { hasText: 'Dragon' })
       .locator('input[type="checkbox"]').check();
-    await expect(page.locator('.annotation-highlight')).toHaveCount(1);
-    await expect(page.locator('.annotation-highlight').first()).toContainText('Dragon here');
 
-    // Clearing brings both back.
-    await page.locator('.sidebar-clear-btn').click();
-    await expect(page.locator('.annotation-highlight')).toHaveCount(2);
+    const view = page.locator('.filtered-view');
+    await expect(view).toBeVisible();
+    await expect(view.locator('.filtered-excerpt')).toHaveCount(1);
+    await expect(view.locator('.filtered-excerpt')).toContainText('The dragon sleeps here');
+    await expect(view).not.toContainText('hoard of gold');
+
+    // Add Gold — both excerpts now show (multiple tags at once).
+    await page.locator('.sidebar-filter-item', { hasText: 'Gold' })
+      .locator('input[type="checkbox"]').check();
+    await expect(view.locator('.filtered-excerpt')).toHaveCount(2);
+
+    // Clicking an excerpt clears the filter and returns to the editor.
+    await view.locator('.filtered-excerpt').first().click();
+    await expect(page.locator('.filtered-view')).toHaveCount(0);
+    await expect(page.locator('.tiptap').first()).toBeVisible();
   });
 
   test('HL mode can hide one tag’s highlights without touching the rest', async () => {
@@ -1641,20 +1652,24 @@ test.describe('Help', () => {
     expect(items).toContain('Documents and sections');
   });
 
-  test('shows What\'s New on the first launch after an update', async () => {
-    // Seed an older last-seen version, then reload to simulate an upgrade.
-    await page.evaluate(() => localStorage.setItem('totonote-last-seen-version', '0.0.1'));
-    await page.reload();
-    await page.waitForSelector('.app-container');
+  test('records the app version in the database, and reaches the changelog', async () => {
+    // The auto-open on update is decided by decideFirstRun (unit-tested) and suppressed
+    // under automation. Here we check the two moving parts it depends on: the version is
+    // recorded in the database (survives a re-download, unlike localStorage), and the
+    // changelog page renders when opened.
+    await page.waitForTimeout(400);
+    const version = await page.evaluate(() => window.api.invoke('app:version'));
+    const lastSeen = await page.evaluate(() =>
+      window.api.invoke('preference:get', { key: 'last-seen-version' }),
+    );
+    expect(lastSeen).toBe(version);
+
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].webContents.send('menu:open-help', 'CHANGELOG'),
+    );
     await expect(page.locator('.help-overlay')).toBeVisible();
     await expect(page.locator('.help-content h1')).toContainText("What's New");
     await page.keyboard.press('Escape');
-
-    // Seen now — a second reload does not reopen it.
-    await page.reload();
-    await page.waitForSelector('.app-container');
-    await page.waitForTimeout(600);
-    await expect(page.locator('.help-overlay')).toHaveCount(0);
   });
 
   test('has a real application menu, not the Electron default', async () => {

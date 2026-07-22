@@ -16,30 +16,11 @@ import './IntroAnimation.css';
 const INTRO_DURATION_MS = 3150;
 const FADE_MS = 450;
 
-/** Set once the intro has played; keeps it from replaying on every launch. */
-export const INTRO_SEEN_KEY = 'totonote-intro-seen';
-
-/** True when the intro should play: never seen, and not under test automation. */
-export function shouldPlayIntro(): boolean {
-  if (navigator.webdriver) return false;
-  try {
-    return window.localStorage.getItem(INTRO_SEEN_KEY) !== '1';
-  } catch {
-    return true;
-  }
-}
+/** Preference key marking that the intro has played once for this database. */
+export const INTRO_SEEN_KEY = 'intro-seen';
 
 export function IntroAnimation({ onDone }: { onDone: () => void }) {
   const [closing, setClosing] = useState(false);
-
-  // Remember it played, so the next launch goes straight to the app.
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(INTRO_SEEN_KEY, '1');
-    } catch {
-      /* private mode / storage disabled — worst case it plays again */
-    }
-  }, []);
 
   // Auto-dismiss after the GIF has had time to play through once.
   useEffect(() => {

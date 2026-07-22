@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { invoke } from '../../lib/ipc-client';
+import { useStore } from '../../stores';
 
 /**
  * The user guide, inside the app.
@@ -68,49 +69,27 @@ function titleOf(id: string): string {
   return heading ? heading[1] : id.replace(/-/g, ' ');
 }
 
-/** localStorage key holding the last version whose changelog was shown. */
-const LAST_SEEN_VERSION_KEY = 'totonote-last-seen-version';
-
 export function HelpViewer() {
-  const [page, setPage] = useState<string | null>(null);
+  const page = useStore(s => s.helpPage);
+  const openHelp = useStore(s => s.openHelp);
+  const closeHelp = useStore(s => s.closeHelp);
 
+  // The native Help menu (main process) asks to open a page.
   useEffect(() => {
     return window.api.onMenu('menu:open-help', payload => {
       const requested = typeof payload === 'string' ? payload : 'README';
-      setPage(CONTENT[requested] ? requested : 'README');
+      openHelp(CONTENT[requested] ? requested : 'README');
     });
-  }, []);
-
-  // On the first launch after an update, show What's New once.
-  useEffect(() => {
-    invoke('app:version').then(version => {
-      let lastSeen: string | null = null;
-      try {
-        lastSeen = window.localStorage.getItem(LAST_SEEN_VERSION_KEY);
-      } catch {
-        /* storage disabled */
-      }
-      // Skip on a genuinely fresh install (nothing seen yet) — a new user doesn't need
-      // a changelog. Only surface it when the version actually changed.
-      if (lastSeen && lastSeen !== version && CONTENT.CHANGELOG) {
-        setPage('CHANGELOG');
-      }
-      try {
-        window.localStorage.setItem(LAST_SEEN_VERSION_KEY, version);
-      } catch {
-        /* storage disabled — worst case it shows again next launch */
-      }
-    });
-  }, []);
+  }, [openHelp]);
 
   useEffect(() => {
     if (!page) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setPage(null);
+      if (e.key === 'Escape') closeHelp();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [page]);
+  }, [page, closeHelp]);
 
   const pages = useMemo(() => {
     const ids = Object.keys(CONTENT);
@@ -124,7 +103,7 @@ export function HelpViewer() {
     <div className="help-overlay">
       <div className="help-header">
         <span className="help-title">Help</span>
-        <button className="btn btn-ghost btn-sm" onClick={() => setPage(null)} aria-label="Close help">
+        <button className="btn btn-ghost btn-sm" onClick={closeHelp} aria-label="Close help">
           &times;
         </button>
       </div>
@@ -134,7 +113,7 @@ export function HelpViewer() {
             <button
               key={id}
               className={`help-nav-item${id === page ? ' active' : ''}`}
-              onClick={() => setPage(id)}
+              onClick={() => openHelp(id)}
             >
               {titleOf(id)}
             </button>
@@ -156,7 +135,7 @@ export function HelpViewer() {
                         href="#"
                         onClick={e => {
                           e.preventDefault();
-                          setPage(id);
+                          openHelp(id);
                         }}
                       >
                         {children}

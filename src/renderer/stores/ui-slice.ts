@@ -24,6 +24,8 @@ export interface UiSlice {
   /** Category whose compiled wiki page is showing in the Info tab. Mutually exclusive with focusedTagId. */
   focusedCategoryId: string | null;
   graphOpen: boolean;
+  /** Help page currently shown in the in-app guide, or null when closed. */
+  helpPage: string | null;
 
   setLeftSidebarWidth: (width: number) => void;
   setRightSidebarWidth: (width: number) => void;
@@ -39,6 +41,8 @@ export interface UiSlice {
   setFocusedTag: (id: string | null) => void;
   setFocusedCategory: (id: string | null) => void;
   setGraphOpen: (open: boolean) => void;
+  openHelp: (page: string) => void;
+  closeHelp: () => void;
 }
 
 export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
@@ -52,6 +56,7 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
   focusedTagId: null,
   focusedCategoryId: null,
   graphOpen: false,
+  helpPage: null,
 
   setLeftSidebarWidth: (width) => set({ leftSidebarWidth: width }),
   setRightSidebarWidth: (width) => set({ rightSidebarWidth: width }),
@@ -81,4 +86,6 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
       ...(id ? { activeRightTab: 'info' as RightTab, focusedTagId: null } : {}),
     }),
   setGraphOpen: (open) => set({ graphOpen: open }),
+  openHelp: (page) => set({ helpPage: page }),
+  closeHelp: () => set({ helpPage: null }),
 });

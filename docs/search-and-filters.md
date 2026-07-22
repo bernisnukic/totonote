@@ -31,21 +31,18 @@ Off by default. It changes how forgiving the matching is:
 
 ![Filter mode, with a checkbox beside each tag](screenshots/20-filter-mode.png)
 
-Tick tags here to **show only those highlights and hide everything else**. Two things
-happen at once:
+Ticking tags here turns the **main page into a reading view of just those tags' passages**.
+Everything untagged is hidden, so what's left is only the text carrying the ticked tags,
+in order — and you can tick several tags to read them together.
 
-- Only the ticked tags' highlights stay coloured in; the rest disappear until you clear
-  the filter.
-- Sections that don't use any of the ticked tags are hidden (their tabs too).
+![The filtered reading view showing only tagged excerpts](screenshots/28-filtered-view.png)
 
-That means Filter does something visible even in a single-section document, where hiding
-sections alone would do nothing.
+Each passage is shown with its tag's colour. **Click one to clear the filter and jump to
+that passage** in the editor, ready to edit. **Clear filter** (top of the view, or the
+button in the sidebar) returns to normal editing.
 
-Ticking several tags widens the net — you see every ticked tag's highlights, and every
-section using *any* of them.
-
-If nothing matches you'll see *"No sections match the active filters."* in the middle of
-the window. **Clear filters (N)** at the top puts everything back.
+This is different from the tag/category pages in the right sidebar: those list one tag or
+one category's excerpts; Filter shows *several tags at once* right on the main page.
 
 > **Clear filters also empties the Search box.** If your search text vanishes, that's why.
 

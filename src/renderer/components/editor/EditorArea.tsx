@@ -7,6 +7,7 @@ import { SectionEditor } from './SectionEditor';
 import { SectionTagBar } from './SectionTagBar';
 import { TagPopover } from './TagPopover';
 import { SelectionToolbar } from './SelectionToolbar';
+import { FilteredView } from './FilteredView';
 
 export function EditorArea() {
   const sections = useStore(s => s.sections);
@@ -63,34 +64,14 @@ export function EditorArea() {
     [setActiveSection]
   );
 
-  // Filter logic: compute which sections to show based on active tag filters
-  const filteredSections = useMemo(() => {
-    const activeFilterTagIds = new Set(
-      Object.values(activeFilters).flat()
-    );
-    if (activeFilterTagIds.size === 0) return sections;
-
-    return sections.filter(section => {
-      // Check section tags
-      const hasSectionTag = sectionTags.some(
-        st => st.sectionId === section.id && activeFilterTagIds.has(st.tagId)
-      );
-      if (hasSectionTag) return true;
-
-      // Check annotations in this section
-      const hasAnnotation = documentAnnotations.some(
-        a => a.sectionId === section.id && activeFilterTagIds.has(a.tagId)
-      );
-      return hasAnnotation;
-    });
-  }, [sections, activeFilters, sectionTags, documentAnnotations]);
-
-  const hasActiveFilters = Object.values(activeFilters).some(v => v.length > 0);
+  // Ticked filter tags. When any are set, the editors stay mounted but a read-only
+  // FilteredView overlays them showing only those tags' excerpts (see FilteredView).
+  const filterTagIds = useMemo(() => new Set(Object.values(activeFilters).flat()), [activeFilters]);
 
   return (
     <>
       <MainToolbar />
-      <SectionTabBar onTabClick={handleTabClick} visibleSections={filteredSections} />
+      <SectionTabBar onTabClick={handleTabClick} />
       <div className="editor-area" ref={editorContainerRef}>
         {sections.length === 0 ? (
           <div className="empty-state">
@@ -99,15 +80,9 @@ export function EditorArea() {
               No sections yet. Click the + button in the tab bar to create your first section.
             </p>
           </div>
-        ) : filteredSections.length === 0 && hasActiveFilters ? (
-          <div className="empty-state">
-            <p className="empty-state-text">
-              No sections match the active filters.
-            </p>
-          </div>
         ) : (
-          <div className="editor-wrapper">
-            {filteredSections.map((section, index) => {
+          <div className="editor-wrapper" style={filterTagIds.size > 0 ? { display: 'none' } : undefined}>
+            {sections.map((section, index) => {
               const tagsForSection = sectionTags.filter(st => st.sectionId === section.id);
               return (
                 <div
@@ -136,9 +111,11 @@ export function EditorArea() {
             })}
           </div>
         )}
+        {filterTagIds.size > 0 && sections.length > 0 && <FilteredView filterTagIds={filterTagIds} />}
       </div>
       <TagPopover />
-      <SelectionToolbar />
+      {/* No live editing surface in filter mode, so no selection toolbar. */}
+      {filterTagIds.size === 0 && <SelectionToolbar />}
     </>
   );
 }
