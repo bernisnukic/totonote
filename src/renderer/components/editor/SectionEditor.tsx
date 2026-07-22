@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -21,6 +21,12 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const tags = useStore(s => s.tags);
   const highlightsVisible = useStore(s => s.highlightsVisible);
   const hiddenTagIds = useStore(s => s.hiddenTagIds);
+  const activeFilters = useStore(s => s.activeFilters);
+  // When Filter mode has any tags ticked, only those highlights show. Empty = show all.
+  const filterTagIds = useMemo(() => {
+    const ids = Object.values(activeFilters).flat();
+    return ids.length > 0 ? new Set(ids) : null;
+  }, [activeFilters]);
   const setSelection = useStore(s => s.setSelection);
   const clearSelection = useStore(s => s.clearSelection);
   const setSelectionToolbarPos = useStore(s => s.setSelectionToolbarPos);
@@ -154,7 +160,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   useEffect(() => {
     if (!editor) return;
     syncDecorations(annotationsRef.current);
-  }, [editor, highlightsVisible, hiddenTagIds, tags]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editor, highlightsVisible, hiddenTagIds, tags, filterTagIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // When this section becomes active, push its annotations to global store
   useEffect(() => {
@@ -181,6 +187,8 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       const withColors = highlightsVisible
         ? annotations.flatMap(a => {
             if (hiddenTagIds.includes(a.tagId)) return [];
+            // Active filters narrow the visible highlights to just the ticked tags.
+            if (filterTagIds && !filterTagIds.has(a.tagId)) return [];
             const tag = tags.find(t => t.id === a.tagId);
             return tag ? [{ ...a, color: tag.color }] : [];
           })
@@ -190,7 +198,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
         return true;
       });
     },
-    [editor, highlightsVisible, tags, hiddenTagIds]
+    [editor, highlightsVisible, tags, hiddenTagIds, filterTagIds]
   );
 
   const handleContextMenu = (e: React.MouseEvent) => {

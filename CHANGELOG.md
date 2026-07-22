@@ -1,5 +1,22 @@
 # What's New
 
+## 1.4.0
+
+**Filter now hides highlights, not just sections.** Ticking tags in Filter mode shows
+only those highlights and dims the rest — so it does something visible even in a
+single-section document. It still hides sections that have none of the ticked tags.
+
+**The tag and category panels stay open when you click an excerpt.** Clicking a phrase
+in a tag's or category's page jumps to that text in the editor and keeps the panel open,
+so you can click straight down the list. It used to collapse on the first click.
+
+**The graph tells same-named categories apart.** When several categories share a name —
+every character has a HISTORY — the graph shows the parent for context ("GURA › HISTORY").
+Hover any node for its full path.
+
+**What's New shows itself.** After you update, the app opens this page on first launch so
+you can see what changed.
+
 ## 1.3.1
 
 - The **Help** window's title sat underneath the macOS window buttons unless the app was

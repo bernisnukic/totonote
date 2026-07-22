@@ -68,6 +68,9 @@ function titleOf(id: string): string {
   return heading ? heading[1] : id.replace(/-/g, ' ');
 }
 
+/** localStorage key holding the last version whose changelog was shown. */
+const LAST_SEEN_VERSION_KEY = 'totonote-last-seen-version';
+
 export function HelpViewer() {
   const [page, setPage] = useState<string | null>(null);
 
@@ -75,6 +78,28 @@ export function HelpViewer() {
     return window.api.onMenu('menu:open-help', payload => {
       const requested = typeof payload === 'string' ? payload : 'README';
       setPage(CONTENT[requested] ? requested : 'README');
+    });
+  }, []);
+
+  // On the first launch after an update, show What's New once.
+  useEffect(() => {
+    invoke('app:version').then(version => {
+      let lastSeen: string | null = null;
+      try {
+        lastSeen = window.localStorage.getItem(LAST_SEEN_VERSION_KEY);
+      } catch {
+        /* storage disabled */
+      }
+      // Skip on a genuinely fresh install (nothing seen yet) — a new user doesn't need
+      // a changelog. Only surface it when the version actually changed.
+      if (lastSeen && lastSeen !== version && CONTENT.CHANGELOG) {
+        setPage('CHANGELOG');
+      }
+      try {
+        window.localStorage.setItem(LAST_SEEN_VERSION_KEY, version);
+      } catch {
+        /* storage disabled — worst case it shows again next launch */
+      }
     });
   }, []);
 

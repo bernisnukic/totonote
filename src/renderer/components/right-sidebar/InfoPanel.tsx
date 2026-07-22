@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../stores';
 import { LabelItem } from './LabelItem';
 import { LabelOptionsPanel } from './LabelOptionsPanel';
@@ -24,14 +24,10 @@ export function InfoPanel() {
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [tagPlacements, setTagPlacements] = useState<AnnotationPlacement[]>([]);
 
-  // Clear focused tag when active section changes
-  const prevSectionId = useRef(activeSectionId);
-  useEffect(() => {
-    if (prevSectionId.current !== activeSectionId && focusedTagId) {
-      setFocusedTag(null);
-    }
-    prevSectionId.current = activeSectionId;
-  }, [activeSectionId, focusedTagId, setFocusedTag]);
+  // The focused tag/category panel deliberately survives section changes now. It used
+  // to clear whenever the active section changed, which fought with clicking an excerpt
+  // to jump to its text — the jump changed the section and collapsed the panel on the
+  // first click. Close it with the × or Escape instead.
 
   useEffect(() => {
     loadCategories();

@@ -1192,9 +1192,10 @@ test.describe('Filing excerpts into categories', () => {
     await page.locator('.category-name-link', { hasText: 'HISTORY' }).click();
     await page.locator('.right-sidebar .placement-row').click();
 
-    // Back on the document view, page closed, section visible.
-    await expect(page.locator('.right-sidebar .category-page')).toHaveCount(0);
+    // The highlighted text is shown, and the page stays open so you can keep clicking
+    // through excerpts — it used to collapse on the first click.
     await expect(page.locator('.annotation-highlight')).toBeVisible();
+    await expect(page.locator('.right-sidebar .category-page')).toBeVisible();
   });
 
   test('an empty category page explains how to file', async () => {
@@ -1249,6 +1250,50 @@ test.describe('Sidebar UX', () => {
     // The details affordance still exists, as its own button.
     await page.locator('.tag-details-btn').click();
     await expect(page.locator('.right-sidebar')).toContainText('Usage');
+  });
+
+  test('Filter shows only ticked highlights', async () => {
+    // Two sections, one highlight each — the proven, non-flaky setup.
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Filter HL');
+    await page.locator('.modal .btn-primary').click();
+    for (const t of ['S1', 'S2']) {
+      await page.locator('.tab-add').click();
+      await page.locator('.modal input.input').first().fill(t);
+      await page.locator('.modal .btn-primary').click();
+      await page.waitForTimeout(500);
+    }
+
+    await page.locator('.tiptap').nth(0).click();
+    await page.locator('.tiptap').nth(0).pressSequentially('Dragon here', { delay: 15 });
+    await page.locator('.tiptap').nth(1).click();
+    await page.locator('.tiptap').nth(1).pressSequentially('Gold here', { delay: 15 });
+
+    const tagSection = async (idx: number, tag: string) => {
+      await page.locator('.tiptap').nth(idx).click();
+      await page.keyboard.press('Meta+A');
+      await expect(page.locator('.selection-toolbar')).toBeVisible();
+      await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+      const modal = page.locator('.modal');
+      await modal.locator('.autocomplete input.input').fill(tag);
+      await modal.locator('.autocomplete-item-create').click();
+      await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+      await page.waitForTimeout(400);
+    };
+    await tagSection(0, 'Dragon');
+    await tagSection(1, 'Gold');
+    await expect(page.locator('.annotation-highlight')).toHaveCount(2);
+
+    // Filter to Dragon — Gold's section hides and only Dragon's highlight remains.
+    await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
+    await page.locator('.sidebar-filter-item', { hasText: 'Dragon' })
+      .locator('input[type="checkbox"]').check();
+    await expect(page.locator('.annotation-highlight')).toHaveCount(1);
+    await expect(page.locator('.annotation-highlight').first()).toContainText('Dragon here');
+
+    // Clearing brings both back.
+    await page.locator('.sidebar-clear-btn').click();
+    await expect(page.locator('.annotation-highlight')).toHaveCount(2);
   });
 
   test('HL mode can hide one tag’s highlights without touching the rest', async () => {
@@ -1336,6 +1381,44 @@ test.describe('Graph view', () => {
     await graph.locator('.graph-node-tag circle').click({ force: true });
     await expect(graph).toHaveCount(0);
     await expect(page.locator('.right-sidebar')).toContainText('Usage');
+  });
+
+  test('same-named categories in the graph show their parent for context', async () => {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Graph Names');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+
+    const newCat = async (name: string, parent?: string) => {
+      if (parent) {
+        await page.locator('.category-row', { hasText: parent })
+          .locator('.category-row-btn', { hasText: '+' }).first().click();
+      } else {
+        await page.locator('.btn', { hasText: '+ New Category' }).click();
+      }
+      await page.locator('.category-new-form input.input').fill(name);
+      await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+      await expect(page.locator('.category-row', { hasText: name }).first()).toBeVisible();
+    };
+    // Two GURA/PEKORA each with a HISTORY — the ambiguous case.
+    await newCat('GURA');
+    await newCat('PEKORA');
+    await newCat('HISTORY', 'GURA');
+    await newCat('HISTORY', 'PEKORA');
+
+    await page.locator('.toolbar-btn[aria-label="Graph view"]').click();
+    const graph = page.locator('.graph-overlay');
+    await expect(graph).toBeVisible();
+
+    // The shared name is prefixed with its parent in the visible label (a <text>);
+    // the unique ones are not.
+    await expect(graph.locator('text', { hasText: 'GURA › HISTORY' })).toBeVisible();
+    await expect(graph.locator('text', { hasText: 'PEKORA › HISTORY' })).toBeVisible();
+    const labels = await graph.locator('.graph-node-category text').allTextContents();
+    expect(labels).toContain('GURA');
+    expect(labels).toContain('PEKORA');
+    // Full path is available on hover (SVG <title>).
+    await expect(graph.locator('.graph-node-category title', { hasText: 'GURA › HISTORY' }).first()).toBeAttached();
   });
 
   test('Escape closes it', async () => {
@@ -1556,6 +1639,22 @@ test.describe('Help', () => {
     expect(items[items.length - 1]).toBe("What's New");
     // Titles come from each page's own heading, not from CSS mangling the filename.
     expect(items).toContain('Documents and sections');
+  });
+
+  test('shows What\'s New on the first launch after an update', async () => {
+    // Seed an older last-seen version, then reload to simulate an upgrade.
+    await page.evaluate(() => localStorage.setItem('totonote-last-seen-version', '0.0.1'));
+    await page.reload();
+    await page.waitForSelector('.app-container');
+    await expect(page.locator('.help-overlay')).toBeVisible();
+    await expect(page.locator('.help-content h1')).toContainText("What's New");
+    await page.keyboard.press('Escape');
+
+    // Seen now — a second reload does not reopen it.
+    await page.reload();
+    await page.waitForSelector('.app-container');
+    await page.waitForTimeout(600);
+    await expect(page.locator('.help-overlay')).toHaveCount(0);
   });
 
   test('has a real application menu, not the Electron default', async () => {

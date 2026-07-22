@@ -31,12 +31,18 @@ Off by default. It changes how forgiving the matching is:
 
 ![Filter mode, with a checkbox beside each tag](screenshots/20-filter-mode.png)
 
-Tick tags here to **hide sections that don't use them**. A section survives if it carries
-one of the ticked tags as a section tag, or contains a highlight using one.
+Tick tags here to **show only those highlights and hide everything else**. Two things
+happen at once:
 
-Ticking several tags widens the net rather than narrowing it — you get every section
-matching *any* of them, not only sections matching all. The section tabs hide along with
-the sections.
+- Only the ticked tags' highlights stay coloured in; the rest disappear until you clear
+  the filter.
+- Sections that don't use any of the ticked tags are hidden (their tabs too).
+
+That means Filter does something visible even in a single-section document, where hiding
+sections alone would do nothing.
+
+Ticking several tags widens the net — you see every ticked tag's highlights, and every
+section using *any* of them.
 
 If nothing matches you'll see *"No sections match the active filters."* in the middle of
 the window. **Clear filters (N)** at the top puts everything back.

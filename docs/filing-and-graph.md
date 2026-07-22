@@ -45,7 +45,8 @@ the row expands and collapses as before. Its page opens in the Info tab:
 - Each **sub-category** with filed excerpts appears as its own section — click its
   heading to drill into that page. The breadcrumb at the top takes you back up.
 - Every excerpt shows its source (*document › section*). **Click it to jump to that text**,
-  even if it lives in another document.
+  even if it lives in another document — the page stays open so you can click straight
+  down the list.
 
 ### Ordering a page
 
@@ -80,6 +81,8 @@ map:
 The cyan lines are the interesting ones: they cut across the tree and show where your
 writing actually landed. A thick line means many excerpts.
 
+- Categories that share a name (every character has a HISTORY) show their parent for
+  context — **GURA › HISTORY**. Hover any node for its full path.
 - **Click** any node to open its page.
 - **Drag** a node to rearrange, **drag the background** to pan, **scroll** to zoom.
 - **Escape** or **×** closes it.

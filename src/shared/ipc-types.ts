@@ -116,6 +116,7 @@ export interface IpcHandlerMap {
     };
   };
   'app:open-external': { args: { url: string }; result: void };
+  'app:version': { args: void; result: string };
 }
 
 export type IpcChannel = keyof IpcHandlerMap;
