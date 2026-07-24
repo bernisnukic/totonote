@@ -1,5 +1,16 @@
 # What's New
 
+## 1.10.1
+
+**Fixed: leaving a document could lose unsaved work.** With **Auto-save** turned off,
+pressing **← Back**, opening another document or switching workspace threw away anything
+you hadn't saved — without warning. Leaving a document now saves it first, whichever mode
+you're in. (Auto-save decides whether TotoNote saves *while you type*; quitting still asks.)
+
+If you use manual saving, please update.
+
+Also: the History timeline no longer holds on to checkpoints for documents you've closed.
+
 ## 1.10.0
 
 **A History timeline.** The new **History** tab keeps checkpoints of the section you're
