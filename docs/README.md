@@ -9,12 +9,13 @@ offline.
 | Page | What's in it |
 |------|--------------|
 | [Getting started](getting-started.md) | Your first document, and how the screen is laid out |
+| [Glossary](glossary.md) | Every term TotoNote uses — tag, highlight, excerpt, filing, page — defined |
 | [Workspaces](workspaces.md) | Keeping separate worlds separate |
 | [Documents and sections](documents-and-sections.md) | Creating documents, splitting them into sections, saving |
-| [Tags and annotations](tags-and-annotations.md) | Highlighting text, tagging it, and the three kinds of tag |
+| [Tags and highlights](tags-and-annotations.md) | Highlighting text, tagging it, and the three kinds of tag |
 | [Categories and rules](categories-and-rules.md) | Organising tags, and auto-creating sub-category skeletons |
 | [Filing and the graph](filing-and-graph.md) | Compiling excerpts onto wiki pages, and the connections map |
-| [Search and filters](search-and-filters.md) | Finding things, filtering, and controlling highlights |
+| [Search and filters](search-and-filters.md) | Finding things, filtering, sorting, and controlling highlights |
 | [Keyboard shortcuts](keyboard-shortcuts.md) | Every shortcut, and how to rebind them |
 | [FAQ](faq.md) | Where your data lives, backups, security warnings, updates |
 

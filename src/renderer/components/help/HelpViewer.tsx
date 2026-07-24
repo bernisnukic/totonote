@@ -1,8 +1,33 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { invoke } from '../../lib/ipc-client';
 import { useStore } from '../../stores';
+
+/** Search hit: a page plus a short snippet of the line the query matched. */
+interface SearchHit {
+  id: string;
+  title: string;
+  snippet: string;
+}
+
+/** Case-insensitive search across every guide page, one best snippet per page. */
+function searchGuide(query: string, titleOf: (id: string) => string): SearchHit[] {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const hits: SearchHit[] = [];
+  for (const [id, text] of Object.entries(CONTENT)) {
+    const lines = text.split('\n');
+    const match = lines.find(line => line.toLowerCase().includes(q));
+    // Also match on the page title so "shortcuts" finds the shortcuts page even if the
+    // word isn't in its body.
+    if (match || titleOf(id).toLowerCase().includes(q)) {
+      const raw = (match ?? '').replace(/^#+\s*/, '').replace(/[*_`>|-]/g, '').trim();
+      hits.push({ id, title: titleOf(id), snippet: raw.slice(0, 120) });
+    }
+  }
+  return hits;
+}
 
 /**
  * The user guide, inside the app.
@@ -46,6 +71,7 @@ const CONTENT: Record<string, string> = {
 const ORDER = [
   'README',
   'getting-started',
+  'glossary',
   'workspaces',
   'documents-and-sections',
   'tags-and-annotations',
@@ -73,6 +99,7 @@ export function HelpViewer() {
   const page = useStore(s => s.helpPage);
   const openHelp = useStore(s => s.openHelp);
   const closeHelp = useStore(s => s.closeHelp);
+  const [query, setQuery] = useState('');
 
   // The native Help menu (main process) asks to open a page.
   useEffect(() => {
@@ -81,6 +108,13 @@ export function HelpViewer() {
       openHelp(CONTENT[requested] ? requested : 'README');
     });
   }, [openHelp]);
+
+  const results = useMemo(() => searchGuide(query, titleOf), [query]);
+
+  const goTo = (id: string) => {
+    setQuery('');
+    openHelp(id);
+  };
 
   useEffect(() => {
     if (!page) return;
@@ -103,21 +137,44 @@ export function HelpViewer() {
     <div className="help-overlay">
       <div className="help-header">
         <span className="help-title">Help</span>
-        <button className="btn btn-ghost btn-sm" onClick={closeHelp} aria-label="Close help">
+        <input
+          className="help-search"
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search the guide…"
+          aria-label="Search the guide"
+        />
+        <button className="help-close" onClick={closeHelp} aria-label="Close help" data-tip="Close (Esc)">
           &times;
         </button>
       </div>
       <div className="help-body">
         <nav className="help-nav">
-          {pages.map(id => (
-            <button
-              key={id}
-              className={`help-nav-item${id === page ? ' active' : ''}`}
-              onClick={() => openHelp(id)}
-            >
-              {titleOf(id)}
-            </button>
-          ))}
+          {query.trim().length >= 2 ? (
+            <div className="help-results">
+              <div className="help-results-count">
+                {results.length} result{results.length === 1 ? '' : 's'}
+              </div>
+              {results.map(hit => (
+                <button key={hit.id} className="help-result" onClick={() => goTo(hit.id)}>
+                  <span className="help-result-title">{hit.title}</span>
+                  {hit.snippet && <span className="help-result-snippet">{hit.snippet}</span>}
+                </button>
+              ))}
+              {results.length === 0 && <div className="help-results-empty">No matches</div>}
+            </div>
+          ) : (
+            pages.map(id => (
+              <button
+                key={id}
+                className={`help-nav-item${id === page ? ' active' : ''}`}
+                onClick={() => openHelp(id)}
+              >
+                {titleOf(id)}
+              </button>
+            ))
+          )}
         </nav>
         <article className="help-content" key={page}>
           <ReactMarkdown

@@ -908,9 +908,88 @@
 .help-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--border-default);
+}
+
+.help-search {
+  flex: 1;
+  max-width: 420px;
+  padding: var(--space-1) var(--space-3);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+}
+
+.help-search:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.help-close {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.help-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border-color: var(--border-strong);
+}
+
+.help-results {
+  padding: var(--space-2) var(--space-1);
+}
+
+.help-results-count,
+.help-results-empty {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.help-result {
+  display: block;
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.help-result:hover {
+  background: var(--bg-tertiary);
+}
+
+.help-result-title {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--accent-primary);
+}
+
+.help-result-snippet {
+  display: block;
+  margin-top: 1px;
+  font-size: 10px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .help-title {
@@ -1070,3 +1149,50 @@
 /* The global reset clears list markers; the guide needs them back. */
 .help-content ul { list-style: disc; }
 .help-content ol { list-style: decimal; }
+
+/* ─── Wiki pop-out (Info tab full-screen) ─────────────────────────────── */
+
+.wiki-overlay {
+  position: fixed;
+  inset: var(--title-bar-height) 0 0 0;
+  z-index: 940;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+
+.wiki-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.wiki-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+  color: var(--text-muted);
+}
+
+.wiki-header .help-close {
+  margin-left: auto;
+}
+
+.wiki-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-4) var(--space-8);
+}
+
+/* Reuses InfoPanel, just at a comfortable reading width instead of the 260px sidebar. */
+.wiki-content {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.wiki-content .placement-row {
+  cursor: default;
+}

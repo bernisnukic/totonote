@@ -8,6 +8,7 @@ import { GraphView } from './components/graph/GraphView';
 import { TooltipHost } from './components/common/TooltipHost';
 import { UndoToast } from './components/common/UndoToast';
 import { HelpViewer } from './components/help/HelpViewer';
+import { WikiView } from './components/right-sidebar/WikiView';
 import { IntroAnimation, INTRO_SEEN_KEY } from './components/intro/IntroAnimation';
 import { UpdateBanner } from './components/common/UpdateBanner';
 import { invoke } from './lib/ipc-client';
@@ -92,6 +93,7 @@ export function App() {
       <TooltipHost />
       <UndoToast />
       <HelpViewer />
+      <WikiView />
     </>
   );
 }

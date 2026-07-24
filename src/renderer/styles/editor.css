@@ -285,3 +285,12 @@
 .filtered-excerpt__text {
   color: var(--text-primary);
 }
+
+/* The section an excerpt came from — a quiet trailing label, useful in the flat date
+   sorts where excerpts from different sections sit next to each other. */
+.filtered-excerpt__source {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}

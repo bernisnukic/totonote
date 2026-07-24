@@ -26,6 +26,8 @@ export interface UiSlice {
   graphOpen: boolean;
   /** Help page currently shown in the in-app guide, or null when closed. */
   helpPage: string | null;
+  /** The tag/category page is popped out full-screen as a wiki view. */
+  wikiOpen: boolean;
 
   setLeftSidebarWidth: (width: number) => void;
   setRightSidebarWidth: (width: number) => void;
@@ -43,6 +45,7 @@ export interface UiSlice {
   setGraphOpen: (open: boolean) => void;
   openHelp: (page: string) => void;
   closeHelp: () => void;
+  setWikiOpen: (open: boolean) => void;
 }
 
 export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
@@ -57,6 +60,7 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
   focusedCategoryId: null,
   graphOpen: false,
   helpPage: null,
+  wikiOpen: false,
 
   setLeftSidebarWidth: (width) => set({ leftSidebarWidth: width }),
   setRightSidebarWidth: (width) => set({ rightSidebarWidth: width }),
@@ -88,4 +92,5 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
   setGraphOpen: (open) => set({ graphOpen: open }),
   openHelp: (page) => set({ helpPage: page }),
   closeHelp: () => set({ helpPage: null }),
+  setWikiOpen: (open) => set({ wikiOpen: open }),
 });

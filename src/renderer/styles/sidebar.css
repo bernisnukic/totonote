@@ -31,10 +31,13 @@
 
 .sidebar-mode-btn {
   flex: 1;
-  padding: var(--space-2) var(--space-1);
+  padding: var(--space-2) 2px;
   font-size: var(--font-size-xs);
   text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wide);
+  /* Labels range from "SORT" to "HIGHLIGHTS"; wide tracking overflows the longest into a
+     second line. Keep them on one line and let the tracking go as the label needs. */
+  letter-spacing: 0.02em;
+  white-space: nowrap;
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
   transition: color var(--transition-fast), border-color var(--transition-fast);
@@ -908,4 +911,43 @@
   font-size: var(--font-size-xs);
   line-height: 1.5;
   color: var(--text-muted);
+}
+
+/* Per-excerpt supplementary notes */
+.placement-note,
+.placement-note-add {
+  margin: 4px 0 0 var(--space-2);
+  font-size: var(--font-size-xs);
+  font-style: italic;
+  color: var(--text-secondary, var(--text-muted));
+  cursor: pointer;
+}
+
+.placement-note {
+  padding: 2px var(--space-2);
+  border-left: 2px solid var(--border-strong);
+}
+
+.placement-note:hover {
+  color: var(--text-primary);
+}
+
+.placement-note-add {
+  display: inline-block;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-style: normal;
+}
+
+.placement-note-add:hover {
+  color: var(--accent-primary);
+}
+
+.placement-note-input {
+  width: calc(100% - var(--space-2));
+  margin: 4px 0 0 var(--space-2);
+  min-height: 40px;
+  font-size: var(--font-size-xs);
 }

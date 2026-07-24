@@ -18,6 +18,8 @@ export function InfoPanel() {
   const setFocusedTag = useStore(s => s.setFocusedTag);
   const focusedCategoryId = useStore(s => s.focusedCategoryId);
   const setFocusedCategory = useStore(s => s.setFocusedCategory);
+  const wikiOpen = useStore(s => s.wikiOpen);
+  const setWikiOpen = useStore(s => s.setWikiOpen);
   const loadPlacements = useStore(s => s.loadPlacements);
   const navigateToPlacement = usePlacementNavigation();
 
@@ -114,7 +116,12 @@ export function InfoPanel() {
               />
               {focusedTag.name}
             </span>
-            <button className="btn btn-ghost btn-sm" onClick={() => setFocusedTag(null)}>&times;</button>
+            <span style={{ display: 'flex', gap: 'var(--space-1)' }}>
+              {!wikiOpen && (
+                <button className="btn btn-ghost btn-sm" onClick={() => setWikiOpen(true)} data-tip="Open as full page" aria-label="Open as full page">&#10530;</button>
+              )}
+              <button className="btn btn-ghost btn-sm" onClick={() => setFocusedTag(null)}>&times;</button>
+            </span>
           </div>
         </div>
 

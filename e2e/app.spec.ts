@@ -341,7 +341,7 @@ test.describe('Left Sidebar', () => {
     await expect(page.locator('.tiptap')).toBeVisible();
   });
 
-  test('shows sidebar mode bar with Search/Sort/Filter/HL', async () => {
+  test('shows sidebar mode bar with Search/Sort/Filter/Highlights', async () => {
     const modeBar = page.locator('.sidebar-mode-bar');
     await expect(modeBar).toBeVisible();
 
@@ -350,7 +350,7 @@ test.describe('Left Sidebar', () => {
     await expect(buttons.nth(0)).toHaveText('Search');
     await expect(buttons.nth(1)).toHaveText('Sort');
     await expect(buttons.nth(2)).toHaveText('Filter');
-    await expect(buttons.nth(3)).toHaveText('HL');
+    await expect(buttons.nth(3)).toHaveText('Highlights');
   });
 
   test('search mode shows search input', async () => {
@@ -429,15 +429,15 @@ test.describe('Left Sidebar', () => {
     await expect(page.locator('.tag-tree-name')).toHaveText('Firebird');
   });
 
-  test('sort mode shows sort options', async () => {
+  test('sort mode shows excerpt sort options', async () => {
     await page.locator('.sidebar-mode-btn', { hasText: 'Sort' }).click();
 
     const sortBtns = page.locator('.sidebar-sort-btn');
     await expect(sortBtns).toHaveCount(4);
-    await expect(sortBtns.nth(0)).toHaveText('Name A-Z');
-    await expect(sortBtns.nth(1)).toHaveText('Name Z-A');
-    await expect(sortBtns.nth(2)).toHaveText('Date (Oldest)');
-    await expect(sortBtns.nth(3)).toHaveText('Date (Newest)');
+    await expect(sortBtns.nth(0)).toHaveText('Document order');
+    await expect(sortBtns.nth(1)).toHaveText('Newest first');
+    await expect(sortBtns.nth(2)).toHaveText('Oldest first');
+    await expect(sortBtns.nth(3)).toHaveText('Grouped by tag');
   });
 
   test('filter mode shows categories and tags', async () => {
@@ -456,7 +456,7 @@ test.describe('Left Sidebar', () => {
   });
 
   test('highlight mode shows toggle', async () => {
-    await page.locator('.sidebar-mode-btn', { hasText: 'HL' }).click();
+    await page.locator('.sidebar-mode-btn', { hasText: 'Highlights' }).click();
     await expect(page.locator('.sidebar-highlight-toggle')).toBeVisible();
     await expect(page.locator('.sidebar-highlight-toggle')).toContainText('Show all highlights');
   });
@@ -1301,8 +1301,8 @@ test.describe('Sidebar UX', () => {
       .locator('input[type="checkbox"]').check();
     await expect(view.locator('.filtered-excerpt')).toHaveCount(2);
 
-    // Clicking an excerpt clears the filter and returns to the editor.
-    await view.locator('.filtered-excerpt').first().click();
+    // Double-clicking an excerpt clears the filter and returns to the editor.
+    await view.locator('.filtered-excerpt').first().dblclick();
     await expect(page.locator('.filtered-view')).toHaveCount(0);
     await expect(page.locator('.tiptap').first()).toBeVisible();
   });
@@ -1326,7 +1326,7 @@ test.describe('Sidebar UX', () => {
     await modal.locator('.btn-primary', { hasText: 'Create' }).click();
     await expect(page.locator('.annotation-highlight')).toHaveCount(2);
 
-    await page.locator('.sidebar-mode-btn', { hasText: 'HL' }).click();
+    await page.locator('.sidebar-mode-btn', { hasText: 'Highlights' }).click();
     const dragonRow = page.locator('.sidebar-highlight-item', { hasText: 'Dragon' });
     await dragonRow.locator('input[type="checkbox"]').uncheck();
 
@@ -1646,7 +1646,8 @@ test.describe('Help', () => {
     const items = await page.locator('.help-nav-item').allTextContents();
     expect(items[0]).toBe('Overview');
     expect(items[1]).toBe('Getting started');
-    expect(items[2]).toBe('Workspaces');
+    expect(items[2]).toBe('Glossary');
+    expect(items[3]).toBe('Workspaces');
     expect(items[items.length - 1]).toBe("What's New");
     // Titles come from each page's own heading, not from CSS mangling the filename.
     expect(items).toContain('Documents and sections');
@@ -1954,5 +1955,81 @@ test.describe('Intro Animation', () => {
     // The intro plays on real launches but is disabled when navigator.webdriver
     // is true (Playwright), so the suite can interact with the app immediately.
     await expect(page.locator('.intro-overlay')).toHaveCount(0);
+  });
+});
+
+// ─── v1.7.0: Sort view and pop-out wiki ────────────────────────────────
+
+test.describe('Sort view and pop-out wiki', () => {
+  // Create a document with one section, type a line, and tag the whole line with a new tag.
+  async function taggedDoc(tagName: string, text: string) {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Sort & Wiki');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially(text, { delay: 15 });
+
+    await page.keyboard.press('Meta+A');
+    await expect(page.locator('.selection-toolbar')).toBeVisible();
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await expect(modal).toBeVisible();
+    await modal.locator('.autocomplete input.input').fill(tagName);
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+  }
+
+  test('Sort tab lists every tagged excerpt, regroups, and double-click jumps back', async () => {
+    await taggedDoc('Hero', 'The hero crossed the frozen sea.');
+
+    // Open the Sort tab — the main page becomes a reading list of excerpts.
+    await page.locator('.sidebar-mode-btn', { hasText: 'Sort' }).click();
+    const view = page.locator('.filtered-view');
+    await expect(view).toBeVisible();
+    await expect(view.locator('.filtered-excerpt')).toHaveCount(1);
+    await expect(view.locator('.filtered-excerpt__text')).toContainText('frozen sea');
+    // In document order the tag name rides on each excerpt.
+    await expect(view.locator('.filtered-excerpt__tag')).toContainText('Hero');
+
+    // "Grouped by tag" gathers excerpts under a tag heading.
+    await page.locator('.sidebar-sort-btn', { hasText: 'Grouped by tag' }).click();
+    await expect(view.locator('.filtered-view__section .section-header', { hasText: 'Hero' })).toBeVisible();
+
+    // Double-click an excerpt to leave the Sort view and land back in the editor.
+    await view.locator('.filtered-excerpt').first().dblclick();
+    await expect(page.locator('.filtered-view')).toHaveCount(0);
+    await expect(page.locator('.editor-wrapper .tiptap').first()).toBeVisible();
+  });
+
+  test('a tag page pops out full-screen and Escape closes it', async () => {
+    await taggedDoc('Relic', 'A relic older than the gods.');
+
+    // The focused-tag *page* (the thing that pops out) is opened from the left sidebar, not
+    // the Info tab's inline list. Put the right sidebar on Info, then open the tag's page
+    // via its details button in Filter mode.
+    await page.locator('.sidebar-tab', { hasText: 'Info' }).click();
+    await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
+    const row = page.locator('.sidebar-filter-item', { hasText: 'Relic' });
+    await expect(row).toBeVisible();
+    await row.locator('.tag-details-btn').click();
+
+    // The focused page carries a pop-out button; clicking it opens the full-screen wiki.
+    const popout = page.locator('button[aria-label="Open as full page"]');
+    await expect(popout).toBeVisible();
+    await popout.click();
+
+    const overlay = page.locator('.wiki-overlay');
+    await expect(overlay).toBeVisible();
+    await expect(overlay).toContainText('Relic');
+
+    // Escape drops back to the sidebar (the page stays focused underneath).
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.wiki-overlay')).toHaveCount(0);
   });
 });

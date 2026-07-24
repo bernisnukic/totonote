@@ -22,6 +22,8 @@ export function EditorArea() {
   const documentAnnotations = useStore(s => s.documentAnnotations);
   const loadDocumentAnnotations = useStore(s => s.loadDocumentAnnotations);
   const activeFilters = useStore(s => s.activeFilters);
+  const leftSidebarMode = useStore(s => s.leftSidebarMode);
+  const documentSort = useStore(s => s.documentSort);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const scrollingByClickRef = useRef(false);
 
@@ -68,6 +70,13 @@ export function EditorArea() {
   // FilteredView overlays them showing only those tags' excerpts (see FilteredView).
   const filterTagIds = useMemo(() => new Set(Object.values(activeFilters).flat()), [activeFilters]);
 
+  // Two things can put the read-only excerpt overlay up: ticking filter tags, or opening
+  // the Sort tab (which shows every excerpt, ordered — no per-tag ticking). Filter wins
+  // if somehow both are active.
+  const filterActive = filterTagIds.size > 0;
+  const sortActive = !filterActive && leftSidebarMode === 'sort';
+  const overlayActive = filterActive || sortActive;
+
   return (
     <>
       <MainToolbar />
@@ -81,7 +90,7 @@ export function EditorArea() {
             </p>
           </div>
         ) : (
-          <div className="editor-wrapper" style={filterTagIds.size > 0 ? { display: 'none' } : undefined}>
+          <div className="editor-wrapper" style={overlayActive ? { display: 'none' } : undefined}>
             {sections.map((section, index) => {
               const tagsForSection = sectionTags.filter(st => st.sectionId === section.id);
               return (
@@ -111,11 +120,12 @@ export function EditorArea() {
             })}
           </div>
         )}
-        {filterTagIds.size > 0 && sections.length > 0 && <FilteredView filterTagIds={filterTagIds} />}
+        {sections.length > 0 && filterActive && <FilteredView filterTagIds={filterTagIds} />}
+        {sections.length > 0 && sortActive && <FilteredView sort={documentSort} />}
       </div>
       <TagPopover />
-      {/* No live editing surface in filter mode, so no selection toolbar. */}
-      {filterTagIds.size === 0 && <SelectionToolbar />}
+      {/* No live editing surface behind the excerpt overlay, so no selection toolbar. */}
+      {!overlayActive && <SelectionToolbar />}
     </>
   );
 }

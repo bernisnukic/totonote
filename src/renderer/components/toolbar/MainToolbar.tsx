@@ -14,12 +14,14 @@ export function MainToolbar() {
 
   const editor = getActiveEditor(activeSectionId);
 
-  const btn = (label: string, action: () => void, isActive?: boolean) => (
+  // `tip` describes what the button does; the short `label` stays on the button face.
+  // Hovering "H1" used to just say "H1", which told the user nothing.
+  const btn = (label: string, tip: string, action: () => void, isActive?: boolean) => (
     <button
       className={`toolbar-btn${isActive ? ' active' : ''}`}
       onClick={action}
-      data-tip={label}
-      aria-label={label}
+      data-tip={tip}
+      aria-label={tip}
     >
       {label}
     </button>
@@ -48,21 +50,21 @@ export function MainToolbar() {
       {editor && (
         <>
           <div className="toolbar-group">
-            {btn('B', () => editor.chain().focus().toggleBold().run(), editor.isActive('bold'))}
-            {btn('I', () => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'))}
-            {btn('U', () => editor.chain().focus().toggleUnderline().run(), editor.isActive('underline'))}
-            {btn('S', () => editor.chain().focus().toggleStrike().run(), editor.isActive('strike'))}
+            {btn('B', 'Bold', () => editor.chain().focus().toggleBold().run(), editor.isActive('bold'))}
+            {btn('I', 'Italic', () => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'))}
+            {btn('U', 'Underline', () => editor.chain().focus().toggleUnderline().run(), editor.isActive('underline'))}
+            {btn('S', 'Strikethrough', () => editor.chain().focus().toggleStrike().run(), editor.isActive('strike'))}
           </div>
 
           <div className="toolbar-group">
-            {btn('H1', () => editor.chain().focus().toggleHeading({ level: 1 }).run(), editor.isActive('heading', { level: 1 }))}
-            {btn('H2', () => editor.chain().focus().toggleHeading({ level: 2 }).run(), editor.isActive('heading', { level: 2 }))}
-            {btn('H3', () => editor.chain().focus().toggleHeading({ level: 3 }).run(), editor.isActive('heading', { level: 3 }))}
+            {btn('H1', 'Heading 1', () => editor.chain().focus().toggleHeading({ level: 1 }).run(), editor.isActive('heading', { level: 1 }))}
+            {btn('H2', 'Heading 2', () => editor.chain().focus().toggleHeading({ level: 2 }).run(), editor.isActive('heading', { level: 2 }))}
+            {btn('H3', 'Heading 3', () => editor.chain().focus().toggleHeading({ level: 3 }).run(), editor.isActive('heading', { level: 3 }))}
           </div>
 
           <div className="toolbar-group">
-            {btn('UL', () => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'))}
-            {btn('OL', () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'))}
+            {btn('UL', 'Bullet list', () => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'))}
+            {btn('OL', 'Numbered list', () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'))}
           </div>
         </>
       )}

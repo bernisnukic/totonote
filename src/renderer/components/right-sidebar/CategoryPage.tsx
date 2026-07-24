@@ -43,9 +43,12 @@ export function usePlacementNavigation() {
   const activeDocumentId = useStore(s => s.activeDocumentId);
   const openDocument = useStore(s => s.openDocument);
   const setActiveSection = useStore(s => s.setActiveSection);
+  const setWikiOpen = useStore(s => s.setWikiOpen);
 
   return useCallback(
     async (placement: AnnotationPlacement) => {
+      // Jumping to the text means leaving the wiki overlay, if it was open.
+      setWikiOpen(false);
       if (placement.documentId !== activeDocumentId) {
         await openDocument(placement.documentId);
       }
@@ -59,7 +62,7 @@ export function usePlacementNavigation() {
         }),
       );
     },
-    [activeDocumentId, openDocument, setActiveSection],
+    [activeDocumentId, openDocument, setActiveSection, setWikiOpen],
   );
 }
 
@@ -72,6 +75,10 @@ export function PlacementRow({
   onNavigate: (p: AnnotationPlacement) => void;
   showTag?: boolean;
 }) {
+  const updateAnnotation = useStore(s => s.updateAnnotation);
+  const [editingNote, setEditingNote] = useState(false);
+  const [note, setNote] = useState(placement.note);
+
   // Server excerpts come from persisted content, which trails the debounced save by up
   // to a second — an excerpt filed moments ago would show as blank. If the section is
   // open in an editor, read the text live instead.
@@ -88,9 +95,21 @@ export function PlacementRow({
   }
   excerpt = excerpt || '…';
   const display = excerpt.length > 110 ? `${excerpt.slice(0, 110)}…` : excerpt;
+
+  const saveNote = () => {
+    setEditingNote(false);
+    if (note !== placement.note) updateAnnotation(placement.id, { note });
+  };
+
   return (
-    <div className="placement-row" onClick={() => onNavigate(placement)} title={excerpt}>
-      <div className="placement-excerpt">
+    <div className="placement-row">
+      {/* Double-click opens the passage in the document; single-click stays put so you
+          can read and annotate without being yanked away. */}
+      <div
+        className="placement-excerpt"
+        onDoubleClick={() => onNavigate(placement)}
+        title="Double-click to open in the document"
+      >
         {showTag && <span className="label-color-dot" style={{ backgroundColor: placement.tagColor }} />}
         <span>{display}</span>
       </div>
@@ -98,6 +117,32 @@ export function PlacementRow({
         {showTag && <span className="placement-tag-name">{placement.tagName} · </span>}
         {placement.documentTitle} › {placement.sectionTitle}
       </div>
+
+      {editingNote ? (
+        <textarea
+          className="textarea placement-note-input"
+          value={note}
+          autoFocus
+          rows={2}
+          placeholder="A note about this excerpt (not shown in the document)…"
+          onChange={e => setNote(e.target.value)}
+          onBlur={saveNote}
+          onKeyDown={e => {
+            if (e.key === 'Escape') {
+              setNote(placement.note);
+              setEditingNote(false);
+            }
+          }}
+        />
+      ) : note ? (
+        <div className="placement-note" onClick={() => setEditingNote(true)} title="Click to edit this note">
+          {note}
+        </div>
+      ) : (
+        <button className="placement-note-add" onClick={() => setEditingNote(true)}>
+          + note
+        </button>
+      )}
     </div>
   );
 }
@@ -117,6 +162,8 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
   const loadPlacements = useStore(s => s.loadPlacements);
   const reorderPlacements = useStore(s => s.reorderPlacements);
   const setFocusedCategory = useStore(s => s.setFocusedCategory);
+  const wikiOpen = useStore(s => s.wikiOpen);
+  const setWikiOpen = useStore(s => s.setWikiOpen);
   const navigate = usePlacementNavigation();
 
   const [placements, setPlacements] = useState<AnnotationPlacement[]>([]);
@@ -278,9 +325,14 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
         )}
         <div className="info-section-title category-page-title">
           <span>{category.name}</span>
-          <button className="btn btn-ghost btn-sm" onClick={() => setFocusedCategory(null)}>
-            &times;
-          </button>
+          <span style={{ display: 'flex', gap: 'var(--space-1)' }}>
+            {!wikiOpen && (
+              <button className="btn btn-ghost btn-sm" onClick={() => setWikiOpen(true)} data-tip="Open as full page" aria-label="Open as full page">&#10530;</button>
+            )}
+            <button className="btn btn-ghost btn-sm" onClick={() => setFocusedCategory(null)}>
+              &times;
+            </button>
+          </span>
         </div>
       </div>
 

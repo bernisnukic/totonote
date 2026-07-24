@@ -2,7 +2,7 @@
 
 The left sidebar is called **Browse**. It has four modes:
 
-![The Browse mode bar with Search, Sort, Filter and HL](screenshots/19-browse-modes.png)
+![The Browse mode bar with Search, Sort, Filter and Highlights](screenshots/19-browse-modes.png)
 
 ## Search
 
@@ -37,9 +37,9 @@ in order — and you can tick several tags to read them together.
 
 ![The filtered reading view showing only tagged excerpts](screenshots/28-filtered-view.png)
 
-Each passage is shown with its tag's colour. **Click one to clear the filter and jump to
-that passage** in the editor, ready to edit. **Clear filter** (top of the view, or the
-button in the sidebar) returns to normal editing.
+Each passage is shown with its tag's colour. **Double-click one to clear the filter and
+jump to that passage** in the editor, ready to edit. **Clear filter** (top of the view, or
+the button in the sidebar) returns to normal editing.
 
 This is different from the tag/category pages in the right sidebar: those list one tag or
 one category's excerpts; Filter shows *several tags at once* right on the main page.
@@ -49,7 +49,7 @@ one category's excerpts; Filter shows *several tags at once* right on the main p
 Clicking anywhere on a row ticks it. The small **›** at the row's end opens the tag's
 details instead.
 
-## HL — highlights
+## Highlights
 
 ![Highlight mode, with the Show all highlights tickbox](screenshots/21-highlight-mode.png)
 
@@ -60,10 +60,18 @@ and the colours return.
 
 ## Sort
 
-Four buttons — Name A-Z, Name Z-A, Date (Oldest), Date (Newest).
+Sort turns the main page into a reading list of **every tagged excerpt in the document**,
+in whatever order you pick:
 
-> **These don't do anything yet.** The button highlights when clicked but nothing is
-> actually re-sorted. It's unfinished, not broken on your machine.
+- **Document order** — top to bottom, section by section, as they appear in your writing.
+- **Newest first** / **Oldest first** — by when you tagged them.
+- **Grouped by tag** — gathered under each tag's name.
+
+![Sort mode showing every excerpt in the chosen order](screenshots/29-sort-view.png)
+
+It's the whole-document counterpart to Filter: Filter narrows the page down to the tags you
+tick, Sort shows *all* of them, ordered. Like Filter it's a reading view — your writing is
+untouched underneath, and **double-clicking an excerpt jumps to it** in the editor.
 
 ## Clicking things
 

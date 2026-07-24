@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react'
 import { useStore } from '../../stores';
 import { PanelDivider } from './PanelDivider';
 import { StatusBar } from './StatusBar';
@@ -18,6 +18,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const setRightWidth = useStore(s => s.setRightSidebarWidth);
   const resetLeftSidebarWidth = useStore(s => s.resetLeftSidebarWidth);
   const resetRightSidebarWidth = useStore(s => s.resetRightSidebarWidth);
+  const resetSidebarWidths = useStore(s => s.resetSidebarWidths);
   const activeDocumentId = useStore(s => s.activeDocumentId);
 
   const handleLeftResize = useCallback(
@@ -33,6 +34,11 @@ export function AppLayout({ children }: AppLayoutProps) {
     },
     [rightWidth, setRightWidth]
   );
+
+  // The View > Reset Sidebar Widths menu command.
+  useEffect(() => {
+    return window.api.onMenu('menu:reset-layout', () => resetSidebarWidths());
+  }, [resetSidebarWidths]);
 
   return (
     <div className="app-container">

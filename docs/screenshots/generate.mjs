@@ -509,11 +509,9 @@ await page.waitForTimeout(300);
 await shot('19-browse-modes', {
   clip: '.sidebar-mode-bar',
   pad: 30,
-  marks: [
-    { selector: '.sidebar-mode-btn', nth: 0, label: 'Find', place: 'below' },
-    { selector: '.sidebar-mode-btn', nth: 2, label: 'Filter', place: 'below' },
-    { selector: '.sidebar-mode-btn', nth: 3, label: 'Highlights', place: 'below' },
-  ],
+  // The four buttons print their own names (SEARCH SORT FILTER HIGHLIGHTS), so one
+  // callout on the whole bar is clearer than four colliding labels under narrow buttons.
+  marks: [{ selector: '.sidebar-mode-bar', label: 'Four ways to browse your writing', place: 'below' }],
 });
 
 await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
@@ -535,7 +533,22 @@ if (await page.locator('.filtered-view').count()) {
   await page.waitForTimeout(200);
 }
 
-await page.locator('.sidebar-mode-btn', { hasText: 'HL' }).click();
+// Sort view: every tagged excerpt in the document, ordered. No ticking needed — opening
+// the Sort tab is enough.
+await page.locator('.sidebar-mode-btn', { hasText: 'Sort' }).click();
+await page.waitForTimeout(500);
+if (await page.locator('.filtered-view').count()) {
+  await shot('29-sort-view', {
+    clip: '.editor-area',
+    // Anchor on the excerpt row, not the bar — a bar callout lands on top of the first
+    // section heading right beneath it. Below the row there's open space.
+    marks: [
+      { selector: '.filtered-excerpt', nth: 0, label: 'Every tagged excerpt, in the order you pick', place: 'below' },
+    ],
+  });
+}
+
+await page.locator('.sidebar-mode-btn', { hasText: 'Highlights' }).click();
 await page.waitForTimeout(300);
 await shot('21-highlight-mode', {
   clip: '.left-sidebar',

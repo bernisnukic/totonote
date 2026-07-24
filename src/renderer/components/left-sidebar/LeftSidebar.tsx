@@ -2,7 +2,6 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useStore } from '../../stores';
 import { flattenCategoryTree } from '../../lib/category-tree';
 import { SidebarModeBar } from './SidebarModeBar';
-import { CategoryTree } from './CategoryTree';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
 /** True for anywhere the user could be typing — the editor, an input or a textarea. */
@@ -16,8 +15,8 @@ export function LeftSidebar() {
   const searchQuery = useStore(s => s.searchQuery);
   const setSearch = useStore(s => s.setSearch);
   const leftSidebarMode = useStore(s => s.leftSidebarMode);
-  const sortOrder = useStore(s => s.sortOrder);
-  const setSortOrder = useStore(s => s.setSortOrder);
+  const documentSort = useStore(s => s.documentSort);
+  const setDocumentSort = useStore(s => s.setDocumentSort);
   const activeFilters = useStore(s => s.activeFilters);
   const toggleFilter = useStore(s => s.toggleFilter);
   const clearFilters = useStore(s => s.clearFilters);
@@ -235,27 +234,28 @@ export function LeftSidebar() {
         </div>
       )}
 
-      {/* Sort mode */}
+      {/* Sort mode — the whole-document sorting counterpart to Filter: the main page
+          shows every tagged excerpt, in the chosen order. */}
       {leftSidebarMode === 'sort' && (
         <div className="sidebar-panel">
+          <p className="sidebar-mode-hint">
+            The main page lists every tagged excerpt in the document, in this order.
+          </p>
           <div className="sidebar-sort-options">
             {([
-              ['name-asc', 'Name A-Z'],
-              ['name-desc', 'Name Z-A'],
-              ['date-asc', 'Date (Oldest)'],
-              ['date-desc', 'Date (Newest)'],
+              ['document', 'Document order'],
+              ['newest', 'Newest first'],
+              ['oldest', 'Oldest first'],
+              ['tag', 'Grouped by tag'],
             ] as const).map(([key, label]) => (
               <button
                 key={key}
-                className={`sidebar-sort-btn${sortOrder === key ? ' active' : ''}`}
-                onClick={() => setSortOrder(key)}
+                className={`sidebar-sort-btn${documentSort === key ? ' active' : ''}`}
+                onClick={() => setDocumentSort(key)}
               >
                 {label}
               </button>
             ))}
-          </div>
-          <div className="sidebar-content">
-            <CategoryTree />
           </div>
         </div>
       )}

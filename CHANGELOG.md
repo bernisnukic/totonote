@@ -1,5 +1,34 @@
 # What's New
 
+## 1.7.0
+
+**The Sort tab works now.** It turns the main page into a reading list of *every* tagged
+excerpt in the document, in the order you choose — document order, newest, oldest, or
+grouped by tag. It's the whole-document companion to Filter: Filter narrows to the tags you
+tick, Sort shows them all, ordered. Like Filter it's a reading view — your writing is
+untouched underneath, and double-clicking an excerpt jumps straight to it. (It used to
+highlight a button and do nothing.)
+
+**Tag and category pages pop out full-screen.** The ⤒ button on any page opens it as a
+full-width wiki page — the same page, just roomier to read. Escape drops back to the
+sidebar.
+
+**Notes on individual excerpts.** Under any filed excerpt there's a **+ note** — jot a
+reminder to yourself ("first mention of the sword") that lives with the excerpt and never
+shows up in the document.
+
+**Double-click to jump.** Double-clicking an excerpt on a page opens it in the document,
+while a single click leaves the page open so you can read down the list.
+
+**Clearer labels and a glossary.** Every button tooltip now says what it does (Bold,
+Heading 1, Bullet list…). The cramped **HL** tab is now **Highlights**. And the in-app
+guide has a new **Glossary** page defining every term TotoNote uses — tag, highlight,
+excerpt, filing, page — so nothing is left to guess.
+
+**Guide search, and small comforts.** The in-app guide has a search box, its close button is
+easier to hit, and **View → Reset Sidebar Widths** puts the panels back if you drag them
+somewhere awkward.
+
 ## 1.6.0
 
 **Editor updated to TipTap 3.** The rich-text editor moved to the current major version

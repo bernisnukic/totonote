@@ -74,6 +74,14 @@ export function buildAppMenu(): void {
     {
       label: 'View',
       submenu: [
+        {
+          label: 'Reset Sidebar Widths',
+          click: () => {
+            const target = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+            target?.webContents.send('menu:reset-layout');
+          },
+        },
+        { type: 'separator' },
         { role: 'reload' },
         { role: 'forceReload' },
         { role: 'toggleDevTools' },
@@ -100,6 +108,7 @@ export function buildAppMenu(): void {
       submenu: [
         { label: 'User Guide', accelerator: isMac ? 'Cmd+?' : 'F1', click: () => openHelp('README') },
         { label: 'Getting Started', click: () => openHelp('getting-started') },
+        { label: 'Glossary', click: () => openHelp('glossary') },
         { label: 'Categories and Rules', click: () => openHelp('categories-and-rules') },
         { label: 'Filing and the Graph', click: () => openHelp('filing-and-graph') },
         { label: 'Keyboard Shortcuts', click: () => openHelp('keyboard-shortcuts') },

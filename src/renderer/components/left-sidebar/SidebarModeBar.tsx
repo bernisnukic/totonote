@@ -6,7 +6,7 @@ const modes: { key: LeftSidebarMode; label: string }[] = [
   { key: 'search', label: 'Search' },
   { key: 'sort', label: 'Sort' },
   { key: 'filter', label: 'Filter' },
-  { key: 'highlight', label: 'HL' },
+  { key: 'highlight', label: 'Highlights' },
 ];
 
 export function SidebarModeBar() {

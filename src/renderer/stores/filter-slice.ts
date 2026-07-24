@@ -2,23 +2,26 @@ import type { StateCreator } from 'zustand';
 
 export type LeftSidebarMode = 'search' | 'sort' | 'filter' | 'highlight';
 
+/** How the Sort tab orders the whole document's tagged excerpts. */
+export type ExcerptSort = 'document' | 'newest' | 'oldest' | 'tag';
+
 export interface FilterSlice {
   searchQuery: string;
   activeFilters: Record<string, string[]>;
-  sortOrder: 'name-asc' | 'name-desc' | 'date-asc' | 'date-desc';
+  documentSort: ExcerptSort;
   leftSidebarMode: LeftSidebarMode;
 
   setSearch: (query: string) => void;
   toggleFilter: (category: string, value: string) => void;
   clearFilters: () => void;
-  setSortOrder: (order: FilterSlice['sortOrder']) => void;
+  setDocumentSort: (order: ExcerptSort) => void;
   setLeftSidebarMode: (mode: LeftSidebarMode) => void;
 }
 
 export const createFilterSlice: StateCreator<FilterSlice, [], [], FilterSlice> = (set) => ({
   searchQuery: '',
   activeFilters: {},
-  sortOrder: 'name-asc',
+  documentSort: 'document',
   leftSidebarMode: 'search',
 
   setSearch: (query) => set({ searchQuery: query }),
@@ -39,6 +42,6 @@ export const createFilterSlice: StateCreator<FilterSlice, [], [], FilterSlice> =
 
   clearFilters: () => set({ activeFilters: {}, searchQuery: '' }),
 
-  setSortOrder: (order) => set({ sortOrder: order }),
+  setDocumentSort: (order) => set({ documentSort: order }),
   setLeftSidebarMode: (mode) => set({ leftSidebarMode: mode }),
 });
