@@ -25,7 +25,12 @@ export function registerAppHooks(onReady: (handles: { app: ElectronApplication; 
     if (fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
 
     app = await electron.launch({
-      args: [path.join(ROOT, '.vite/build/index.js')],
+      args: [
+        // CI runners restrict unprivileged user namespaces, which Electron's sandbox needs;
+        // without this the app never starts there. Local runs keep the sandbox on.
+        ...(process.env.CI ? ['--no-sandbox'] : []),
+        path.join(ROOT, '.vite/build/index.js'),
+      ],
       env: {
         ...process.env,
         TOTONOTE_DB_PATH: testDbPath,
