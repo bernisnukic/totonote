@@ -55,6 +55,9 @@ export const createWorkspaceSlice: StateCreator<AppStore, [], [], WorkspaceSlice
   setActiveWorkspace: async (id) => {
     if (get().activeWorkspaceId === id) return;
     remember(id);
+    // Switching worlds unmounts the open document's editors, so flush before they go —
+    // otherwise unsaved work in manual-save mode is lost on the way out.
+    if (get().activeDocumentId) await get().leaveDocument();
     // Categories and documents belong to a workspace, so everything scoped has to go.
     set({
       activeWorkspaceId: id,

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useStore } from '../../stores';
 import { flattenCategoryTree } from '../../lib/category-tree';
+import { fuzzyMatch } from '../../lib/fuzzy-match';
 import { SidebarModeBar } from './SidebarModeBar';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
@@ -31,7 +32,6 @@ export function LeftSidebar() {
   const focusedTagId = useStore(s => s.focusedTagId);
   const deleteTag = useStore(s => s.deleteTag);
   const documentAnnotations = useStore(s => s.documentAnnotations);
-  const sectionTags = useStore(s => s.sectionTags);
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [exactMatch, setExactMatch] = useState(false);
@@ -72,14 +72,6 @@ export function LeftSidebar() {
   const toggleExpandAll = useCallback(() => {
     setExpandedCategories(allExpanded ? new Set<string>() : new Set(allCategoryIds));
   }, [allExpanded, allCategoryIds]);
-
-  // Scoped usage: compute which tags are used in the current document
-  const usedTagIds = useMemo(() => {
-    return new Set([
-      ...documentAnnotations.map(a => a.tagId),
-      ...sectionTags.map(st => st.tagId),
-    ]);
-  }, [documentAnnotations, sectionTags]);
 
   const tagUsageCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -410,26 +402,3 @@ export function LeftSidebar() {
 }
 
 /** Fuzzy match: contains OR within edit distance threshold */
-function fuzzyMatch(query: string, text: string): boolean {
-  if (!query) return true;
-  if (text.includes(query)) return true;
-  // Check each word in the text
-  const words = text.split(/\s+/);
-  const threshold = Math.max(1, Math.floor(query.length / 3));
-  return words.some(word => levenshtein(query, word) <= threshold);
-}
-
-function levenshtein(a: string, b: string): number {
-  const m = a.length, n = b.length;
-  const dp: number[] = Array.from({ length: n + 1 }, (_, i) => i);
-  for (let i = 1; i <= m; i++) {
-    let prev = i - 1;
-    dp[0] = i;
-    for (let j = 1; j <= n; j++) {
-      const tmp = dp[j];
-      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
-      prev = tmp;
-    }
-  }
-  return dp[n];
-}

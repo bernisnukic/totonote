@@ -5,9 +5,10 @@ import { Modal } from '../common/Modal';
 import { ColorPicker } from '../common/ColorPicker';
 import { CategoryRuleModal } from './CategoryRuleModal';
 import { BulkAddSubcategoryModal } from './BulkAddSubcategoryModal';
+import { CategoryNode } from './CategoryNode';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { parseRuleTemplate, countRuleNodes } from '../../../shared/category-rule';
-import type { Category } from '../../../shared/domain-types';
+import { categoryImpact, describeCategoryDeletion } from '../../lib/category-impact';
 
 export function EditPanel() {
   const categories = useStore(s => s.categories);
@@ -175,28 +176,11 @@ export function EditPanel() {
   };
 
   const handleDeleteCategory = async (id: string, name: string) => {
-    // Everything nested underneath goes too, so count the whole subtree — not just
-    // direct children — before asking.
-    const descendantIds = new Set<string>();
-    const queue = [id];
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      for (const c of categories) {
-        if (c.parentId === current && !descendantIds.has(c.id)) {
-          descendantIds.add(c.id);
-          queue.push(c.id);
-        }
-      }
-    }
-    const doomedTags = tags.filter(t => t.categoryId === id || descendantIds.has(t.categoryId));
-
-    const parts: string[] = [];
-    if (descendantIds.size > 0) parts.push(`${descendantIds.size} sub-categor${descendantIds.size === 1 ? 'y' : 'ies'}`);
-    if (doomedTags.length > 0) parts.push(`${doomedTags.length} tag${doomedTags.length === 1 ? '' : 's'}`);
-    const msg = parts.length > 0
-      ? `Delete category "${name}" and its ${parts.join(' and ')}?`
-      : `Delete category "${name}"?`;
-    if (!window.confirm(msg)) return;
+    // Everything nested underneath goes too, so the prompt counts the whole subtree —
+    // see lib/category-impact, where that arithmetic is unit-tested.
+    const impact = categoryImpact(id, categories, tags);
+    if (!window.confirm(describeCategoryDeletion(name, impact))) return;
+    const { descendantIds } = impact;
 
     try {
       await deleteCategory(id);
@@ -238,104 +222,28 @@ export function EditPanel() {
     setSelectedIds(new Set());
   };
 
-  const renderCategoryNode = (cat: Category) => {
-    const catTags = tags.filter(t => t.categoryId === cat.id);
-    const children = categories.filter(c => c.parentId === cat.id);
-    const size = ruleSize(cat.id);
-
-    return (
-      <div key={cat.id} className="info-section category-node">
-        <div
-          className="category-row"
-          onContextMenu={e => {
-            e.preventDefault();
-            setContextMenu({ x: e.clientX, y: e.clientY, categoryId: cat.id });
-          }}
-        >
-          {selectMode && (
-            <input
-              type="checkbox"
-              className="category-select-box"
-              checked={selectedIds.has(cat.id)}
-              onChange={() => toggleSelected(cat.id)}
-              aria-label={`Select ${cat.name}`}
-            />
-          )}
-
-          {renamingCategoryId === cat.id ? (
-            <input
-              ref={renameCatInputRef}
-              className="input category-rename-input"
-              value={renameCatName}
-              onChange={e => setRenameCatName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleRenameCategory();
-                if (e.key === 'Escape') setRenamingCategoryId(null);
-              }}
-              onBlur={handleRenameCategory}
-            />
-          ) : (
-            <div
-              className="info-section-title category-node-name"
-              onClick={() => (selectMode ? toggleSelected(cat.id) : startRenameCategory(cat.id, cat.name))}
-              title={selectMode ? 'Click to select' : 'Click to rename — right-click for more'}
-            >
-              {cat.name}
-            </div>
-          )}
-
-          {size > 0 && (
-            <button
-              className="rule-chip"
-              onClick={() => setRuleCategoryId(cat.id)}
-              title={`Rule: creates ${size} sub-categor${size === 1 ? 'y' : 'ies'} in each new sub-category`}
-            >
-              rule {size}
-            </button>
-          )}
-
-          <button
-            className="btn btn-ghost btn-sm category-row-btn"
-            onClick={() => startCreateSubCategory(cat.id)}
-            title="Add sub-category"
-          >
-            +
-          </button>
-          <button
-            className="btn btn-ghost btn-sm category-row-btn"
-            onClick={() => handleDeleteCategory(cat.id, cat.name)}
-            title="Delete category"
-          >
-            ×
-          </button>
-        </div>
-
-        {catTags.length > 0 && (
-          <div className="label-list">
-            {catTags.map(tag => (
-              <span
-                key={tag.id}
-                className="badge"
-                style={{
-                  backgroundColor: `${tag.color}20`,
-                  color: tag.color,
-                  borderLeft: `3px solid ${tag.color}`,
-                }}
-              >
-                {tag.name}
-              </span>
-            ))}
-          </div>
-        )}
-        {catTags.length === 0 && children.length === 0 && (
-          <div className="category-node-empty">No tags</div>
-        )}
-
-        {children.length > 0 && (
-          <div className="category-node-children">{children.map(child => renderCategoryNode(child))}</div>
-        )}
-      </div>
-    );
+  /** Everything CategoryNode needs; the panel keeps owning the state. */
+  const categoryNodeProps = {
+    categories,
+    tags,
+    ruleSize,
+    selectMode,
+    selectedIds,
+    onToggleSelected: toggleSelected,
+    renamingCategoryId,
+    renameValue: renameCatName,
+    renameInputRef: renameCatInputRef,
+    onRenameChange: setRenameCatName,
+    onRenameCommit: handleRenameCategory,
+    onRenameCancel: () => setRenamingCategoryId(null),
+    onStartRename: startRenameCategory,
+    onOpenRule: setRuleCategoryId,
+    onAddSubCategory: startCreateSubCategory,
+    onDelete: handleDeleteCategory,
+    onContextMenu: (e: React.MouseEvent, categoryId: string) => {
+      e.preventDefault();
+      setContextMenu({ x: e.clientX, y: e.clientY, categoryId });
+    },
   };
 
   const rootCategories = categories.filter(c => !c.parentId);
@@ -440,7 +348,9 @@ export function EditPanel() {
         </div>
       )}
 
-      {rootCategories.map(cat => renderCategoryNode(cat))}
+      {rootCategories.map(cat => (
+        <CategoryNode key={cat.id} {...categoryNodeProps} category={cat} />
+      ))}
 
       {categories.length === 0 && (
         <div className="empty-state">

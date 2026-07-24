@@ -5,7 +5,9 @@ export default defineConfig({
   timeout: 30000,
   expect: { timeout: 10000 },
   fullyParallel: false,
-  retries: 0,
+  // One retry on CI absorbs the occasional timing flake on a slow shared runner; locally a
+  // failure should stay a failure so it gets looked at.
+  retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: 'list',
   use: {

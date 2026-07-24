@@ -2,13 +2,66 @@ name: Build
 
 on:
   push:
+    branches:
+      - main
     tags:
       - 'v*'
+  pull_request:
   workflow_dispatch:
 
 jobs:
+  # Gate: nothing gets built or published unless lint and the test suites pass. Without
+  # this the pipeline went npm ci -> make -> publish, so a red suite would ship silently.
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # better-sqlite3 is a native module; node-gyp needs Python to rebuild it.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The unit tests run under Electron's Node, so better-sqlite3 has to match Electron's
+      # ABI rather than the ABI npm installed it for.
+      - name: Rebuild native modules against Electron
+        run: npx electron-rebuild -f -w better-sqlite3
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build main and preload for E2E
+        run: npm run test:e2e:build
+
+      # Electron needs a display server on Linux.
+      - name: E2E tests
+        run: xvfb-run --auto-servernum npx playwright test
+
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test-results/
+          if-no-files-found: ignore
+
   build:
     name: Build ${{ matrix.platform }}
+    needs: test
+    # Distributables are only worth making for a release tag.
+    if: startsWith(github.ref, 'refs/tags/')
     strategy:
       fail-fast: false
       matrix:

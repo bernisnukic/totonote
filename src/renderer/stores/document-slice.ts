@@ -16,7 +16,10 @@ export interface DocumentSlice {
 
   loadDocuments: () => Promise<void>;
   openDocument: (id: string) => Promise<void>;
-  closeDocument: () => void;
+  closeDocument: () => Promise<void>;
+  /** Flush pending saves and clear session state for the open document, before its
+   *  editors unmount. Used by closeDocument and by switching documents. */
+  leaveDocument: () => Promise<void>;
   createDocument: (title: string, description?: string) => Promise<Document>;
   updateDocument: (id: string, updates: { title?: string; description?: string; sectionLabel?: string }) => Promise<void>;
   deleteDocument: (id: string) => Promise<void>;
@@ -53,6 +56,10 @@ export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> 
   },
 
   openDocument: async (id) => {
+    // Switching documents tears down the current editors — flush first (see leaveDocument).
+    if (get().activeDocumentId && get().activeDocumentId !== id) {
+      await get().leaveDocument();
+    }
     set({ isLoading: true });
     const [doc, sections] = await Promise.all([
       invoke('document:get', { id }),
@@ -67,7 +74,29 @@ export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> 
     });
   },
 
-  closeDocument: () => {
+  /**
+   * Persist anything outstanding and drop this document's session state.
+   *
+   * Called before the section editors unmount — both when going Back and when switching to
+   * another document. Flushing has to happen *while the editors are still mounted*, because
+   * only they hold the current content and mapped annotation positions.
+   *
+   * In manual-save mode this means leaving a document saves it. Auto-save controls whether
+   * we write *as you type*; it never means "throw away work on the way out" — that silently
+   * destroyed unsaved edits. Quitting still warns rather than saving, since that is the one
+   * exit a user expects to be asked about.
+   */
+  leaveDocument: async () => {
+    await get().saveAllDirty();
+    // The History timeline is per-session and per-section; without this it keeps every
+    // snapshot of every section visited until the app quits.
+    for (const section of get().sections) {
+      get().clearSectionHistory(section.id);
+    }
+  },
+
+  closeDocument: async () => {
+    await get().leaveDocument();
     set({
       activeDocumentId: null,
       activeDocument: null,
@@ -95,11 +124,23 @@ export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> 
   deleteDocument: async (id) => {
     const snapshot = await invoke('document:delete', { id });
     get().offerUndo(snapshot);
-    set(s => ({
-      documents: s.documents.filter(d => d.id !== id),
-      activeDocumentId: s.activeDocumentId === id ? null : s.activeDocumentId,
-      activeDocument: s.activeDocumentId === id ? null : s.activeDocument,
-    }));
+    // Deleting is deliberate destruction, so nothing is flushed — but the pending-save and
+    // history bookkeeping has to go, or a deleted document keeps the app marked "unsaved".
+    const wasOpen = get().activeDocumentId === id;
+    if (wasOpen) {
+      for (const section of get().sections) get().clearSectionHistory(section.id);
+    }
+    set(s => {
+      const goneIds = wasOpen ? new Set(s.sections.map(sec => sec.id)) : new Set<string>();
+      return {
+        documents: s.documents.filter(d => d.id !== id),
+        activeDocumentId: wasOpen ? null : s.activeDocumentId,
+        activeDocument: wasOpen ? null : s.activeDocument,
+        sections: wasOpen ? [] : s.sections,
+        activeSectionId: wasOpen ? null : s.activeSectionId,
+        dirtySectionIds: s.dirtySectionIds.filter(sid => !goneIds.has(sid)),
+      };
+    });
   },
 
   loadSections: async (documentId) => {

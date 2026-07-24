@@ -125,3 +125,78 @@ export interface IpcHandlerMap {
 }
 
 export type IpcChannel = keyof IpcHandlerMap;
+
+/**
+ * The same channel list at runtime, so the preload bridge can reject anything else.
+ * `IPC_CHANNELS` and `IpcHandlerMap` are kept in step by the assertions below: add a
+ * channel to one and forget the other and this file stops compiling.
+ */
+export const IPC_CHANNELS = [
+  'workspace:list',
+  'workspace:create',
+  'workspace:rename',
+  'workspace:delete',
+  'document:list',
+  'document:get',
+  'document:create',
+  'document:update',
+  'document:delete',
+  'section:list',
+  'section:get',
+  'section:create',
+  'section:update',
+  'section:delete',
+  'section:reorder',
+  'tag:list',
+  'tag:create',
+  'tag:update',
+  'tag:delete',
+  'tag:search',
+  'category:list',
+  'category:create',
+  'category:update',
+  'category:delete',
+  'undo:restore',
+  'category:bulk-add-child',
+  'category:rule-list',
+  'category:rule-get',
+  'category:rule-set',
+  'category:rule-apply-existing',
+  'annotation:list',
+  'annotation:list-by-document',
+  'annotation:create',
+  'annotation:update',
+  'annotation:delete',
+  'annotation:batch-update-positions',
+  'annotation:placements',
+  'annotation:reorder-placements',
+  'annotation:filing-edges',
+  'section-tag:list',
+  'section-tag:add',
+  'section-tag:remove',
+  'section-tag:list-by-document',
+  'document-tag:list',
+  'document-tag:add',
+  'document-tag:remove',
+  'browse-category:list',
+  'preference:get',
+  'preference:set',
+  'app:check-for-updates',
+  'app:open-external',
+  'app:version',
+  'window:set-dirty',
+  'app:force-quit',
+] as const;
+
+type ListedChannel = (typeof IPC_CHANNELS)[number];
+type Assert<T extends true> = T;
+/* eslint-disable @typescript-eslint/no-unused-vars */
+type _EveryChannelIsListed = Assert<[IpcChannel] extends [ListedChannel] ? true : false>;
+type _EveryListedChannelExists = Assert<[ListedChannel] extends [IpcChannel] ? true : false>;
+/* eslint-enable @typescript-eslint/no-unused-vars */
+
+/** Runtime guard for the preload bridge. */
+export function isIpcChannel(value: string): value is IpcChannel {
+  return (IPC_CHANNELS as readonly string[]).includes(value);
+}
+

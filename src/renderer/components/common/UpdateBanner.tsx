@@ -38,7 +38,8 @@ export function UpdateBanner() {
   };
 
   const download = () => {
-    invoke('app:open-external', { url: info.releaseUrl }).catch(() => {});
+    // Opening the release page is best-effort; a rejection just means no browser opened.
+    invoke('app:open-external', { url: info.releaseUrl }).catch(() => undefined);
   };
 
   return (

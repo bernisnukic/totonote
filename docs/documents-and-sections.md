@@ -101,15 +101,20 @@ no save button needed.
 
 If you'd rather save by hand, turn **Auto-save** off in **Settings**. Then your changes
 wait until you press **⌘S / Ctrl+S** (or the **Save** button that appears in the status
-bar), and TotoNote warns you about any unsaved work before it quits.
+bar).
 
 ![The status bar showing the document, the current section and "Saved"](screenshots/06-status-bar.png)
 
 The bottom right says **Saved** / **Saving…**, or **● Unsaved** with a **Save** button when
 auto-save is off and you have pending changes.
 
-> Because it waits a second, leaving a document *immediately* after typing can lose that
-> last edit. Give it a moment before pressing **← Back** or quitting.
+**Leaving a document always saves it** — pressing **← Back**, opening another document or
+switching workspace writes your changes out first, whichever mode you're in. Auto-save
+decides whether TotoNote saves *while you type*, not whether your work survives closing
+something.
+
+The one exception is quitting, where you get asked instead: with unsaved changes, TotoNote
+offers **Save**, **Don't Save** or **Cancel** before it closes.
 
 ## History
 
