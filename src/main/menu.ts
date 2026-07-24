@@ -19,6 +19,12 @@ function openHelp(page: string): void {
   target?.webContents.send('menu:open-help', page);
 }
 
+/** Send a bare menu message to the focused window (or the first one). */
+function sendToFocused(channel: string): void {
+  const target = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+  target?.webContents.send(channel);
+}
+
 export function buildAppMenu(): void {
   const isMac = process.platform === 'darwin';
 
@@ -52,6 +58,11 @@ export function buildAppMenu(): void {
             target?.webContents.send('menu:new-document');
           },
         },
+        {
+          label: 'Save',
+          accelerator: 'CmdOrCtrl+S',
+          click: () => sendToFocused('menu:save-all'),
+        },
         { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' },
       ],
@@ -60,8 +71,19 @@ export function buildAppMenu(): void {
       // Without an Edit menu, macOS gives no Cmd+C/V/Z inside the editor at all.
       label: 'Edit',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
+        // NOT role:'undo'/'redo'. Those fire the OS-native undo, which the rich-text
+        // editor (ProseMirror) doesn't hear — so Cmd+Z did nothing while typing. Forward
+        // to the renderer instead, which routes it to the focused editor (or input).
+        {
+          label: 'Undo',
+          accelerator: 'CmdOrCtrl+Z',
+          click: () => sendToFocused('menu:undo'),
+        },
+        {
+          label: 'Redo',
+          accelerator: 'CmdOrCtrl+Shift+Z',
+          click: () => sendToFocused('menu:redo'),
+        },
         { type: 'separator' },
         { role: 'cut' },
         { role: 'copy' },

@@ -117,6 +117,11 @@ export interface IpcHandlerMap {
   };
   'app:open-external': { args: { url: string }; result: void };
   'app:version': { args: void; result: string };
+
+  // Unsaved-changes tracking (manual-save mode). The renderer tells main whether there's
+  // unsaved work so the window can warn before closing; force-quit skips that warning.
+  'window:set-dirty': { args: { dirty: boolean }; result: void };
+  'app:force-quit': { args: void; result: void };
 }
 
 export type IpcChannel = keyof IpcHandlerMap;

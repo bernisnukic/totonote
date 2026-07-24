@@ -470,6 +470,45 @@
   margin-bottom: var(--space-3);
 }
 
+/* A checkbox row with a label and an explanatory line (e.g. the auto-save toggle). */
+.settings-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+.settings-toggle input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.settings-toggle-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.settings-toggle-label {
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+.settings-toggle-hint {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+}
+
+/* The Save button in the status bar (manual-save mode). */
+.status-save-btn {
+  padding: 1px var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--bg-primary);
+  background: var(--accent-primary);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+.status-save-btn:hover {
+  filter: brightness(1.1);
+}
+
 .theme-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

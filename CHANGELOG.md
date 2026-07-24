@@ -1,5 +1,18 @@
 # What's New
 
+## 1.9.0
+
+**Undo works in the editor again.** ⌘Z / Ctrl+Z was being swallowed by the menu's
+system-level undo, which the editor never heard. It now goes straight to your writing.
+
+**Auto-save is now optional.** It's still on by default — your writing saves itself as you
+go — but you can turn it off in **Settings → Editing**. With it off, you save on demand with
+**⌘S / Ctrl+S** (or the **Save** button in the status bar), the status bar shows **● Unsaved**
+when you have pending changes, and TotoNote warns you before quitting with unsaved work.
+
+**Expand or collapse every category at once.** The Search tab has an **Expand all /
+Collapse all** button above the list.
+
 ## 1.8.0
 
 **Familiar toolbar icons.** The formatting buttons are now the icons you know from any word

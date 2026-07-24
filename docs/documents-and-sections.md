@@ -96,12 +96,17 @@ reorders both the tabs and the page.
 
 ## Saving
 
-There is no save button and no save shortcut, because there's nothing to save by hand.
-Your writing is stored automatically about a second after you stop typing.
+By default your writing is stored automatically about a second after you stop typing —
+no save button needed.
+
+If you'd rather save by hand, turn **Auto-save** off in **Settings**. Then your changes
+wait until you press **⌘S / Ctrl+S** (or the **Save** button that appears in the status
+bar), and TotoNote warns you about any unsaved work before it quits.
 
 ![The status bar showing the document, the current section and "Saved"](screenshots/06-status-bar.png)
 
-The bottom right says **Saved** or **Saving...**.
+The bottom right says **Saved** / **Saving…**, or **● Unsaved** with a **Save** button when
+auto-save is off and you have pending changes.
 
 > Because it waits a second, leaving a document *immediately* after typing can lose that
 > last edit. Give it a moment before pressing **← Back** or quitting.

@@ -47,7 +47,7 @@ paragraph.
 | Action | macOS | Windows & Linux |
 |--------|-------|-----------------|
 | Undo | `⌘Z` | `Ctrl+Z` |
-| Redo | `⌘⇧Z` or `⌘Y` | `Ctrl+Shift+Z` or `Ctrl+Y` |
+| Redo | `⌘⇧Z` | `Ctrl+Shift+Z` or `Ctrl+Y` |
 
 ## System shortcuts
 
@@ -64,9 +64,14 @@ editor, where they previously did nothing.
 
 ## Saving
 
-There is no save shortcut, because there is nothing to save manually — your writing is
-saved automatically about a second after you stop typing. The status bar in the bottom
-right tells you when it has.
+| Action | macOS | Windows & Linux |
+|--------|-------|-----------------|
+| Save now | `⌘S` | `Ctrl+S` |
+
+With **Auto-save** on (the default) there's nothing to save by hand — your writing is
+stored about a second after you stop typing, and the status bar tells you when. Turn
+auto-save off in **Settings** and `⌘S` / `Ctrl+S` saves on demand instead, with a warning
+before you quit if anything is unsaved.
 
 ## About the shortcut list in Settings
 

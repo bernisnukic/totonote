@@ -12,6 +12,10 @@ descriptions**. Matching categories open up on their own; anything with no match
 If a *category* name matches, all of its tags are shown, with the ones that didn't match
 themselves dimmed.
 
+With the box empty you're browsing the whole tree. Click a category to open or close it,
+or use **▸ Expand all / ▾ Collapse all** above the list to open or close every category at
+once.
+
 ### The "Exact" button
 
 Off by default. It changes how forgiving the matching is:

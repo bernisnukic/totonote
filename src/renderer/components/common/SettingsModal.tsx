@@ -34,6 +34,9 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const theme = useStore(s => s.theme);
   const setTheme = useStore(s => s.setTheme);
+  const autoSaveEnabled = useStore(s => s.autoSaveEnabled);
+  const setAutoSaveEnabled = useStore(s => s.setAutoSaveEnabled);
+  const isMac = /Mac/i.test(navigator.platform);
 
   return (
     <Modal
@@ -66,6 +69,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">Editing</h3>
+        <label className="settings-toggle">
+          <input
+            type="checkbox"
+            checked={autoSaveEnabled}
+            onChange={e => setAutoSaveEnabled(e.target.checked)}
+          />
+          <span className="settings-toggle-body">
+            <span className="settings-toggle-label">Auto-save</span>
+            <span className="settings-toggle-hint">
+              {autoSaveEnabled
+                ? 'Your writing saves itself a moment after you stop typing.'
+                : 'Save manually with ' + (isMac ? '⌘S' : 'Ctrl+S') + '. You’ll be warned about unsaved work before quitting.'}
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="settings-section">

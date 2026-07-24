@@ -7,6 +7,7 @@ import { AnnotationDecoration, annotationPluginKey } from '../../extensions/anno
 import { useStore } from '../../stores';
 import { useDebounce } from '../../hooks/useDebounce';
 import { registerEditor, unregisterEditor } from '../../lib/editor-registry';
+import { registerFlusher, unregisterFlusher } from '../../lib/save-registry';
 import type { Section, Annotation } from '../../../shared/domain-types';
 import { invoke } from '../../lib/ipc-client';
 
@@ -28,35 +29,42 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const setHighlightsVisible = useStore(s => s.setHighlightsVisible);
   const setContextMenu = useStore(s => s.setContextMenu);
   const batchUpdatePositions = useStore(s => s.batchUpdatePositions);
+  const markSectionDirty = useStore(s => s.markSectionDirty);
 
   const annotationsRef = useRef<Annotation[]>([]);
   const contentLoadedRef = useRef(false);
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
 
-  const debouncedSave = useDebounce((sectionId: string, content: string) => {
-    saveContent(sectionId, content);
-    // Persist mapped annotation positions alongside content
+  // Persist this section now: its content plus any annotation positions that moved with
+  // edits. Used by both the auto-save debounce and manual save (Cmd+S / save-and-quit).
+  const persistSection = useCallback((sectionId: string, content: string) => {
+    const promise = saveContent(sectionId, content);
     const ed = editorRef.current;
-    if (!ed) return;
-    const decoSet = annotationPluginKey.getState(ed.state);
-    if (!decoSet) return;
-    const decos = decoSet.find();
-    const updates: Array<{ id: string; fromPos: number; toPos: number }> = [];
-    for (const d of decos) {
-      const annId = d.spec?.annotationId;
-      if (!annId) continue;
-      const orig = annotationsRef.current.find(a => a.id === annId);
-      if (orig && (orig.fromPos !== d.from || orig.toPos !== d.to)) {
-        updates.push({ id: annId, fromPos: d.from, toPos: d.to });
+    if (ed) {
+      const decoSet = annotationPluginKey.getState(ed.state);
+      const decos = decoSet?.find() ?? [];
+      const updates: Array<{ id: string; fromPos: number; toPos: number }> = [];
+      for (const d of decos) {
+        const annId = d.spec?.annotationId;
+        if (!annId) continue;
+        const orig = annotationsRef.current.find(a => a.id === annId);
+        if (orig && (orig.fromPos !== d.from || orig.toPos !== d.to)) {
+          updates.push({ id: annId, fromPos: d.from, toPos: d.to });
+        }
+      }
+      if (updates.length > 0) {
+        batchUpdatePositions(updates);
+        annotationsRef.current = annotationsRef.current.map(a => {
+          const u = updates.find(up => up.id === a.id);
+          return u ? { ...a, fromPos: u.fromPos, toPos: u.toPos } : a;
+        });
       }
     }
-    if (updates.length > 0) {
-      batchUpdatePositions(updates);
-      annotationsRef.current = annotationsRef.current.map(a => {
-        const u = updates.find(up => up.id === a.id);
-        return u ? { ...a, fromPos: u.fromPos, toPos: u.toPos } : a;
-      });
-    }
+    return promise;
+  }, [saveContent, batchUpdatePositions]);
+
+  const debouncedSave = useDebounce((sectionId: string, content: string) => {
+    persistSection(sectionId, content);
   }, 1000);
 
   const editor = useEditor({
@@ -67,8 +75,14 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     ],
     content: '',
     onUpdate: ({ editor }) => {
-      if (contentLoadedRef.current) {
-        debouncedSave(section.id, JSON.stringify(editor.getJSON()));
+      if (!contentLoadedRef.current) return;
+      const content = JSON.stringify(editor.getJSON());
+      // Auto-save debounces to disk; manual-save mode just flags the section dirty and
+      // waits for Cmd+S. Read the flag live so toggling the setting takes effect at once.
+      if (useStore.getState().autoSaveEnabled) {
+        debouncedSave(section.id, content);
+      } else {
+        markSectionDirty(section.id);
       }
     },
     onSelectionUpdate: ({ editor }) => {
@@ -112,6 +126,16 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     editorRef.current = editor;
   }, [editor]);
 
+  // Register a manual-save flusher so Cmd+S / save-and-quit can persist this section on
+  // demand (content + annotation positions) even with auto-save off.
+  useEffect(() => {
+    registerFlusher(section.id, () => {
+      const ed = editorRef.current;
+      if (ed && contentLoadedRef.current) return persistSection(section.id, JSON.stringify(ed.getJSON()));
+    });
+    return () => unregisterFlusher(section.id);
+  }, [section.id, persistSection]);
+
   // Register editor in registry
   useEffect(() => {
     if (!editor) return;
@@ -138,7 +162,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     requestAnimationFrame(() => {
       contentLoadedRef.current = true;
     });
-  }, [editor, section.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editor, section.id]);
 
   // Load and sync annotations
   useEffect(() => {
@@ -151,13 +175,13 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       }
       syncDecorations(annotations);
     });
-  }, [editor, section.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editor, section.id]);
 
   // Re-sync decorations when highlights toggle, per-tag visibility or tags change
   useEffect(() => {
     if (!editor) return;
     syncDecorations(annotationsRef.current);
-  }, [editor, highlightsVisible, hiddenTagIds, tags]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editor, highlightsVisible, hiddenTagIds, tags]);
 
   // When this section becomes active, push its annotations to global store
   useEffect(() => {
@@ -172,7 +196,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     if (!editor || !isActive) return;
     annotationsRef.current = globalAnnotations;
     syncDecorations(globalAnnotations);
-  }, [editor, isActive, globalAnnotations]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editor, isActive, globalAnnotations]);
 
   const syncDecorations = useCallback(
     (annotations: Annotation[]) => {

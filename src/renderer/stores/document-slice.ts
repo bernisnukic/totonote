@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { Document, Section } from '../../shared/domain-types';
 import { invoke } from '../lib/ipc-client';
+import { flushSection } from '../lib/save-registry';
 // Typed against the whole store so deletions can offer an undo (type-only import).
 import type { AppStore } from './index';
 
@@ -27,6 +28,12 @@ export interface DocumentSlice {
   deleteSection: (id: string) => Promise<void>;
   reorderSections: (orderedIds: string[]) => Promise<void>;
   saveContent: (sectionId: string, content: string) => Promise<void>;
+
+  /** Sections edited but not yet persisted — only tracked in manual-save mode. */
+  dirtySectionIds: string[];
+  markSectionDirty: (sectionId: string) => void;
+  /** Flush every dirty section (content + annotation positions) and clear the dirty set. */
+  saveAllDirty: () => Promise<void>;
 }
 
 export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> = (set, get) => ({
@@ -35,6 +42,7 @@ export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> 
   activeDocument: null,
   sections: [],
   activeSectionId: null,
+  dirtySectionIds: [],
   isLoading: false,
   isSaving: false,
 
@@ -139,6 +147,7 @@ export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> 
         // gone. (Undo reloads everything, so the restore path already puts them back.)
         documentAnnotations: s.documentAnnotations.filter(a => a.sectionId !== id),
         sectionTags: s.sectionTags.filter(st => st.sectionId !== id),
+        dirtySectionIds: s.dirtySectionIds.filter(sid => sid !== id),
       };
     });
   },
@@ -166,5 +175,19 @@ export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> 
         sec.id === sectionId ? { ...sec, content, updatedAt: new Date().toISOString() } : sec
       ),
     }));
+  },
+
+  markSectionDirty: (sectionId) => {
+    set(s => (s.dirtySectionIds.includes(sectionId)
+      ? s
+      : { dirtySectionIds: [...s.dirtySectionIds, sectionId] }));
+  },
+
+  saveAllDirty: async () => {
+    const ids = get().dirtySectionIds;
+    if (ids.length === 0) return;
+    // Each editor's flusher persists its content and mapped annotation positions.
+    await Promise.all(ids.map(id => Promise.resolve(flushSection(id))));
+    set({ dirtySectionIds: [] });
   },
 });

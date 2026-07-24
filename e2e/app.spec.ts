@@ -2107,3 +2107,76 @@ test.describe('Sort precedence and section deletion', () => {
     await expect(goldRow.locator('.tag-usage-badge')).toHaveCount(0);
   });
 });
+
+// ─── v1.9.0: undo, manual save, collapse/expand ────────────────────────
+
+test.describe('Editing settings and undo', () => {
+  async function docWithSection() {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Editing Settings');
+    await page.locator('.modal .btn-primary').click();
+    await page.locator('.tab-add').click();
+    await page.locator('.modal input.input').first().fill('Main');
+    await page.locator('.modal .btn-primary').click();
+    await expect(page.locator('.tiptap')).toBeVisible();
+  }
+
+  test('Cmd+Z undoes editor typing (via the Edit menu command)', async () => {
+    await docWithSection();
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Undo me please', { delay: 20 });
+    await expect(editor).toContainText('Undo me please');
+
+    // The menu forwards Undo to the focused editor (role:'undo' would miss ProseMirror).
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0].webContents.send('menu:undo'),
+    );
+    await expect(editor).not.toContainText('Undo me please');
+  });
+
+  test('turning off auto-save requires a manual save', async () => {
+    await docWithSection();
+
+    // Turn auto-save off in Settings.
+    await page.locator('.toolbar-btn[aria-label="Settings"]').click();
+    await page.locator('.settings-toggle input[type="checkbox"]').uncheck();
+    await page.locator('.modal .btn-primary', { hasText: 'Done' }).click();
+
+    // Type — the status bar should flag unsaved work with a Save button.
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Held until I save', { delay: 20 });
+    const saveBtn = page.locator('.status-save-btn');
+    await expect(saveBtn).toBeVisible();
+
+    // Saving clears the unsaved flag.
+    await saveBtn.click();
+    await expect(saveBtn).toHaveCount(0);
+
+    // And the content really persisted: navigate away and back.
+    await page.locator('.toolbar-back-btn').click();
+    await page.locator('.document-card', { hasText: 'Editing Settings' }).click();
+    await expect(page.locator('.tiptap').first()).toContainText('Held until I save');
+  });
+
+  test('Search tab can expand and collapse all categories', async () => {
+    await docWithSection();
+    // Make a tag so there's a category with a child to expand.
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: 'New Tag' }).click();
+    await page.locator('.modal input.input').first().fill('Griffin');
+    await page.locator('.modal .btn-primary', { hasText: 'Create' }).click();
+
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    const expandAll = page.locator('.sidebar-tree-action');
+    await expect(expandAll).toContainText('Expand all');
+    await expandAll.click();
+    await expect(page.locator('.tag-tree-name', { hasText: 'Griffin' })).toBeVisible();
+
+    // Now it offers to collapse, and doing so hides the tags.
+    await expect(expandAll).toContainText('Collapse all');
+    await expandAll.click();
+    await expect(page.locator('.tag-tree-name', { hasText: 'Griffin' })).toHaveCount(0);
+  });
+});

@@ -1,7 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 /** Channels the main process may push to the renderer, and nothing else. */
-const MENU_CHANNELS = ['menu:open-help', 'menu:new-document', 'menu:reset-layout'] as const;
+const MENU_CHANNELS = [
+  'menu:open-help',
+  'menu:new-document',
+  'menu:reset-layout',
+  'menu:undo',
+  'menu:redo',
+  'menu:save-all',
+  'app:save-and-quit',
+] as const;
 
 const api = {
   invoke: (channel: string, args?: unknown) => ipcRenderer.invoke(channel, args),

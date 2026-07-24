@@ -4,10 +4,14 @@ import { invoke } from '../lib/ipc-client';
 export interface PreferenceSlice {
   shortcuts: Record<string, string>;
   theme: string;
+  /** When true (default) the editor debounce-saves as you type; when false the user saves
+   *  manually with Cmd+S and is warned about unsaved work on exit. */
+  autoSaveEnabled: boolean;
 
   loadPreferences: () => Promise<void>;
   updateShortcut: (action: string, keybinding: string) => Promise<void>;
   setTheme: (theme: string) => Promise<void>;
+  setAutoSaveEnabled: (enabled: boolean) => Promise<void>;
   /** Read/write an arbitrary persisted flag (stored in the SQLite preferences table,
    *  so it travels with the user's database rather than resetting on a re-download). */
   readPreference: (key: string) => Promise<string | null>;
@@ -17,16 +21,25 @@ export interface PreferenceSlice {
 export const createPreferenceSlice: StateCreator<PreferenceSlice, [], [], PreferenceSlice> = (set) => ({
   shortcuts: {},
   theme: 'dark',
+  autoSaveEnabled: true,
 
   loadPreferences: async () => {
-    const [shortcutsRaw, themeRaw] = await Promise.all([
+    const [shortcutsRaw, themeRaw, autoSaveRaw] = await Promise.all([
       invoke('preference:get', { key: 'shortcuts' }),
       invoke('preference:get', { key: 'theme' }),
+      invoke('preference:get', { key: 'autoSave' }),
     ]);
     set({
       shortcuts: shortcutsRaw ? JSON.parse(shortcutsRaw) : {},
       theme: themeRaw || 'dark',
+      // Default on — only an explicit 'false' turns it off.
+      autoSaveEnabled: autoSaveRaw !== 'false',
     });
+  },
+
+  setAutoSaveEnabled: async (enabled) => {
+    await invoke('preference:set', { key: 'autoSave', value: enabled ? 'true' : 'false' });
+    set({ autoSaveEnabled: enabled });
   },
 
   updateShortcut: async (action, keybinding) => {

@@ -949,6 +949,23 @@
   box-shadow: 0 -2px 0 var(--accent-primary);
 }
 
+/* Collapse-all / expand-all control above the search tree */
+.sidebar-tree-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 var(--space-2) var(--space-1);
+}
+.sidebar-tree-action {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+.sidebar-tree-action:hover {
+  color: var(--text-primary);
+}
+
 /* Explains what a sidebar mode does, at the top of its panel */
 .sidebar-mode-hint {
   padding: var(--space-2) var(--space-3);

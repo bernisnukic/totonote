@@ -66,6 +66,13 @@ export function LeftSidebar() {
     });
   }, []);
 
+  // Collapse-all / expand-all for the search tree.
+  const allCategoryIds = useMemo(() => flattenCategoryTree(categories).map(({ category }) => category.id), [categories]);
+  const allExpanded = allCategoryIds.length > 0 && allCategoryIds.every(id => expandedCategories.has(id));
+  const toggleExpandAll = useCallback(() => {
+    setExpandedCategories(allExpanded ? new Set<string>() : new Set(allCategoryIds));
+  }, [allExpanded, allCategoryIds]);
+
   // Scoped usage: compute which tags are used in the current document
   const usedTagIds = useMemo(() => {
     return new Set([
@@ -178,6 +185,13 @@ export function LeftSidebar() {
               Exact
             </button>
           </div>
+          {allCategoryIds.length > 0 && (
+            <div className="sidebar-tree-actions">
+              <button className="sidebar-tree-action" onClick={toggleExpandAll}>
+                {allExpanded ? '▾ Collapse all' : '▸ Expand all'}
+              </button>
+            </div>
+          )}
           <div className="sidebar-results">
             {categoryTree.length > 0 ? (
               <div className="category-tree">

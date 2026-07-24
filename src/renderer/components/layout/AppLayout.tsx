@@ -4,6 +4,8 @@ import { PanelDivider } from './PanelDivider';
 import { StatusBar } from './StatusBar';
 import { LeftSidebar } from '../left-sidebar/LeftSidebar';
 import { RightSidebar } from '../right-sidebar/RightSidebar';
+import { getActiveEditor } from '../../lib/editor-registry';
+import { invoke } from '../../lib/ipc-client';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,6 +22,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const resetRightSidebarWidth = useStore(s => s.resetRightSidebarWidth);
   const resetSidebarWidths = useStore(s => s.resetSidebarWidths);
   const activeDocumentId = useStore(s => s.activeDocumentId);
+  const saveAllDirty = useStore(s => s.saveAllDirty);
+  const autoSaveEnabled = useStore(s => s.autoSaveEnabled);
+  const dirtyCount = useStore(s => s.dirtySectionIds.length);
 
   const handleLeftResize = useCallback(
     (delta: number) => {
@@ -39,6 +44,50 @@ export function AppLayout({ children }: AppLayoutProps) {
   useEffect(() => {
     return window.api.onMenu('menu:reset-layout', () => resetSidebarWidths());
   }, [resetSidebarWidths]);
+
+  // Edit > Undo/Redo (Cmd+Z / Shift+Cmd+Z). These come through the menu rather than the
+  // OS-native undo, which the rich-text editor can't hear. Route to whatever has focus:
+  // a plain input undoes its own text; otherwise the active section editor does.
+  useEffect(() => {
+    const run = (redo: boolean) => {
+      const el = document.activeElement as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+        document.execCommand(redo ? 'redo' : 'undo');
+        return;
+      }
+      const editor = getActiveEditor(useStore.getState().activeSectionId);
+      editor?.chain().focus()[redo ? 'redo' : 'undo']().run();
+    };
+    const offUndo = window.api.onMenu('menu:undo', () => run(false));
+    const offRedo = window.api.onMenu('menu:redo', () => run(true));
+    return () => {
+      offUndo();
+      offRedo();
+    };
+  }, []);
+
+  // File > Save (Cmd+S). And the save-and-quit handshake: when the user chooses "Save" in
+  // the close-warning dialog, flush everything, then tell main it's safe to quit.
+  useEffect(() => {
+    const offSave = window.api.onMenu('menu:save-all', () => {
+      saveAllDirty();
+    });
+    const offSaveQuit = window.api.onMenu('app:save-and-quit', () => {
+      saveAllDirty().finally(() => invoke('app:force-quit'));
+    });
+    return () => {
+      offSave();
+      offSaveQuit();
+    };
+  }, [saveAllDirty]);
+
+  // Tell main whether there's unsaved work, so it can warn before the window closes. Only
+  // manual-save mode can have unsaved work; auto-save keeps this false. Turning auto-save
+  // back on also flushes anything left pending.
+  useEffect(() => {
+    if (autoSaveEnabled && dirtyCount > 0) saveAllDirty();
+    invoke('window:set-dirty', { dirty: !autoSaveEnabled && dirtyCount > 0 });
+  }, [autoSaveEnabled, dirtyCount, saveAllDirty]);
 
   return (
     <div className="app-container">

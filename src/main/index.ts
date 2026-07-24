@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'path';
 import { initDb, closeDb } from './db/connection';
 import { registerIpcHandlers } from './ipc/handlers';
@@ -15,6 +15,10 @@ if (require('electron-squirrel-startup')) {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+// In manual-save mode the renderer reports whether there's unsaved work, so we can warn
+// before the window closes. Stays false whenever auto-save is on (nothing to lose).
+let unsavedChanges = false;
 
 const createWindow = (): void => {
   mainWindow = new BrowserWindow({
@@ -50,6 +54,28 @@ const createWindow = (): void => {
   if (!app.isPackaged && process.env.NODE_ENV !== 'test') {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
+
+  // Warn before closing with unsaved work (manual-save mode only). Under automation we
+  // never prompt, so tests can close the window freely.
+  mainWindow.on('close', e => {
+    if (!unsavedChanges || process.env.NODE_ENV === 'test' || !mainWindow) return;
+    const choice = dialog.showMessageBoxSync(mainWindow, {
+      type: 'warning',
+      buttons: ['Save', "Don't Save", 'Cancel'],
+      defaultId: 0,
+      cancelId: 2,
+      message: 'You have unsaved changes.',
+      detail: 'Do you want to save them before quitting?',
+    });
+    if (choice === 2) {
+      e.preventDefault(); // Cancel — stay open.
+    } else if (choice === 1) {
+      unsavedChanges = false; // Don't Save — let the close proceed.
+    } else {
+      e.preventDefault(); // Save — flush in the renderer, then it force-quits.
+      mainWindow.webContents.send('app:save-and-quit');
+    }
+  });
 };
 
 app.whenReady().then(() => {
@@ -58,6 +84,16 @@ app.whenReady().then(() => {
 
   // Register IPC handlers
   registerIpcHandlers();
+
+  // Unsaved-changes tracking for the close warning.
+  ipcMain.handle('window:set-dirty', (_e, args: { dirty: boolean }) => {
+    unsavedChanges = Boolean(args?.dirty);
+  });
+  // After the renderer has flushed pending saves, it asks to quit for real.
+  ipcMain.handle('app:force-quit', () => {
+    unsavedChanges = false;
+    app.quit();
+  });
 
   // Application menu — also what puts the real app name in the macOS menu bar and
   // gives the editor its Cmd+C/V/Z roles.

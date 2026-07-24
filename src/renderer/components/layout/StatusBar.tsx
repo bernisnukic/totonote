@@ -6,8 +6,12 @@ export function StatusBar() {
   const activeDocument = useStore(s => s.activeDocument);
   const activeSectionId = useStore(s => s.activeSectionId);
   const sections = useStore(s => s.sections);
+  const autoSaveEnabled = useStore(s => s.autoSaveEnabled);
+  const dirtyCount = useStore(s => s.dirtySectionIds.length);
+  const saveAllDirty = useStore(s => s.saveAllDirty);
 
   const activeSection = sections.find(s => s.id === activeSectionId);
+  const hasUnsaved = !autoSaveEnabled && dirtyCount > 0;
 
   return (
     <div
@@ -33,9 +37,18 @@ export function StatusBar() {
               {activeDocument.sectionLabel}: {activeSection.title}
             </span>
           )}
-          <span style={{ marginLeft: 'auto' }}>
-            {isSaving ? 'Saving...' : 'Saved'}
-          </span>
+          {hasUnsaved ? (
+            <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <span style={{ color: 'var(--accent-primary)' }}>● Unsaved</span>
+              <button className="status-save-btn" onClick={() => saveAllDirty()}>
+                Save
+              </button>
+            </span>
+          ) : (
+            <span style={{ marginLeft: 'auto' }}>
+              {isSaving ? 'Saving...' : autoSaveEnabled ? 'Saved' : 'All saved'}
+            </span>
+          )}
         </>
       )}
       {!activeDocument && <span>TotoNote</span>}
