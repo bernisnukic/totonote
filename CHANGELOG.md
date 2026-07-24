@@ -1,5 +1,18 @@
 # What's New
 
+## 1.11.0
+
+**Pictures.** Paste or drag an image straight into a section — character references, maps,
+concept art. PNG, JPEG, WebP, GIF and AVIF.
+
+Images are kept **inside your world file**, so copying `totonote.db` still takes everything
+with it, and anything over 2000px is scaled down once on the way in so a folder of concept
+art doesn't turn your world into a multi-gigabyte file.
+
+**Pictures go on wiki pages too.** Select an image, tag it, and file it under a category
+just like a passage of text — the picture then shows up on that category's compiled page.
+Which is how a character's portrait ends up on the character's page.
+
 ## 1.10.1
 
 **Fixed: leaving a document could lose unsaved work.** With **Auto-save** turned off,

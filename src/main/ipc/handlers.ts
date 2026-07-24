@@ -9,8 +9,10 @@ import * as undoRepo from '../db/repositories/undo-repo';
 import * as annotationRepo from '../db/repositories/annotation-repo';
 import * as sectionTagRepo from '../db/repositories/section-tag-repo';
 import * as preferenceRepo from '../db/repositories/preference-repo';
+import * as mediaRepo from '../db/repositories/media-repo';
+import { mediaIdsInContent } from '../../shared/media-refs';
 import { checkForUpdates } from '../services/update-checker';
-import type { CreateCategoryInput, BulkAddSubcategoryInput } from '../../shared/domain-types';
+import type { CreateCategoryInput, BulkAddSubcategoryInput, CreateMediaInput } from '../../shared/domain-types';
 
 const ALLOWED_EXTERNAL_PREFIX = 'https://github.com/bernisnukic/totonote/';
 
@@ -104,6 +106,19 @@ export function registerIpcHandlers(): void {
   // Preferences
   ipcMain.handle('preference:get', (_, args: { key: string }) => preferenceRepo.getPreference(args.key));
   ipcMain.handle('preference:set', (_, args: { key: string; value: string }) => preferenceRepo.setPreference(args.key, args.value));
+
+  // Embedded images
+  ipcMain.handle('media:create', (_, args: CreateMediaInput) => mediaRepo.createMedia(args));
+  ipcMain.handle('media:get-meta', (_, args: { id: string }) => mediaRepo.getMediaMeta(args.id));
+  ipcMain.handle('media:usage', () => mediaRepo.mediaUsage());
+  ipcMain.handle('media:purge-unused', () => {
+    // An image counts as in use if any section's stored content still points at it.
+    const referenced = new Set<string>();
+    for (const content of sectionRepo.allSectionContent()) {
+      for (const id of mediaIdsInContent(content)) referenced.add(id);
+    }
+    return { removed: mediaRepo.deleteUnusedMedia(referenced) };
+  });
 
   // App / Updates
   // Undo

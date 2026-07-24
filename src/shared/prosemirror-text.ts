@@ -15,6 +15,8 @@
  * inside the range collapse to a single separator, and leaves contribute nothing.
  */
 
+import { mediaIdFromUrl } from './media-refs';
+
 export interface PMJsonNode {
   type: string;
   text?: string;
@@ -85,4 +87,49 @@ export function excerptFromContent(contentJson: string, from: number, to: number
     return '';
   }
   return extractTextBetween(doc, from, to).trim();
+}
+
+/**
+ * The media ids of any images inside a document range.
+ *
+ * A filed excerpt that is an image has no text at all, so a compiled page would show
+ * nothing for it — a character's portrait would render as an empty row. Walking for image
+ * nodes with the same position arithmetic lets the page show a thumbnail instead.
+ */
+export function imagesInRange(doc: PMJsonNode, from: number, to: number): string[] {
+  const ids: string[] = [];
+
+  const walk = (node: PMJsonNode, pos: number): void => {
+    if (node.text != null) return;
+
+    if (LEAF_NODES.has(node.type)) {
+      // A leaf occupies exactly one position; include it when that position is covered.
+      if (node.type === 'image' && pos >= from && pos < to) {
+        const src = (node as { attrs?: { src?: string } }).attrs?.src;
+        const id = src ? mediaIdFromUrl(src) : null;
+        if (id && !ids.includes(id)) ids.push(id);
+      }
+      return;
+    }
+
+    // Children of a container start one position inside it (the doc itself starts at 0).
+    let childPos = node === doc ? 0 : pos + 1;
+    for (const child of node.content ?? []) {
+      walk(child, childPos);
+      childPos += nodeSize(child);
+    }
+  };
+
+  walk(doc, 0);
+  return ids;
+}
+
+/** `imagesInRange` against stored JSON, tolerating unparsable content. */
+export function imagesFromContent(contentJson: string, from: number, to: number): string[] {
+  if (!contentJson) return [];
+  try {
+    return imagesInRange(JSON.parse(contentJson), from, to);
+  } catch {
+    return [];
+  }
 }

@@ -26,6 +26,8 @@ import type {
   CreateAnnotationInput,
   UpdateAnnotationInput,
   PositionUpdate,
+  MediaMeta,
+  CreateMediaInput,
 } from './domain-types';
 
 export interface IpcHandlerMap {
@@ -118,6 +120,13 @@ export interface IpcHandlerMap {
   'app:open-external': { args: { url: string }; result: void };
   'app:version': { args: void; result: string };
 
+  // Embedded images. Bytes go in once on import and are served back over the
+  // totonote:// protocol, so they never travel through IPC again.
+  'media:create': { args: CreateMediaInput; result: MediaMeta };
+  'media:get-meta': { args: { id: string }; result: MediaMeta | null };
+  'media:usage': { args: void; result: { count: number; totalBytes: number } };
+  'media:purge-unused': { args: void; result: { removed: number } };
+
   // Unsaved-changes tracking (manual-save mode). The renderer tells main whether there's
   // unsaved work so the window can warn before closing; force-quit skips that warning.
   'window:set-dirty': { args: { dirty: boolean }; result: void };
@@ -186,6 +195,10 @@ export const IPC_CHANNELS = [
   'app:version',
   'window:set-dirty',
   'app:force-quit',
+  'media:create',
+  'media:get-meta',
+  'media:usage',
+  'media:purge-unused',
 ] as const;
 
 type ListedChannel = (typeof IPC_CHANNELS)[number];

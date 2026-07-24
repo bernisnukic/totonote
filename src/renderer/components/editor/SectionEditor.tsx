@@ -3,6 +3,8 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 // v3: StarterKit now bundles Underline (and Link); Placeholder moved to @tiptap/extensions.
 import { Placeholder } from '@tiptap/extensions';
+import { importImageFile, imageFilesFrom } from '../../lib/image-import';
+import { SizedImage } from '../../extensions/sized-image';
 import { AnnotationDecoration, annotationPluginKey } from '../../extensions/annotation-decoration';
 import { useStore } from '../../stores';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -74,10 +76,34 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     pushSnapshot(sectionId, content);
   }, 1200);
 
+  /**
+   * Store each file, then insert an image node pointing at it. Sequential rather than
+   * parallel so a multi-image paste lands in the order it was picked up.
+   */
+  const insertImages = useCallback(async (files: File[], at?: number) => {
+    const ed = editorRef.current;
+    if (!ed) return;
+    let pos = at;
+    for (const file of files) {
+      try {
+        const { meta, url } = await importImageFile(file);
+        const node = { type: 'image', attrs: { src: url, alt: file.name, width: meta.width } };
+        const chain = ed.chain().focus();
+        pos === undefined ? chain.insertContent(node).run() : chain.insertContentAt(pos, node).run();
+        // Step past what was just inserted so the next image follows it.
+        if (pos !== undefined) pos += 1;
+      } catch (err) {
+        console.error('[image import]', err);
+        window.alert(`Could not add "${file.name}": ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }, []);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Placeholder.configure({ placeholder: 'Start writing...' }),
+      SizedImage,
       AnnotationDecoration,
     ],
     content: '',
@@ -114,6 +140,27 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
           return true;
         }
         return false;
+      },
+      // Paste or drop an image file and it goes into the database, with only a
+      // totonote://media/<id> reference landing in the document.
+      handlePaste: (_view, event) => {
+        const files = imageFilesFrom(event.clipboardData);
+        if (files.length === 0) return false;
+        event.preventDefault();
+        void insertImages(files);
+        return true;
+      },
+      handleDrop: (view, event) => {
+        const files = imageFilesFrom((event as DragEvent).dataTransfer);
+        if (files.length === 0) return false;
+        event.preventDefault();
+        // Drop where the pointer is, not wherever the caret happened to be.
+        const at = view.posAtCoords({
+          left: (event as DragEvent).clientX,
+          top: (event as DragEvent).clientY,
+        });
+        void insertImages(files, at?.pos);
+        return true;
       },
       handleClick: (_view, _pos, event) => {
         const target = event.target as HTMLElement;

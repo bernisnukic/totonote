@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../stores';
 import { getEditor } from '../../lib/editor-registry';
+import { mediaUrl } from '../../../shared/media-refs';
 import type { AnnotationPlacement, Category } from '../../../shared/domain-types';
 
 export type PlacementSort = 'custom' | 'newest' | 'oldest' | 'document';
@@ -93,6 +94,12 @@ export function PlacementRow({
       }
     }
   }
+  // A picture filed on its own has no text; the thumbnail below carries the meaning, so
+  // name it rather than showing a bare ellipsis.
+  const imageCount = placement.imageIds.length;
+  if (!excerpt && imageCount > 0) {
+    excerpt = imageCount === 1 ? 'Image' : `${imageCount} images`;
+  }
   excerpt = excerpt || '…';
   const display = excerpt.length > 110 ? `${excerpt.slice(0, 110)}…` : excerpt;
 
@@ -113,6 +120,15 @@ export function PlacementRow({
         {showTag && <span className="label-color-dot" style={{ backgroundColor: placement.tagColor }} />}
         <span>{display}</span>
       </div>
+      {/* An excerpt that is a picture has no text of its own — show it instead. */}
+      {placement.imageIds.length > 0 && (
+        <div className="placement-thumbs" onDoubleClick={() => onNavigate(placement)}>
+          {placement.imageIds.map(id => (
+            <img key={id} className="placement-thumb" src={mediaUrl(id)} alt="" draggable={false} />
+          ))}
+        </div>
+      )}
+
       <div className="placement-source">
         {showTag && <span className="placement-tag-name">{placement.tagName} · </span>}
         {placement.documentTitle} › {placement.sectionTitle}

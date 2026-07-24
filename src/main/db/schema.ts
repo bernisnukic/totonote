@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, blob, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // SQLite timestamps are ISO strings (matches the existing schema and domain-types).
@@ -180,4 +180,26 @@ export const browseCategories = sqliteTable('browse_categories', {
 export const preferences = sqliteTable('preferences', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
+});
+
+/**
+ * Embedded images, stored as bytes in the database rather than as loose files.
+ *
+ * Keeps the promise that a world is one `.db` file you can copy or back up, and keeps the
+ * bytes *out* of `sections.content` — that column is re-written on a one-second debounce
+ * and snapshotted up to 60 times per section by the History timeline, so an inline data
+ * URI would be copied constantly. Section content only ever holds `totonote://media/<id>`.
+ *
+ * Rows are never garbage-collected when a section is deleted: deletions are undoable, and
+ * purging the images of a section that can still be restored would quietly break it.
+ */
+export const media = sqliteTable('media', {
+  id: text('id').primaryKey(),
+  mimeType: text('mime_type').notNull(),
+  /** Pixel dimensions after any downscale on import, so the editor can size the node. */
+  width: integer('width').notNull(),
+  height: integer('height').notNull(),
+  byteSize: integer('byte_size').notNull(),
+  data: blob('data', { mode: 'buffer' }).notNull(),
+  createdAt: text('created_at').notNull().default(isoNow),
 });

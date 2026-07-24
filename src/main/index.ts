@@ -1,13 +1,25 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, protocol } from 'electron';
 import path from 'path';
 import { initDb, closeDb } from './db/connection';
 import { registerIpcHandlers } from './ipc/handlers';
 import { buildAppMenu } from './menu';
+import { getMediaBytes } from './db/repositories/media-repo';
+import { MEDIA_SCHEME, MEDIA_HOST } from '../shared/media-refs';
 
 // Set before anything reads it. Without this the app identifies itself as "Electron":
 // the macOS menu bar shows "Electron" beside the Apple logo, and app.getPath('userData')
 // lands in ~/Library/Application Support/Electron. Must run before app 'ready'.
 app.setName('TotoNote');
+
+// Embedded images are served from the database over totonote://media/<id>. The scheme has
+// to be declared privileged *before* the app is ready, or <img> requests to it are treated
+// as an unknown protocol and blocked. `standard` gives it normal URL parsing (host + path).
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: MEDIA_SCHEME,
+    privileges: { standard: true, secure: true, supportFetchAPI: true },
+  },
+]);
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -81,6 +93,28 @@ const createWindow = (): void => {
 app.whenReady().then(() => {
   // Initialize database
   initDb();
+
+  // Serve embedded images out of the database. The renderer has no filesystem access and
+  // the bytes are not in the document, so this is how an <img> gets its pixels.
+  protocol.handle(MEDIA_SCHEME, request => {
+    const url = new URL(request.url);
+    if (url.hostname !== MEDIA_HOST) {
+      return new Response('Not found', { status: 404 });
+    }
+    const id = decodeURIComponent(url.pathname.replace(/^\//, ''));
+    const found = id ? getMediaBytes(id) : null;
+    if (!found) {
+      return new Response('Not found', { status: 404 });
+    }
+    return new Response(new Uint8Array(found.data), {
+      status: 200,
+      headers: {
+        'Content-Type': found.mimeType,
+        // Ids are content-addressed by creation, so a given id never changes bytes.
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    });
+  });
 
   // Register IPC handlers
   registerIpcHandlers();

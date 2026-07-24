@@ -29,6 +29,13 @@
       "when": 1784646953135,
       "tag": "0003_chief_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784933699688,
+      "tag": "0004_wealthy_mole_man",
+      "breakpoints": true
     }
   ]
 }

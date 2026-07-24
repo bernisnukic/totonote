@@ -1,7 +1,7 @@
 {
   "name": "totonote",
   "productName": "TotoNote",
-  "version": "1.10.1",
+  "version": "1.11.0",
   "description": "A desktop app for organizing lore and world-building notes",
   "main": ".vite/build/index.js",
   "private": true,
@@ -56,6 +56,7 @@
   },
   "dependencies": {
     "@tiptap/core": "^3.0.0",
+    "@tiptap/extension-image": "^3.28.0",
     "@tiptap/extensions": "^3.0.0",
     "@tiptap/pm": "^3.0.0",
     "@tiptap/react": "^3.0.0",

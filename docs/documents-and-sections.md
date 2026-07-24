@@ -94,6 +94,30 @@ Underneath, **drag a section by its grip** to reorder it, or use the **▲** and
 buttons to move it one place at a time. Either way the change saves straight away and
 reorders both the tabs and the page.
 
+## Pictures
+
+Paste or drag an image straight into a section — a character reference, a map, a piece of
+concept art. Supported: PNG, JPEG, WebP, GIF and AVIF.
+
+![A section with an embedded image](screenshots/31-images.png)
+
+Images are kept **inside your database file**, not as loose files next to it, so copying
+`totonote.db` still takes your whole world with it. Anything larger than 2000px on its
+longest edge is scaled down once as it comes in, so a folder of concept art doesn't turn
+your world into a several-gigabyte file. Animated GIFs are stored untouched.
+
+> Because the image is copied into the database, editing the original file afterwards
+> won't change what TotoNote shows.
+
+### Pictures on wiki pages
+
+An image can be tagged and filed like any other excerpt: click it to select it, then use
+the **Tag** button as usual and pick a category under **File under…**. It then appears on
+that category's compiled page — which is how a character's portrait ends up at the top of
+their page.
+
+See [Filing and the graph](filing-and-graph.md) for how filing works.
+
 ## Saving
 
 By default your writing is stored automatically about a second after you stop typing —

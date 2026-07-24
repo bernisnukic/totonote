@@ -504,6 +504,32 @@ await shot('26-graph', {
 await page.keyboard.press('Escape');
 await page.waitForTimeout(300);
 
+
+// ── Embedded image ────────────────────────────────────────────────────────────
+
+// A real PNG pasted the way a user would, into the empty MODERN ERA section so nothing
+// existing gets split. Small enough to inline here; the pipeline is the genuine one.
+await page.locator('.tiptap').nth(1).click();
+await page.evaluate(async b64 => {
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const file = new File([bytes], 'gura-reference.png', { type: 'image/png' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  document
+    .querySelectorAll('.tiptap')[1]
+    ?.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+}, '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');
+await page.waitForSelector('.tiptap img', { timeout: 10000 });
+// Pasting leaves the image node selected, which floats the Tag toolbar over it.
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(600);
+await page.locator('.section-tab', { hasText: 'MOD' }).click();
+await page.waitForTimeout(700);
+await shot('31-images', {
+  clip: '.editor-area',
+  marks: [{ selector: '.tiptap img', label: 'Pasted in — kept inside your world file', place: 'right' }],
+});
+
 // ── 5. Browse sidebar ─────────────────────────────────────────────────────────
 
 await shot('19-browse-modes', {

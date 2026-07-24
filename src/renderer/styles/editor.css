@@ -294,3 +294,36 @@
   font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
+
+/* Embedded images. Bytes come from the database over totonote://media/<id>; the width
+   attribute is the user's chosen display size, capped so a big map can't overflow. */
+.tiptap img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: var(--space-3) 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+}
+
+/* Selecting an image (to tag or file it) should look like selecting text does. */
+.tiptap img.ProseMirror-selectednode {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-color: var(--accent-primary);
+}
+
+/* Thumbnails of images inside a filed excerpt, on a compiled page. */
+.placement-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+.placement-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+}

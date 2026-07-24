@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractTextBetween, nodeSize, excerptFromContent, type PMJsonNode } from './prosemirror-text';
+import { extractTextBetween, nodeSize, excerptFromContent, type PMJsonNode, imagesInRange } from './prosemirror-text';
 
 const text = (t: string): PMJsonNode => ({ type: 'text', text: t });
 const p = (...content: PMJsonNode[]): PMJsonNode => ({ type: 'paragraph', content });
@@ -92,5 +92,54 @@ describe('excerptFromContent', () => {
   it('returns empty for unparseable or empty content', () => {
     expect(excerptFromContent('not json', 0, 5)).toBe('');
     expect(excerptFromContent('', 0, 5)).toBe('');
+  });
+});
+
+describe('imagesInRange', () => {
+  const img = (id: string) => ({ type: 'image', attrs: { src: `totonote://media/${id}` } });
+  const para = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] });
+
+  it('finds an image inside the range', () => {
+    // doc: [para "abc"](0..5) [image](5..6)
+    const doc = { type: 'doc', content: [para('abc'), img('one')] };
+    expect(imagesInRange(doc, 5, 6)).toEqual(['one']);
+  });
+
+  it('ignores an image outside the range', () => {
+    const doc = { type: 'doc', content: [para('abc'), img('one')] };
+    expect(imagesInRange(doc, 0, 5)).toEqual([]);
+  });
+
+  it('finds several images across a wider range', () => {
+    const doc = { type: 'doc', content: [img('a'), img('b'), img('c')] };
+    expect(imagesInRange(doc, 0, 3)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('deduplicates the same image used twice', () => {
+    const doc = { type: 'doc', content: [img('same'), img('same')] };
+    expect(imagesInRange(doc, 0, 2)).toEqual(['same']);
+  });
+
+  it('ignores images that are not stored in the database', () => {
+    const doc = { type: 'doc', content: [{ type: 'image', attrs: { src: 'https://x/y.png' } }] };
+    expect(imagesInRange(doc, 0, 1)).toEqual([]);
+  });
+
+  it('agrees with the text extractor about where things are', () => {
+    // An image contributes no text, so text and images partition the same range.
+    const doc = { type: 'doc', content: [para('hi'), img('pic'), para('bye')] };
+    const whole = { from: 0, to: nodeSize(doc) };
+    expect(extractTextBetween(doc, whole.from, whole.to)).toBe('hi bye');
+    expect(imagesInRange(doc, whole.from, whole.to)).toEqual(['pic']);
+  });
+
+  it('finds an image nested inside a list item', () => {
+    const doc = {
+      type: 'doc',
+      content: [
+        { type: 'bulletList', content: [{ type: 'listItem', content: [img('nested')] }] },
+      ],
+    };
+    expect(imagesInRange(doc, 0, nodeSize(doc))).toEqual(['nested']);
   });
 });

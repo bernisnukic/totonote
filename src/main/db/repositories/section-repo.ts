@@ -69,3 +69,17 @@ export function reorderSections(documentId: string, orderedIds: string[]): void 
     });
   });
 }
+
+/**
+ * Every section's stored content, across all documents and workspaces.
+ *
+ * Only used to work out which embedded images are still referenced before purging the
+ * rest — an image is in use if any section still points at it, wherever that section is.
+ */
+export function allSectionContent(): string[] {
+  return getDb()
+    .select({ content: sections.content })
+    .from(sections)
+    .all()
+    .map(row => row.content);
+}

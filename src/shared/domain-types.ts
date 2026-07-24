@@ -91,6 +91,8 @@ export interface AnnotationPlacement {
   documentTitle: string;
   /** Text the annotation covers, computed from the stored section content. */
   excerpt: string;
+  /** Media ids of any images inside the range — a filed portrait has no text to show. */
+  imageIds: string[];
 }
 
 /**
@@ -258,4 +260,24 @@ export interface BulkAddSubcategoryResult {
   created: Category[];
   /** Categories that already had a child by that name, so were left alone. */
   skipped: { parentId: string; parentName: string }[];
+}
+
+/**
+ * An embedded image. The bytes live in the `media` table; documents only ever reference
+ * `totonote://media/<id>`, so section content stays small enough to re-save every second.
+ */
+export interface MediaMeta {
+  id: string;
+  mimeType: string;
+  /** Pixel dimensions as stored, after any downscale on import. */
+  width: number;
+  height: number;
+  byteSize: number;
+}
+
+export interface CreateMediaInput {
+  mimeType: string;
+  width: number;
+  height: number;
+  data: Uint8Array;
 }
