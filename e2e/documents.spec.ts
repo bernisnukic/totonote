@@ -143,7 +143,7 @@ test.describe('Editor', () => {
     await editor.pressSequentially('Bold text', { delay: 30 });
 
     // Select the text
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
 
     // Click Bold button (icon-only now, so locate by its accessible name)
     const boldBtn = page.locator('.toolbar-btn[aria-label="Bold"]').first();

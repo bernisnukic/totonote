@@ -34,7 +34,7 @@ test.describe('Category dropdowns', () => {
     const editor = page.locator('.tiptap').first();
     await editor.click();
     await editor.pressSequentially('Some text', { delay: 20 });
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
     await modal.locator('.autocomplete input.input').fill('Brand New Tag');
@@ -83,7 +83,7 @@ test.describe('Filing excerpts into categories', () => {
 
   /** Tag the whole line, filing it under the given category label. */
   async function tagAndFile(fileUnder: string | null) {
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
     if (fileUnder) {

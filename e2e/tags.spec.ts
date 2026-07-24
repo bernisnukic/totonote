@@ -110,7 +110,7 @@ test.describe('Selection Toolbar', () => {
 
   test('shows floating toolbar when text is selected', async () => {
     // Select text
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
 
     // Floating toolbar should appear
     await expect(page.locator('.selection-toolbar')).toBeVisible();
@@ -118,7 +118,7 @@ test.describe('Selection Toolbar', () => {
   });
 
   test('Tag button opens tag selection modal', async () => {
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
 
     // Modal should open
@@ -152,7 +152,7 @@ test.describe('Annotation Workflow', () => {
 
     // Select text "hero" in the editor
     await editor.click();
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
 
     // Selection toolbar should appear
     await expect(page.locator('.selection-toolbar')).toBeVisible();
@@ -192,7 +192,7 @@ test.describe('Inline Tag Creation', () => {
     await editor.pressSequentially('The dragon breathed fire', { delay: 20 });
 
     // Select all text
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await expect(page.locator('.selection-toolbar')).toBeVisible();
 
     // Click Tag
@@ -241,7 +241,7 @@ test.describe('Color Picker', () => {
     const editor = page.locator('.tiptap').first();
     await editor.click();
     await editor.pressSequentially('Colored text', { delay: 20 });
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await expect(page.locator('.selection-toolbar')).toBeVisible();
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const tagModal = page.locator('.modal');
@@ -282,7 +282,7 @@ test.describe('Tag Category Edit', () => {
     const editor = page.locator('.tiptap').first();
     await editor.click();
     await editor.pressSequentially('Editable text', { delay: 20 });
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await expect(page.locator('.selection-toolbar')).toBeVisible();
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const tagModal = page.locator('.modal');
@@ -319,7 +319,7 @@ test.describe('Deleting a tag', () => {
     await editor.pressSequentially('The dragon guards the gate', { delay: 20 });
 
     // Tag a selection.
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await expect(page.locator('.selection-toolbar')).toBeVisible();
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
@@ -426,7 +426,7 @@ test.describe('Working with an existing highlight', () => {
     const editor = page.locator('.tiptap').first();
     await editor.click();
     await editor.pressSequentially('Gura was born in Atlantis.', { delay: 15 });
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
     await modal.locator('.autocomplete input.input').fill('GURA');
@@ -466,7 +466,7 @@ test.describe('Tagging a selection', () => {
     const editor = page.locator('.tiptap').first();
     await editor.click();
     await editor.pressSequentially('Wild rabbits ran amok in Libestal.', { delay: 15 });
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
 
     const modal = page.locator('.modal');
@@ -501,7 +501,7 @@ test.describe('Context Menu', () => {
     await editor.pressSequentially('Right-click me for a context menu', { delay: 20 });
 
     // Select all text
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
 
     // Right-click on the selected text
     await editor.click({ button: 'right' });

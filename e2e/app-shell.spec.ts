@@ -24,7 +24,7 @@ test.describe('Undo', () => {
     const editor = page.locator('.tiptap').first();
     await editor.click();
     await editor.pressSequentially('The dragon sleeps', { delay: 15 });
-    await page.keyboard.press('Meta+A');
+    await page.keyboard.press('ControlOrMeta+A');
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
     await modal.locator('.autocomplete input.input').fill('Dragon');
