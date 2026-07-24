@@ -71,10 +71,13 @@ export function EditorArea() {
   const filterTagIds = useMemo(() => new Set(Object.values(activeFilters).flat()), [activeFilters]);
 
   // Two things can put the read-only excerpt overlay up: ticking filter tags, or opening
-  // the Sort tab (which shows every excerpt, ordered — no per-tag ticking). Filter wins
-  // if somehow both are active.
-  const filterActive = filterTagIds.size > 0;
-  const sortActive = !filterActive && leftSidebarMode === 'sort';
+  // the Sort tab (which shows every excerpt, ordered — no per-tag ticking). The Sort tab
+  // wins whenever you're on it, even if filter tags are still ticked from before —
+  // otherwise clicking Sort with a filter on looked like it did nothing. Filter only
+  // claims the page when you're not on the Sort tab.
+  const onSortTab = leftSidebarMode === 'sort';
+  const filterActive = !onSortTab && filterTagIds.size > 0;
+  const sortActive = onSortTab;
   const overlayActive = filterActive || sortActive;
 
   return (

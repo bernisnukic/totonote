@@ -44,6 +44,12 @@
   color: var(--accent-primary);
 }
 
+/* Icon buttons: the SVG inherits the button's colour (currentColor), so hover and active
+   states recolour it for free. */
+.toolbar-btn-icon svg {
+  display: block;
+}
+
 .toolbar-separator {
   width: 1px;
   height: 20px;

@@ -182,8 +182,8 @@ test.describe('Editor', () => {
     // Select the text
     await page.keyboard.press('Meta+A');
 
-    // Click Bold button
-    const boldBtn = page.locator('.toolbar-btn', { hasText: 'B' }).first();
+    // Click Bold button (icon-only now, so locate by its accessible name)
+    const boldBtn = page.locator('.toolbar-btn[aria-label="Bold"]').first();
     await boldBtn.click();
 
     // Text should be wrapped in strong tags
@@ -2028,8 +2028,82 @@ test.describe('Sort view and pop-out wiki', () => {
     await expect(overlay).toBeVisible();
     await expect(overlay).toContainText('Relic');
 
+    // Exactly one close button in the pop-out — the overlay's own. The page's inner close
+    // and pop-out controls are hidden while popped out (they used to double up).
+    await expect(overlay.locator('.help-close')).toHaveCount(1);
+    await expect(overlay.locator('button[aria-label="Open as full page"]')).toHaveCount(0);
+
     // Escape drops back to the sidebar (the page stays focused underneath).
     await page.keyboard.press('Escape');
     await expect(page.locator('.wiki-overlay')).toHaveCount(0);
+  });
+});
+
+// ─── v1.7.1: Sort/filter precedence and section deletion ───────────────
+
+test.describe('Sort precedence and section deletion', () => {
+  // A document with two sections, each carrying one tagged word.
+  async function twoTaggedSections() {
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Section Fixes');
+    await page.locator('.modal .btn-primary').click();
+    for (const t of ['S1', 'S2']) {
+      await page.locator('.tab-add').click();
+      await page.locator('.modal input.input').first().fill(t);
+      await page.locator('.modal .btn-primary').click();
+      await page.waitForTimeout(400);
+    }
+    await page.locator('.tiptap').nth(0).click();
+    await page.locator('.tiptap').nth(0).pressSequentially('The dragon sleeps here', { delay: 15 });
+    await page.locator('.tiptap').nth(1).click();
+    await page.locator('.tiptap').nth(1).pressSequentially('A hoard of gold', { delay: 15 });
+
+    const tagSection = async (idx: number, title: string, tag: string) => {
+      await page.locator('.section-tab', { hasText: title }).click();
+      await page.waitForTimeout(750);
+      await page.locator('.tiptap').nth(idx).click();
+      await page.keyboard.press('Meta+A');
+      await expect(page.locator('.selection-toolbar')).toBeVisible();
+      await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+      const modal = page.locator('.modal');
+      await modal.locator('.autocomplete input.input').fill(tag);
+      await modal.locator('.autocomplete-item-create').click();
+      await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+      await page.waitForTimeout(400);
+    };
+    await tagSection(0, 'S1', 'Dragon');
+    await tagSection(1, 'S2', 'Gold');
+  }
+
+  test('Sort shows all excerpts even when a filter is ticked', async () => {
+    await twoTaggedSections();
+
+    // Tick a single filter — the page narrows to just that tag's excerpt.
+    await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
+    await page.locator('.sidebar-filter-item', { hasText: 'Dragon' })
+      .locator('input[type="checkbox"]').check();
+    const view = page.locator('.filtered-view');
+    await expect(view.locator('.filtered-excerpt')).toHaveCount(1);
+
+    // Switching to Sort must show *every* excerpt, not stay stuck on the filtered one.
+    await page.locator('.sidebar-mode-btn', { hasText: 'Sort' }).click();
+    await expect(view).toBeVisible();
+    await expect(view.locator('.filtered-excerpt')).toHaveCount(2);
+  });
+
+  test('deleting a section drops its tag from the usage count', async () => {
+    await twoTaggedSections();
+
+    // In Filter mode the Gold tag shows a usage badge of 1 (its one excerpt in S2).
+    await page.locator('.sidebar-mode-btn', { hasText: 'Filter' }).click();
+    const goldRow = page.locator('.sidebar-filter-item', { hasText: 'Gold' });
+    await expect(goldRow.locator('.tag-usage-badge')).toHaveText('1');
+
+    // Delete S2 (accept the confirmation). Its annotation goes with it.
+    page.once('dialog', d => d.accept());
+    await page.locator('.section-tab', { hasText: 'S2' }).locator('.tab-close').click();
+
+    // The count must fall to zero — the badge disappears — rather than lingering stale.
+    await expect(goldRow.locator('.tag-usage-badge')).toHaveCount(0);
   });
 });

@@ -55,8 +55,9 @@ Leave the abbreviation blank and it gets made up from the title: `Ancient` → `
 - The section you're currently in shows its **full title**.
 - All the others show their **abbreviation**.
 - **`+`** adds a section.
-- Hover a tab and a small **`×`** appears to delete that section. It takes that section's
-  highlights with it, but an **Undo** button appears for a few seconds afterwards.
+- Hover a tab and a small **`×`** appears to delete that section. It asks you to confirm
+  first (a section can hold a lot of writing), takes that section's highlights with it, and
+  still shows an **Undo** button for a few seconds afterwards if you change your mind.
 
 ## How sections are laid out
 
@@ -86,12 +87,12 @@ Both live in the **Arrange** tab on the right.
 ![The Arrange tab, with the Section Label field and the list of sections](screenshots/22-arrange-tab.png)
 
 **Section Label** is what *this document* calls its sections — "Chapter", "Era",
-"Character", anything. It saves as you type. It only ever shows up in the status bar at
-the bottom of the window.
+"Character", anything. Change it here and the app uses that word wherever it refers to a
+section in this document. It saves as you type.
 
-Underneath, each section has **▲** and **▼** buttons that move it one place up or down.
-There's no drag and drop, and no undo, but the change is saved straight away and reorders
-both the tabs and the page.
+Underneath, **drag a section by its grip** to reorder it, or use the **▲** and **▼**
+buttons to move it one place at a time. Either way the change saves straight away and
+reorders both the tabs and the page.
 
 ## Saving
 

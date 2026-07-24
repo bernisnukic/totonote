@@ -18,6 +18,14 @@ export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
   const [newTitle, setNewTitle] = useState('');
   const [newAbbreviation, setNewAbbreviation] = useState('');
 
+  // A section holds a whole page of writing and its tags — big enough to confirm, the way
+  // documents do. The undo toast still catches it if they change their mind after.
+  const handleDelete = (id: string, title: string) => {
+    if (window.confirm(`Delete the section "${title}" and everything tagged in it? You can undo right after.`)) {
+      deleteSection(id);
+    }
+  };
+
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
     const abbr = newAbbreviation.trim() || generateAbbreviation(newTitle.trim());
@@ -38,7 +46,7 @@ export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
             label={section.id === activeSectionId ? section.title : section.abbreviation}
             isActive={section.id === activeSectionId}
             onClick={() => onTabClick(section.id)}
-            onClose={() => deleteSection(section.id)}
+            onClose={() => handleDelete(section.id, section.title)}
           />
         ))}
         <button className="tab-add" onClick={() => setShowCreate(true)} title="Add section">

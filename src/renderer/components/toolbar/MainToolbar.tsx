@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../stores';
 import { getActiveEditor } from '../../lib/editor-registry';
 import { SettingsModal } from '../common/SettingsModal';
+import { ToolbarIcon, type ToolbarIconName } from './toolbar-icons';
 
 export function MainToolbar() {
   const [showSettings, setShowSettings] = useState(false);
@@ -14,16 +15,16 @@ export function MainToolbar() {
 
   const editor = getActiveEditor(activeSectionId);
 
-  // `tip` describes what the button does; the short `label` stays on the button face.
-  // Hovering "H1" used to just say "H1", which told the user nothing.
-  const btn = (label: string, tip: string, action: () => void, isActive?: boolean) => (
+  // Each formatting button shows a familiar icon; `tip` is the hover label and the
+  // accessible name (the icon itself is aria-hidden).
+  const btn = (icon: ToolbarIconName, tip: string, action: () => void, isActive?: boolean) => (
     <button
-      className={`toolbar-btn${isActive ? ' active' : ''}`}
+      className={`toolbar-btn toolbar-btn-icon${isActive ? ' active' : ''}`}
       onClick={action}
       data-tip={tip}
       aria-label={tip}
     >
-      {label}
+      {ToolbarIcon[icon]}
     </button>
   );
 
@@ -50,21 +51,21 @@ export function MainToolbar() {
       {editor && (
         <>
           <div className="toolbar-group">
-            {btn('B', 'Bold', () => editor.chain().focus().toggleBold().run(), editor.isActive('bold'))}
-            {btn('I', 'Italic', () => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'))}
-            {btn('U', 'Underline', () => editor.chain().focus().toggleUnderline().run(), editor.isActive('underline'))}
-            {btn('S', 'Strikethrough', () => editor.chain().focus().toggleStrike().run(), editor.isActive('strike'))}
+            {btn('bold', 'Bold', () => editor.chain().focus().toggleBold().run(), editor.isActive('bold'))}
+            {btn('italic', 'Italic', () => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'))}
+            {btn('underline', 'Underline', () => editor.chain().focus().toggleUnderline().run(), editor.isActive('underline'))}
+            {btn('strike', 'Strikethrough', () => editor.chain().focus().toggleStrike().run(), editor.isActive('strike'))}
           </div>
 
           <div className="toolbar-group">
-            {btn('H1', 'Heading 1', () => editor.chain().focus().toggleHeading({ level: 1 }).run(), editor.isActive('heading', { level: 1 }))}
-            {btn('H2', 'Heading 2', () => editor.chain().focus().toggleHeading({ level: 2 }).run(), editor.isActive('heading', { level: 2 }))}
-            {btn('H3', 'Heading 3', () => editor.chain().focus().toggleHeading({ level: 3 }).run(), editor.isActive('heading', { level: 3 }))}
+            {btn('h1', 'Heading 1', () => editor.chain().focus().toggleHeading({ level: 1 }).run(), editor.isActive('heading', { level: 1 }))}
+            {btn('h2', 'Heading 2', () => editor.chain().focus().toggleHeading({ level: 2 }).run(), editor.isActive('heading', { level: 2 }))}
+            {btn('h3', 'Heading 3', () => editor.chain().focus().toggleHeading({ level: 3 }).run(), editor.isActive('heading', { level: 3 }))}
           </div>
 
           <div className="toolbar-group">
-            {btn('UL', 'Bullet list', () => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'))}
-            {btn('OL', 'Numbered list', () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'))}
+            {btn('bullet', 'Bullet list', () => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'))}
+            {btn('ordered', 'Numbered list', () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'))}
           </div>
         </>
       )}

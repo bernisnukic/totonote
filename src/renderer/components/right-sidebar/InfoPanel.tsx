@@ -117,10 +117,14 @@ export function InfoPanel() {
               {focusedTag.name}
             </span>
             <span style={{ display: 'flex', gap: 'var(--space-1)' }}>
+              {/* In the pop-out the overlay has its own close button, so hide this one —
+                  two close buttons on one page read as a bug. */}
               {!wikiOpen && (
-                <button className="btn btn-ghost btn-sm" onClick={() => setWikiOpen(true)} data-tip="Open as full page" aria-label="Open as full page">&#10530;</button>
+                <>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setWikiOpen(true)} data-tip="Open as full page" aria-label="Open as full page">&#10530;</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setFocusedTag(null)} aria-label="Close">&times;</button>
+                </>
               )}
-              <button className="btn btn-ghost btn-sm" onClick={() => setFocusedTag(null)}>&times;</button>
             </span>
           </div>
         </div>

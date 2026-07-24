@@ -326,12 +326,16 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
         <div className="info-section-title category-page-title">
           <span>{category.name}</span>
           <span style={{ display: 'flex', gap: 'var(--space-1)' }}>
+            {/* Hidden in the pop-out — the full-screen overlay carries its own close, and
+                two close buttons on one page look like a bug. */}
             {!wikiOpen && (
-              <button className="btn btn-ghost btn-sm" onClick={() => setWikiOpen(true)} data-tip="Open as full page" aria-label="Open as full page">&#10530;</button>
+              <>
+                <button className="btn btn-ghost btn-sm" onClick={() => setWikiOpen(true)} data-tip="Open as full page" aria-label="Open as full page">&#10530;</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setFocusedCategory(null)} aria-label="Close">
+                  &times;
+                </button>
+              </>
             )}
-            <button className="btn btn-ghost btn-sm" onClick={() => setFocusedCategory(null)}>
-              &times;
-            </button>
           </span>
         </div>
       </div>

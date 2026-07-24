@@ -134,6 +134,11 @@ export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> 
         // Pick the replacement from what's left — reading s.sections here would hand
         // back the id of the section just deleted.
         activeSectionId: s.activeSectionId === id ? (remaining[0]?.id ?? null) : s.activeSectionId,
+        // The section's annotations and section-tags were cascade-deleted in the DB. Drop
+        // the in-memory copies too, or the tag usage badges keep counting a section that's
+        // gone. (Undo reloads everything, so the restore path already puts them back.)
+        documentAnnotations: s.documentAnnotations.filter(a => a.sectionId !== id),
+        sectionTags: s.sectionTags.filter(st => st.sectionId !== id),
       };
     });
   },

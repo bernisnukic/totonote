@@ -1,5 +1,27 @@
 # What's New
 
+## 1.8.0
+
+**Familiar toolbar icons.** The formatting buttons are now the icons you know from any word
+processor — bold, italic, underline, strikethrough, headings, and lists — instead of terse
+letters. Hover any of them for its name.
+
+**Drag to reorder sections.** In the Arrange tab you can now drag a section by its grip to
+reorder it, as well as using the ▲ ▼ arrows.
+
+**Deleting a section asks first.** The tab's ✕ now confirms before deleting — a section
+holds a whole page of writing — and Undo still catches it if you change your mind.
+
+**Fixes from your testing:**
+
+- **Sort works with a filter on.** Opening the Sort tab now shows every excerpt even if you
+  left filter tags ticked, instead of appearing to do nothing.
+- **The pop-out wiki has one close button, not two.**
+- **Deleting a tagged section updates the counts.** A tag's usage count no longer keeps
+  counting a section you've deleted.
+- **The Section Label field explains itself** — it's the word this document uses for its
+  sections (Chapter, Act, Entry…), now spelled out right under the field.
+
 ## 1.7.0
 
 **The Sort tab works now.** It turns the main page into a reading list of *every* tagged
