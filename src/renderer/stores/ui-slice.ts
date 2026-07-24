@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 
-export type RightTab = 'info' | 'arrange' | 'edit';
+export type RightTab = 'info' | 'arrange' | 'edit' | 'history';
 
 /** Default panel widths — also what "reset" restores. */
 export const DEFAULT_LEFT_SIDEBAR_WIDTH = 260;

@@ -1,5 +1,14 @@
 # What's New
 
+## 1.10.0
+
+**A History timeline.** The new **History** tab keeps checkpoints of the section you're
+writing — automatic snapshots taken whenever you pause. Click any one to roll the section
+back to that state, and because the whole timeline stays put, you can jump forward again
+too. It's more forgiving than plain undo, which throws the "future" away as soon as you make
+a new edit. Each checkpoint shows when it was taken and a preview of the text; history lasts
+for the session and clears when you close the app.
+
 ## 1.9.0
 
 **Undo works in the editor again.** ⌘Z / Ctrl+Z was being swallowed by the menu's

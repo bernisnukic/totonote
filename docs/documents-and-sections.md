@@ -111,11 +111,26 @@ auto-save is off and you have pending changes.
 > Because it waits a second, leaving a document *immediately* after typing can lose that
 > last edit. Give it a moment before pressing **← Back** or quitting.
 
+## History
+
+The **History** tab (in the Details sidebar) keeps a timeline of checkpoints for the
+section you're editing — automatic snapshots taken a moment after you pause.
+
+![The History tab timeline, with a checkpoint marked](screenshots/30-history.png)
+
+Click any checkpoint to roll the section back to that state. The whole timeline stays put,
+so you can jump forward again just as easily — it's more forgiving than plain undo, which
+throws the "future" away the moment you make a new edit.
+
+> History is per-session: it's there while the app is open and clears when you close it.
+> For a permanent record, the text itself is always saved.
+
 ## Settings
 
-The gear button in the toolbar. There are four themes, and a list of keyboard shortcuts.
+The gear button in the toolbar — four themes, an **Auto-save** toggle (see
+[Saving](#saving), above), and the list of keyboard shortcuts.
 
-![The Settings box showing the four themes](screenshots/23-settings.png)
+![The Settings box showing the four themes and the auto-save toggle](screenshots/23-settings.png)
 
 > Settings can only be reached from inside a document — there's no gear on the Documents
 > screen.

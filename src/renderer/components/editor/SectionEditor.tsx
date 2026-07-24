@@ -30,6 +30,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const setContextMenu = useStore(s => s.setContextMenu);
   const batchUpdatePositions = useStore(s => s.batchUpdatePositions);
   const markSectionDirty = useStore(s => s.markSectionDirty);
+  const pushSnapshot = useStore(s => s.pushSnapshot);
 
   const annotationsRef = useRef<Annotation[]>([]);
   const contentLoadedRef = useRef(false);
@@ -67,6 +68,12 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     persistSection(sectionId, content);
   }, 1000);
 
+  // Snapshot the section a beat after editing stops, for the History timeline. Independent
+  // of saving so the timeline fills in whether auto-save is on or off. pushSnapshot dedupes.
+  const debouncedSnapshot = useDebounce((sectionId: string, content: string) => {
+    pushSnapshot(sectionId, content);
+  }, 1200);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
@@ -84,6 +91,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       } else {
         markSectionDirty(section.id);
       }
+      debouncedSnapshot(section.id, content);
     },
     onSelectionUpdate: ({ editor }) => {
       const { from, to } = editor.state.selection;
@@ -162,7 +170,9 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     requestAnimationFrame(() => {
       contentLoadedRef.current = true;
     });
-  }, [editor, section.id]);
+    // Seed the History timeline with the loaded state (deduped, so re-mounting is free).
+    pushSnapshot(section.id, JSON.stringify(editor.getJSON()));
+  }, [editor, section.id, pushSnapshot]);
 
   // Load and sync annotations
   useEffect(() => {

@@ -223,12 +223,13 @@ test.describe('Tag System', () => {
     await expect(page.locator('.tiptap')).toBeVisible();
   });
 
-  test('right sidebar shows Info/Arrange/Edit tabs', async () => {
+  test('right sidebar shows Info/Arrange/Edit/History tabs', async () => {
     const tabs = page.locator('.sidebar-tab');
-    await expect(tabs).toHaveCount(3);
+    await expect(tabs).toHaveCount(4);
     await expect(tabs.nth(0)).toHaveText('Info');
     await expect(tabs.nth(1)).toHaveText('Arrange');
     await expect(tabs.nth(2)).toHaveText('Edit');
+    await expect(tabs.nth(3)).toHaveText('History');
   });
 
   test('creates a new tag via Edit panel', async () => {
@@ -2178,5 +2179,28 @@ test.describe('Editing settings and undo', () => {
     await expect(expandAll).toContainText('Collapse all');
     await expandAll.click();
     await expect(page.locator('.tag-tree-name', { hasText: 'Griffin' })).toHaveCount(0);
+  });
+
+  test('History tab restores an earlier checkpoint', async () => {
+    await docWithSection();
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Alpha', { delay: 20 });
+    await page.waitForTimeout(1400); // let the checkpoint debounce (1200ms) fire
+    await editor.pressSequentially(' Beta', { delay: 20 });
+    await page.waitForTimeout(1400);
+
+    // The History tab lists multiple checkpoints.
+    await page.locator('.sidebar-tab', { hasText: 'History' }).click();
+    expect(await page.locator('.history-item').count()).toBeGreaterThan(1);
+
+    // Restore the "Alpha" checkpoint (anchored, so it isn't the "Alpha Beta" one).
+    await page
+      .locator('.history-item', { has: page.locator('.history-item-preview', { hasText: /^Alpha$/ }) })
+      .click();
+
+    // The section rolls back — "Beta" is gone.
+    await expect(editor).toContainText('Alpha');
+    await expect(editor).not.toContainText('Beta');
   });
 });

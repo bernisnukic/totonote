@@ -949,6 +949,72 @@
   box-shadow: 0 -2px 0 var(--accent-primary);
 }
 
+/* History tab: a timeline of section checkpoints */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-2) var(--space-3);
+}
+.history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  text-align: left;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  position: relative;
+  transition: background var(--transition-fast);
+}
+.history-item:not(:disabled):hover {
+  background: var(--bg-hover);
+}
+.history-item-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+  background: var(--text-muted);
+}
+/* Connect the dots into a vertical timeline. */
+.history-item:not(:last-child) .history-item-dot::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-2) + 3.5px);
+  top: 15px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--border-default);
+}
+.history-item.current .history-item-dot {
+  background: var(--accent-primary);
+}
+.history-item.current {
+  cursor: default;
+}
+.history-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.history-item-time {
+  font-size: var(--font-size-xs);
+  color: var(--accent-primary);
+}
+.history-item-preview {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-item-meta {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
 /* Collapse-all / expand-all control above the search tree */
 .sidebar-tree-actions {
   display: flex;

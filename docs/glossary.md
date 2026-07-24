@@ -19,6 +19,11 @@ Opens into the editor.
 scrollable page, with a tab bar across the top to jump between them.
 → [Documents and sections](documents-and-sections.md)
 
+**Checkpoint** — an automatic snapshot of a section, taken as you write. The **History**
+tab lists them as a timeline; click one to roll the section back to that state. Checkpoints
+last for the session and clear when you close the app.
+→ [Documents and sections](documents-and-sections.md#history)
+
 ## Marking up your writing
 
 **Tag** — a named, coloured label: `Gura`, `Ancient Temple`, `Betrayal`. A tag says *what

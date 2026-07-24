@@ -135,6 +135,7 @@ export const createDocumentSlice: StateCreator<AppStore, [], [], DocumentSlice> 
   deleteSection: async (id) => {
     const snapshot = await invoke('section:delete', { id });
     get().offerUndo(snapshot);
+    get().clearSectionHistory(id);
     set(s => {
       const remaining = s.sections.filter(sec => sec.id !== id);
       return {

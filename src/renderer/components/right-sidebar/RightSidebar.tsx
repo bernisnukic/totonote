@@ -4,11 +4,13 @@ import type { RightTab } from '../../stores/ui-slice';
 import { InfoPanel } from './InfoPanel';
 import { ArrangePanel } from './ArrangePanel';
 import { EditPanel } from './EditPanel';
+import { HistoryPanel } from './HistoryPanel';
 
 const tabs: { key: RightTab; label: string }[] = [
   { key: 'info', label: 'Info' },
   { key: 'arrange', label: 'Arrange' },
   { key: 'edit', label: 'Edit' },
+  { key: 'history', label: 'History' },
 ];
 
 export function RightSidebar() {
@@ -35,6 +37,7 @@ export function RightSidebar() {
         {activeRightTab === 'info' && <InfoPanel />}
         {activeRightTab === 'arrange' && <ArrangePanel />}
         {activeRightTab === 'edit' && <EditPanel />}
+        {activeRightTab === 'history' && <HistoryPanel />}
       </div>
     </>
   );

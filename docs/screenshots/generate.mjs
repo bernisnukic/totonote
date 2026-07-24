@@ -573,6 +573,24 @@ await shot('22-arrange-tab', {
   ],
 });
 
+// History tab: make a couple of checkpoints (the snapshot debounce is 1200ms), then shoot.
+const historyEditor = page.locator('.tiptap').first();
+await historyEditor.click();
+await historyEditor.pressSequentially(' A first revision of the passage.', { delay: 8 });
+await page.waitForTimeout(1400);
+await historyEditor.pressSequentially(' Then a second pass, with more detail.', { delay: 8 });
+await page.waitForTimeout(1400);
+await page.locator('.sidebar-tab', { hasText: 'History' }).click();
+await page.waitForTimeout(300);
+await shot('30-history', {
+  clip: '.right-sidebar',
+  pad: 300,
+  marks: [
+    { selector: '.history-item', nth: 1, label: 'Click a checkpoint to roll back to it', place: 'left' },
+  ],
+});
+await page.locator('.sidebar-tab', { hasText: 'Info' }).click();
+
 await page.locator('.toolbar-btn[aria-label="Settings"]').click();
 await page.waitForTimeout(400);
 await shot('23-settings', {
