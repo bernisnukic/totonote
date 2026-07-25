@@ -102,3 +102,18 @@ unfiled; the highlights and the writing stay.
 **Category rules pair well with this.** Give `CHARACTERS` a rule
 ([Categories and rules](categories-and-rules.md)) and every new character arrives with
 its page sections ready to receive filings.
+
+## Getting a page out
+
+The **⭳** button on a category's page saves it as a **Markdown file** — the page heading,
+every filed excerpt as a quote with its note and source, and a section per child page. It
+reads fine as plain text and pastes into a wiki, a design doc or a GitHub repo.
+
+Pictures and drawings can't travel in a text file, so an excerpt that is one says what it
+was and where to find it.
+
+## Mentioned in
+
+A tag's page lists **which documents mention it**, most-used first, with a count. Clicking
+one opens that document. The graph draws the same connections as lines; this is the version
+you can read down and click through when you're chasing a name.

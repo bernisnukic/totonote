@@ -28,12 +28,15 @@ export interface PreferenceSlice {
   autoSaveEnabled: boolean;
   /** How long after you stop typing a History checkpoint is taken, in milliseconds. */
   historyIntervalMs: number;
+  /** Play the opening animation on launch. Off starts straight into the app. */
+  introEnabled: boolean;
 
   loadPreferences: () => Promise<void>;
   updateShortcut: (action: string, keybinding: string) => Promise<void>;
   setTheme: (theme: string) => Promise<void>;
   setAutoSaveEnabled: (enabled: boolean) => Promise<void>;
   setHistoryIntervalMs: (ms: number) => Promise<void>;
+  setIntroEnabled: (enabled: boolean) => Promise<void>;
   /** Read/write an arbitrary persisted flag (stored in the SQLite preferences table,
    *  so it travels with the user's database rather than resetting on a re-download). */
   readPreference: (key: string) => Promise<string | null>;
@@ -45,13 +48,15 @@ export const createPreferenceSlice: StateCreator<PreferenceSlice, [], [], Prefer
   theme: 'dark',
   autoSaveEnabled: true,
   historyIntervalMs: DEFAULT_HISTORY_INTERVAL_MS,
+  introEnabled: true,
 
   loadPreferences: async () => {
-    const [shortcutsRaw, themeRaw, autoSaveRaw, historyRaw] = await Promise.all([
+    const [shortcutsRaw, themeRaw, autoSaveRaw, historyRaw, introRaw] = await Promise.all([
       invoke('preference:get', { key: 'shortcuts' }),
       invoke('preference:get', { key: 'theme' }),
       invoke('preference:get', { key: 'autoSave' }),
       invoke('preference:get', { key: 'historyInterval' }),
+      invoke('preference:get', { key: 'introEnabled' }),
     ]);
     set({
       shortcuts: shortcutsRaw ? JSON.parse(shortcutsRaw) : {},
@@ -59,6 +64,8 @@ export const createPreferenceSlice: StateCreator<PreferenceSlice, [], [], Prefer
       // Default on — only an explicit 'false' turns it off.
       autoSaveEnabled: autoSaveRaw !== 'false',
       historyIntervalMs: parseHistoryInterval(historyRaw),
+      // Default on — only an explicit 'false' skips it.
+      introEnabled: introRaw !== 'false',
     });
   },
 
@@ -66,6 +73,11 @@ export const createPreferenceSlice: StateCreator<PreferenceSlice, [], [], Prefer
     const clamped = clampHistoryInterval(ms);
     await invoke('preference:set', { key: 'historyInterval', value: String(clamped) });
     set({ historyIntervalMs: clamped });
+  },
+
+  setIntroEnabled: async (enabled) => {
+    await invoke('preference:set', { key: 'introEnabled', value: enabled ? 'true' : 'false' });
+    set({ introEnabled: enabled });
   },
 
   setAutoSaveEnabled: async (enabled) => {

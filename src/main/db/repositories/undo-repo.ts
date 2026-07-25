@@ -1,5 +1,6 @@
 import { eq, inArray } from 'drizzle-orm';
 import { getDb } from '../connection';
+import { indexSection } from './search-repo';
 import {
   documents,
   sections,

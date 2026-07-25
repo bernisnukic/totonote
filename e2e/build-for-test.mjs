@@ -34,7 +34,7 @@ await build({
       fileName: () => 'index.js',
     },
     rollupOptions: {
-      external: ['electron', 'better-sqlite3', 'electron-squirrel-startup', ...nodeBuiltins],
+      external: ['electron', 'better-sqlite3', 'electron-squirrel-startup', 'tesseract.js', ...nodeBuiltins],
     },
     minify: false,
     sourcemap: false,

@@ -26,8 +26,7 @@ Each tile shows the title, the description if you gave one, a date, and a **Dele
 - **Title** — required. If you leave it empty the Create button just silently does nothing.
 - **Description** — optional, shown on the tile.
 
-> **Choose the title carefully.** There is currently no way to rename a document or change
-> its description afterwards.
+Both can be changed later — open the **Arrange** tab and click the title.
 
 ## Making a section
 
@@ -46,7 +45,7 @@ Leave the abbreviation blank and it gets made up from the title: `Ancient` → `
 > type but only catches your first keystroke, so typing `Ancient Age` leaves it showing
 > just `A`. Either clear the box (it then fills in properly) or type what you want.
 
-> **Sections can't be renamed afterwards** either, same as documents.
+Sections can be renamed the same way, in the **Arrange** tab.
 
 ## The tab bar
 
@@ -86,6 +85,9 @@ Both live in the **Arrange** tab on the right.
 
 ![The Arrange tab, with the Section Label field and the list of sections](screenshots/22-arrange-tab.png)
 
+At the top of the tab, **click the document's title to rename it**, and click any section's
+name in the list below to rename that.
+
 **Section Label** is what *this document* calls its sections — "Chapter", "Era",
 "Character", anything. Change it here and the app uses that word wherever it refers to a
 section in this document. It saves as you type.
@@ -105,6 +107,14 @@ Images are kept **inside your database file**, not as loose files next to it, so
 `totonote.db` still takes your whole world with it. Anything larger than 2000px on its
 longest edge is scaled down once as it comes in, so a folder of concept art doesn't turn
 your world into a several-gigabyte file. Animated GIFs are stored untouched.
+
+**Drag the corner handle** to size a picture — small for a portrait, wide for a map. The
+size is remembered.
+
+**The words inside a picture are searchable.** Shortly after you add an image, TotoNote
+reads any text in it — labels on a map, a name on a character sheet — so searching finds
+the picture even though the words only exist as pixels. It happens in the background and
+needs no internet.
 
 > Because the image is copied into the database, editing the original file afterwards
 > won't change what TotoNote shows.
@@ -184,8 +194,18 @@ throws the "future" away the moment you make a new edit.
 
 ## Settings
 
-The gear button in the toolbar — four themes, an **Auto-save** toggle (see
-[Saving](#saving), above), and the list of keyboard shortcuts.
+The gear button in the toolbar — or **TotoNote → Settings…** (**⌘,**) on macOS, which also
+works on the Documents screen. It holds:
+
+- **Startup** — whether the opening animation plays. Turn it off to go straight to your
+  documents.
+- **Appearance** — four themes.
+- **Editing** — the **Auto-save** toggle (see [Saving](#saving), above).
+- **History** — how often a checkpoint is taken, from every pause up to every 10 seconds.
+- **Storage** — how much space embedded pictures use, and a button to reclaim what nothing
+  points at any more. Pictures from a deleted section are kept so an undo can restore them,
+  so this is the way to clear them out once you're sure.
+- **Keyboard shortcuts**.
 
 ![The Settings box showing the four themes and the auto-save toggle](screenshots/23-settings.png)
 

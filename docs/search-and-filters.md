@@ -6,8 +6,19 @@ The left sidebar is called **Browse**. It has four modes:
 
 ## Search
 
-Type in the box and it looks through your **category names**, **tag names** and **tag
-descriptions**. Matching categories open up on their own; anything with no match is hidden.
+Type in the box and TotoNote searches **everything you've written** as well as your
+**category names**, **tag names** and **tag descriptions**.
+
+Matches from your writing appear at the top under **In your writing**, with the matching
+words picked out and the document and section they came from. Click one to jump straight
+there — including into a document you don't currently have open. Below that, matching
+categories open up on their own and anything with no match is hidden.
+
+![Search showing matches from the writing itself](screenshots/33-search.png)
+
+**Text inside pictures counts too.** A label on a map or a name on a character sheet is
+findable even though it only exists as pixels — TotoNote reads new images in the background
+shortly after you add them.
 
 If a *category* name matches, all of its tags are shown, with the ones that didn't match
 themselves dimmed.

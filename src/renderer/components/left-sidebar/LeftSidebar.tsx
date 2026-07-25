@@ -2,6 +2,9 @@ import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useStore } from '../../stores';
 import { flattenCategoryTree } from '../../lib/category-tree';
 import { fuzzyMatch } from '../../lib/fuzzy-match';
+import { invoke } from '../../lib/ipc-client';
+import { renderSnippet } from './search-snippet';
+import type { SearchHit } from '../../../shared/domain-types';
 import { SidebarModeBar } from './SidebarModeBar';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
@@ -35,6 +38,55 @@ export function LeftSidebar() {
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [exactMatch, setExactMatch] = useState(false);
+
+  // Matches from the writing itself, which live in the database rather than in the store —
+  // the search runs in the main process against a full-text index.
+  const [writingHits, setWritingHits] = useState<SearchHit[]>([]);
+  const [writingSearching, setWritingSearching] = useState(false);
+  const activeWorkspaceId = useStore(s => s.activeWorkspaceId);
+  const openDocument = useStore(s => s.openDocument);
+  const setActiveSection = useStore(s => s.setActiveSection);
+  const activeDocumentId = useStore(s => s.activeDocumentId);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (leftSidebarMode !== 'search' || query.length < 2) {
+      setWritingHits([]);
+      return;
+    }
+    let cancelled = false;
+    setWritingSearching(true);
+    // Debounced so a fast typist doesn't queue a query per keystroke.
+    const timer = setTimeout(() => {
+      invoke('search:writing', { query, workspaceId: activeWorkspaceId ?? undefined })
+        .then(hits => {
+          if (!cancelled) setWritingHits(hits);
+        })
+        .finally(() => {
+          if (!cancelled) setWritingSearching(false);
+        });
+    }, 180);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, leftSidebarMode, activeWorkspaceId]);
+
+  /** Open the passage a hit points at, in whichever document it lives. */
+  const goToHit = useCallback(
+    async (hit: SearchHit) => {
+      if (hit.documentId !== activeDocumentId) await openDocument(hit.documentId);
+      setActiveSection(hit.sectionId);
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          document
+            .querySelector(`[data-section-id="${hit.sectionId}"]`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }),
+      );
+    },
+    [activeDocumentId, openDocument, setActiveSection],
+  );
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tagId: string } | null>(null);
@@ -166,7 +218,7 @@ export function LeftSidebar() {
               className="sidebar-search-input"
               value={searchQuery}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search categories & tags..."
+              placeholder="Search your writing, categories & tags…"
               autoFocus
             />
             <button
@@ -184,6 +236,33 @@ export function LeftSidebar() {
               </button>
             </div>
           )}
+          {searchQuery.trim().length >= 2 && (
+            <div className="sidebar-writing-results">
+              <div className="sidebar-filter-group-label">
+                In your writing{writingHits.length > 0 ? ` (${writingHits.length})` : ''}
+              </div>
+              {writingHits.length === 0 ? (
+                <div className="sidebar-empty" style={{ padding: 'var(--space-1) var(--space-2)', textAlign: 'left' }}>
+                  {writingSearching ? 'Searching…' : 'No matches in your writing'}
+                </div>
+              ) : (
+                writingHits.map(hit => (
+                  <button
+                    key={hit.sectionId}
+                    className="sidebar-writing-hit"
+                    onClick={() => goToHit(hit)}
+                    title="Open this passage"
+                  >
+                    <span className="sidebar-writing-hit__where">
+                      {hit.documentTitle} › {hit.sectionTitle}
+                    </span>
+                    <span className="sidebar-writing-hit__snippet">{renderSnippet(hit.snippet)}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
           <div className="sidebar-results">
             {categoryTree.length > 0 ? (
               <div className="category-tree">

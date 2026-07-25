@@ -488,3 +488,46 @@
   height: 100%;
   object-fit: cover;
 }
+
+/* Resizable images */
+.resizable-image {
+  position: relative;
+  display: block;
+  line-height: 0;
+  margin: var(--space-3) 0;
+}
+
+.resizable-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+}
+
+.resizable-image.is-selected img,
+.resizable-image.is-resizing img {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-color: var(--accent-primary);
+}
+
+/* The grab corner. Only visible on hover or while selected, so it doesn't clutter reading. */
+.resizable-image__handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--accent-primary);
+  border: 2px solid var(--bg-primary);
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.resizable-image:hover .resizable-image__handle,
+.resizable-image.is-selected .resizable-image__handle,
+.resizable-image.is-resizing .resizable-image__handle {
+  opacity: 1;
+}

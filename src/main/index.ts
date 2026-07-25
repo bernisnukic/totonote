@@ -5,6 +5,8 @@ import { registerIpcHandlers } from './ipc/handlers';
 import { buildAppMenu } from './menu';
 import { getMediaBytes } from './db/repositories/media-repo';
 import { MEDIA_SCHEME, MEDIA_HOST } from '../shared/media-refs';
+import { queueOcrBacklog } from './services/ocr-queue';
+import { shutdownOcr } from './services/ocr';
 
 // Set before anything reads it. Without this the app identifies itself as "Electron":
 // the macOS menu bar shows "Electron" beside the Apple logo, and app.getPath('userData')
@@ -133,6 +135,9 @@ app.whenReady().then(() => {
   // gives the editor its Cmd+C/V/Z roles.
   buildAppMenu();
 
+  // Read any pictures imported before this feature existed, a bounded batch per launch.
+  queueOcrBacklog();
+
   // Create main window
   createWindow();
 
@@ -150,6 +155,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  void shutdownOcr();
   closeDb();
 });
 

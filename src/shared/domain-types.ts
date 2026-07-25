@@ -277,6 +277,16 @@ export interface MediaMeta {
   byteSize: number;
 }
 
+/** One search result: where the match is, and the matching words in context. */
+export interface SearchHit {
+  sectionId: string;
+  documentId: string;
+  documentTitle: string;
+  sectionTitle: string;
+  /** Matching words wrapped in [ ], with an ellipsis where text was trimmed. */
+  snippet: string;
+}
+
 export interface CreateMediaInput {
   mimeType: string;
   width: number;

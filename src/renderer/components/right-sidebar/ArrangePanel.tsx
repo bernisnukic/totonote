@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../stores';
 
 export function ArrangePanel() {
@@ -6,6 +6,47 @@ export function ArrangePanel() {
   const activeDocument = useStore(s => s.activeDocument);
   const updateDocument = useStore(s => s.updateDocument);
   const reorderSections = useStore(s => s.reorderSections);
+  const updateSection = useStore(s => s.updateSection);
+
+  // Inline rename, for sections and for the document itself. Both were impossible before —
+  // the guide told users to choose titles carefully because they were permanent.
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (renamingId) {
+      renameRef.current?.focus();
+      renameRef.current?.select();
+    }
+  }, [renamingId]);
+
+  const commitRename = () => {
+    const id = renamingId;
+    const value = renameValue.trim();
+    setRenamingId(null);
+    if (!id || !value) return;
+    if (id === 'document') {
+      if (activeDocument && value !== activeDocument.title) updateDocument(activeDocument.id, { title: value });
+      return;
+    }
+    const section = sections.find(s => s.id === id);
+    if (section && value !== section.title) updateSection(id, { title: value });
+  };
+
+  const renameInput = (
+    <input
+      ref={renameRef}
+      className="input"
+      value={renameValue}
+      onChange={e => setRenameValue(e.target.value)}
+      onBlur={commitRename}
+      onKeyDown={e => {
+        if (e.key === 'Enter') commitRename();
+        if (e.key === 'Escape') setRenamingId(null);
+      }}
+    />
+  );
 
   // Drag reordering state.
   const [dragId, setDragId] = useState<string | null>(null);
@@ -34,6 +75,26 @@ export function ArrangePanel() {
 
   return (
     <div style={{ padding: 'var(--space-2)' }}>
+      {activeDocument && (
+        <div className="input-group">
+          <label className="input-label">Document</label>
+          {renamingId === 'document' ? (
+            renameInput
+          ) : (
+            <div
+              className="arrange-row arrange-row--title"
+              onClick={() => {
+                setRenamingId('document');
+                setRenameValue(activeDocument.title);
+              }}
+              title="Click to rename"
+            >
+              <span className="arrange-row__title">{activeDocument.title}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeDocument && (
         <div className="input-group">
           <label className="input-label">Section label</label>
@@ -83,7 +144,20 @@ export function ArrangePanel() {
                 &#10247;
               </span>
             )}
-            <span className="arrange-row__title">{section.title}</span>
+            {renamingId === section.id ? (
+              renameInput
+            ) : (
+              <span
+                className="arrange-row__title arrange-row__title--editable"
+                onClick={() => {
+                  setRenamingId(section.id);
+                  setRenameValue(section.title);
+                }}
+                title="Click to rename"
+              >
+                {section.title}
+              </span>
+            )}
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => moveSection(i, 'up')}

@@ -18,6 +18,7 @@ export function InfoPanel() {
   const setFocusedTag = useStore(s => s.setFocusedTag);
   const focusedCategoryId = useStore(s => s.focusedCategoryId);
   const setFocusedCategory = useStore(s => s.setFocusedCategory);
+  const openDocument = useStore(s => s.openDocument);
   const wikiOpen = useStore(s => s.wikiOpen);
   const setWikiOpen = useStore(s => s.setWikiOpen);
   const loadPlacements = useStore(s => s.loadPlacements);
@@ -53,6 +54,21 @@ export function InfoPanel() {
     }
     loadPlacements({ tagId: focusedTagId }).then(setTagPlacements);
   }, [focusedTagId, loadPlacements, documentAnnotations]);
+
+  /** Documents this tag appears in, most-used first. */
+  const mentionedIn = useMemo(() => {
+    const byDocument = new Map<string, { documentId: string; documentTitle: string; count: number }>();
+    for (const p of tagPlacements) {
+      const entry = byDocument.get(p.documentId) ?? {
+        documentId: p.documentId,
+        documentTitle: p.documentTitle,
+        count: 0,
+      };
+      entry.count += 1;
+      byDocument.set(p.documentId, entry);
+    }
+    return [...byDocument.values()].sort((a, b) => b.count - a.count || a.documentTitle.localeCompare(b.documentTitle));
+  }, [tagPlacements]);
 
   const focusedTagStats = useMemo(() => {
     if (!focusedTag) return null;
@@ -135,6 +151,25 @@ export function InfoPanel() {
             Used {focusedTagStats.count} time{focusedTagStats.count !== 1 ? 's' : ''} across {focusedTagStats.documentCount} document{focusedTagStats.documentCount !== 1 ? 's' : ''}
           </p>
         </div>
+
+        {mentionedIn.length > 0 && (
+          <div className="info-section">
+            <div className="info-section-title">Mentioned in</div>
+            {/* The graph shows these connections as lines; this is the same thing as a list
+                you can actually click, which is what you want when chasing a name. */}
+            {mentionedIn.map(doc => (
+              <button
+                key={doc.documentId}
+                className="backlink-row"
+                onClick={() => openDocument(doc.documentId)}
+                title="Open this document"
+              >
+                <span className="backlink-row__title">{doc.documentTitle}</span>
+                <span className="backlink-row__count">{doc.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {placementsByCategory.map(group => (
           <div key={group.key} className="info-section">

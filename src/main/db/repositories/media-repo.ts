@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, isNull } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../connection';
 import { media } from '../schema';
@@ -36,6 +36,22 @@ export function getMediaBytes(id: string): { mimeType: string; data: Buffer } | 
     .get();
   if (!row) return null;
   return { mimeType: row.mimeType, data: Buffer.from(row.data as Buffer) };
+}
+
+/** Record the text read out of a picture ('' means "looked, found nothing"). */
+export function setMediaOcrText(id: string, text: string): void {
+  getDb().update(media).set({ ocrText: text }).where(eq(media.id, id)).run();
+}
+
+/** Images that have never been looked at, for backfilling after an upgrade. */
+export function mediaWithoutOcr(limit = 50): Array<{ id: string; data: Buffer }> {
+  const rows = getDb()
+    .select({ id: media.id, data: media.data })
+    .from(media)
+    .where(isNull(media.ocrText))
+    .limit(limit)
+    .all();
+  return rows.map(r => ({ id: r.id, data: Buffer.from(r.data as Buffer) }));
 }
 
 /** Metadata only — used by the renderer to size a node without fetching the bytes. */

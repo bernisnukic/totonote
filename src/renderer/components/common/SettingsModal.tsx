@@ -2,6 +2,7 @@ import React from 'react';
 import { useStore } from '../../stores';
 import { Modal } from './Modal';
 import { ShortcutSettingsContent } from './ShortcutSettings';
+import { StorageSettings } from './StorageSettings';
 
 const THEMES = [
   {
@@ -48,6 +49,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const setAutoSaveEnabled = useStore(s => s.setAutoSaveEnabled);
   const historyIntervalMs = useStore(s => s.historyIntervalMs);
   const setHistoryIntervalMs = useStore(s => s.setHistoryIntervalMs);
+  const introEnabled = useStore(s => s.introEnabled);
+  const setIntroEnabled = useStore(s => s.setIntroEnabled);
   const isMac = /Mac/i.test(navigator.platform);
 
   return (
@@ -84,10 +87,31 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       </div>
 
       <div className="settings-section">
+        <h3 className="settings-section-title">Startup</h3>
+        <label className="settings-toggle">
+          <input
+            type="checkbox"
+            aria-label="Play the opening animation"
+            checked={introEnabled}
+            onChange={e => setIntroEnabled(e.target.checked)}
+          />
+          <span className="settings-toggle-body">
+            <span className="settings-toggle-label">Play the opening animation</span>
+            <span className="settings-toggle-hint">
+              {introEnabled
+                ? 'Shown once, the first time you open a new world.'
+                : 'Off — TotoNote opens straight into your documents.'}
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <div className="settings-section">
         <h3 className="settings-section-title">Editing</h3>
         <label className="settings-toggle">
           <input
             type="checkbox"
+            aria-label="Auto-save"
             checked={autoSaveEnabled}
             onChange={e => setAutoSaveEnabled(e.target.checked)}
           />
@@ -122,6 +146,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           How long after you stop typing the History tab takes a checkpoint. Shorter fills the
           timeline as you write; longer keeps it reaching further back.
         </p>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">Storage</h3>
+        <StorageSettings />
       </div>
 
       <div className="settings-section">

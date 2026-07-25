@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../stores';
 import { getEditor } from '../../lib/editor-registry';
 import { mediaUrl } from '../../../shared/media-refs';
+import { invoke } from '../../lib/ipc-client';
+import { pageToMarkdown, pageFilename } from '../../../shared/page-markdown';
 import { DrawingThumb } from './DrawingThumb';
 import type { AnnotationPlacement, Category } from '../../../shared/domain-types';
 
@@ -328,6 +330,25 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
     );
   };
 
+  /** Write this page out as Markdown — the only way lore currently leaves the app. */
+  const exportPage = async () => {
+    if (!category) return;
+    const markdown = pageToMarkdown({
+      title: category.name,
+      breadcrumb: breadcrumb.map(c => c.name),
+      placements: sortPlacements(grouped.get(categoryId) ?? [], sort),
+      children: children.map(child => ({
+        category: child,
+        placements: sortPlacements(grouped.get(child.id) ?? [], sort),
+      })),
+    });
+    try {
+      await invoke('export:save-text', { suggestedName: pageFilename(category.name), contents: markdown });
+    } catch (err) {
+      console.error('[export]', err);
+    }
+  };
+
   if (!category) return null;
   const directRows = grouped.get(categoryId) ?? [];
   const hasAnything = placements.length > 0;
@@ -354,6 +375,14 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
                 two close buttons on one page look like a bug. */}
             {!wikiOpen && (
               <>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={exportPage}
+                  data-tip="Export this page as Markdown"
+                  aria-label="Export this page"
+                >
+                  &#8681;
+                </button>
                 <button className="btn btn-ghost btn-sm" onClick={() => setWikiOpen(true)} data-tip="Open as full page" aria-label="Open as full page">&#10530;</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => setFocusedCategory(null)} aria-label="Close">
                   &times;

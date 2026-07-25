@@ -200,6 +200,9 @@ export const media = sqliteTable('media', {
   width: integer('width').notNull(),
   height: integer('height').notNull(),
   byteSize: integer('byte_size').notNull(),
+  /** Text read out of the picture, so a label on a map is findable from the search box.
+   *  Null until it has been looked at; empty string when there was nothing to read. */
+  ocrText: text('ocr_text'),
   data: blob('data', { mode: 'buffer' }).notNull(),
   createdAt: text('created_at').notNull().default(isoNow),
 });

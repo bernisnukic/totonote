@@ -15,6 +15,8 @@ export interface FirstRunInput {
   version: string;
   /** True under test automation — suppresses the whole first-run experience. */
   isAutomation: boolean;
+  /** The Settings toggle. Undefined is treated as on, for callers written before it. */
+  introEnabled?: boolean;
 }
 
 export interface FirstRunDecision {
@@ -35,13 +37,17 @@ export function decideFirstRun(input: FirstRunInput): FirstRunDecision {
   // The intro is due once ever per database; the changelog whenever the version changed
   // — including the very first launch, where lastVersion is null. That is the tester's
   // case: an existing database that never recorded a version, opened under a new build.
+  // Turning the opening animation off in Settings skips it outright, but the flag is
+  // still recorded — otherwise switching it back on would replay an intro the user has
+  // already seen, on a database that is no longer new.
   const introDue = input.seenIntro !== '1';
+  const introWanted = input.introEnabled !== false;
   const changelogDue = input.lastVersion !== input.version;
 
   // Automation suppresses the *visible* popups so they never block E2E, but the flags
   // are still recorded (throwaway databases, and it keeps the write path testable).
   return {
-    playIntro: introDue && !input.isAutomation,
+    playIntro: introDue && introWanted && !input.isAutomation,
     showChangelog: changelogDue && !input.isAutomation,
     writeIntroSeen: introDue,
     writeLastVersion: changelogDue,

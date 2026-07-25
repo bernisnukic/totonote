@@ -1,4 +1,6 @@
 import Image from '@tiptap/extension-image';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { ResizableImage } from '../../components/editor/ResizableImage';
 
 /**
  * The image node, plus a persisted display width.
@@ -12,6 +14,13 @@ import Image from '@tiptap/extension-image';
  * which is what every stored annotation range is measured in.
  */
 export const SizedImage = Image.extend({
+  // A node view, so the image can carry a drag handle. Without one there is no way to
+  // size a picture at all: the width attribute was stored and honoured but nothing ever
+  // set it, so a portrait and a map came out the same size.
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImage);
+  },
+
   addAttributes() {
     return {
       ...this.parent?.(),

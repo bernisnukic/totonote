@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import path from 'path';
 import * as schema from './schema';
+import { SEARCH_INDEX_DDL } from './repositories/search-repo';
 
 export type TestDb = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -28,5 +29,8 @@ export function createTestDb(): TestDbHandle {
   sqlite
     .prepare(`INSERT OR IGNORE INTO workspaces (id, name, sort_order) VALUES (?, ?, ?)`)
     .run(DEFAULT_TEST_WORKSPACE_ID, 'My World', 1);
+  // The full-text index lives outside the migrations (it's derived), so create it here
+  // exactly as connection.ts does — section writes re-index, and would fail without it.
+  sqlite.exec(SEARCH_INDEX_DDL);
   return { db, sqlite };
 }

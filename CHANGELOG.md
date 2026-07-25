@@ -1,5 +1,32 @@
 # What's New
 
+## 1.15.0
+
+**Search everything you've written.** The search box now looks through your actual writing,
+not just category and tag names. Matches appear at the top with the words picked out and
+the document they came from — click to jump straight there, even into a document you don't
+have open.
+
+**Words inside pictures are searchable too.** Shortly after you add an image, TotoNote reads
+any text in it — a label on a map, a name on a character sheet — so you can find the picture
+by what it says. It runs in the background and needs no internet.
+
+**Resize pictures.** Drag the corner handle: small for a portrait, wide for a map. The size
+sticks.
+
+**Rename documents and sections.** In the **Arrange** tab, click the title. Titles stopped
+being permanent.
+
+**Export a page.** The **⭳** button on a category page saves it as Markdown — every filed
+excerpt with its note and source — so lore can go into a wiki or a design doc.
+
+**Mentioned in.** A tag's page now lists which documents mention it, most-used first.
+
+**A smaller opening animation**, and a setting to skip it entirely (*Settings → Startup*).
+
+**Reclaim space.** *Settings → Storage* shows what embedded pictures cost and clears out
+ones nothing points at any more.
+
 ## 1.14.0
 
 **A real app icon.** TotoNote now has its own icon — the TOTO NOTE mark from the opening

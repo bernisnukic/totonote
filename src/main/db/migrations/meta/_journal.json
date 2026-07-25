@@ -43,6 +43,13 @@
       "when": 1784935675892,
       "tag": "0005_huge_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784965812280,
+      "tag": "0006_material_kate_bishop",
+      "breakpoints": true
     }
   ]
 }

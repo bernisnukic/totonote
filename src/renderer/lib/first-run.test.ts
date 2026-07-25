@@ -51,3 +51,25 @@ describe('decideFirstRun', () => {
     });
   });
 });
+
+describe('the opening animation setting', () => {
+  const base = { seenIntro: null, lastVersion: '1.0.0', version: '1.0.0', isAutomation: false };
+
+  it('plays on a new database by default', () => {
+    expect(decideFirstRun(base).playIntro).toBe(true);
+  });
+
+  it('skips it when the setting is off', () => {
+    expect(decideFirstRun({ ...base, introEnabled: false }).playIntro).toBe(false);
+  });
+
+  it('still records that it is seen when skipped', () => {
+    // Otherwise switching the setting back on would replay an intro for a database that
+    // is no longer new.
+    expect(decideFirstRun({ ...base, introEnabled: false }).writeIntroSeen).toBe(true);
+  });
+
+  it('treats an unset preference as on, for callers written before it existed', () => {
+    expect(decideFirstRun({ ...base, introEnabled: undefined }).playIntro).toBe(true);
+  });
+});

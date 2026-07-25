@@ -6,6 +6,7 @@ import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from './schema';
 import { adoptLegacyDatabase } from './legacy-baseline';
+import { ensureSearchIndex, isSearchIndexEmpty, rebuildSearchIndex } from './repositories/search-repo';
 
 export type Db = BetterSQLite3Database<typeof schema>;
 
@@ -49,6 +50,13 @@ export function initDb(): Db {
   sqlite
     .prepare(`INSERT OR IGNORE INTO categories (id, workspace_id, name, sort_order) VALUES (?, ?, ?, ?)`)
     .run('cat-general', 'ws-default', 'General', 1);
+
+  // The full-text index is derived from sections, so it is built here rather than by a
+  // migration — it can be dropped and rebuilt at any time without touching real content.
+  // An empty index on a database that already has sections means this is the first launch
+  // after the feature arrived, so backfill it.
+  ensureSearchIndex();
+  if (isSearchIndexEmpty()) rebuildSearchIndex();
 
   return db;
 }

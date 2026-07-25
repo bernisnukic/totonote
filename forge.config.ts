@@ -49,7 +49,9 @@ const config: ForgeConfig = {
     executableName: process.platform === 'linux' ? 'totonote' : 'TotoNote',
     // Drizzle's migrator reads SQL files from disk; ship them next to the app
     // so `process.resourcesPath/migrations/` resolves in packaged builds.
-    extraResource: ['./src/main/db/migrations'],
+    // migrations: read at startup by the migrator.
+    // ocr: the vendored language data, so reading text out of pictures never needs the network.
+    extraResource: ['./src/main/db/migrations', './assets/ocr'],
   },
   rebuildConfig: {},
   hooks: {
@@ -64,7 +66,7 @@ const config: ForgeConfig = {
     //     src/main/index.ts is left at runtime — missing it crashes mac
     //     launches and breaks Windows Squirrel install events.
     packageAfterCopy: async (_config, buildPath) => {
-      const mainProcessDeps = ['better-sqlite3', 'electron-squirrel-startup'];
+      const mainProcessDeps = ['better-sqlite3', 'electron-squirrel-startup', 'tesseract.js'];
 
       // Defensive scan: every external require() in the built main bundle
       // MUST be in mainProcessDeps, or the packaged app will crash at launch.

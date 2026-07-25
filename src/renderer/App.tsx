@@ -59,7 +59,8 @@ export function App() {
       ]);
       if (cancelled) return;
 
-      const d = decideFirstRun({ seenIntro, lastVersion, version, isAutomation: navigator.webdriver });
+      const introEnabled = (await readPreference('introEnabled')) !== 'false';
+      const d = decideFirstRun({ seenIntro, lastVersion, version, isAutomation: navigator.webdriver, introEnabled });
       if (d.writeLastVersion) await writePreference(LAST_SEEN_VERSION_KEY, version);
       if (d.writeIntroSeen) await writePreference(INTRO_SEEN_KEY, '1');
 

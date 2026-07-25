@@ -595,7 +595,7 @@ test.describe('Editing settings and undo', () => {
 
     // Turn auto-save off in Settings.
     await page.locator('.toolbar-btn[aria-label="Settings"]').click();
-    await page.locator('.settings-toggle input[type="checkbox"]').uncheck();
+    await page.locator('input[aria-label="Auto-save"]').uncheck();
     await page.locator('.modal .btn-primary', { hasText: 'Done' }).click();
 
     // Type — the status bar should flag unsaved work with a Save button.
@@ -620,7 +620,7 @@ test.describe('Editing settings and undo', () => {
   test('leaving a document with auto-save off keeps the unsaved work', async () => {
     await docWithSection();
     await page.locator('.toolbar-btn[aria-label="Settings"]').click();
-    await page.locator('.settings-toggle input[type="checkbox"]').uncheck();
+    await page.locator('input[aria-label="Auto-save"]').uncheck();
     await page.locator('.modal .btn-primary', { hasText: 'Done' }).click();
 
     const editor = page.locator('.tiptap').first();
@@ -642,7 +642,7 @@ test.describe('Editing settings and undo', () => {
   test('switching documents with auto-save off keeps the unsaved work', async () => {
     await docWithSection();
     await page.locator('.toolbar-btn[aria-label="Settings"]').click();
-    await page.locator('.settings-toggle input[type="checkbox"]').uncheck();
+    await page.locator('input[aria-label="Auto-save"]').uncheck();
     await page.locator('.modal .btn-primary', { hasText: 'Done' }).click();
 
     const editor = page.locator('.tiptap').first();

@@ -16,7 +16,9 @@
 }
 
 .intro-gif {
-  width: min(420px, 60vmin);
+  /* Sized like a game's title card — a mark sitting in a field of black, rather than
+     artwork stretched across the whole window. */
+  width: min(240px, 34vmin);
   height: auto;
   user-select: none;
 }

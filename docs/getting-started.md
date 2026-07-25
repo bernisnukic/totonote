@@ -29,8 +29,7 @@ Click it and fill in:
 
 Press **Create** and the document opens straight away.
 
-> Pick the title carefully. **There's currently no way to rename a document** or change its
-> description after it's created.
+> You can rename a document later from the **Arrange** tab.
 
 ## Adding your first section
 
@@ -52,7 +51,7 @@ If you leave the abbreviation blank it's generated from the title — `Ancient` 
 > keystroke — type `Ancient Age` and you'll be left with just `A`. Either clear the box
 > before pressing Create (it then generates properly) or type the abbreviation you want.
 >
-> Like documents, **sections can't be renamed after they're created.**
+> Sections can be renamed later too, in the **Arrange** tab.
 
 Now click into the page and start writing.
 

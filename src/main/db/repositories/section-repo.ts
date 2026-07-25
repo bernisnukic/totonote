@@ -1,6 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { eq } from 'drizzle-orm';
 import { getDb } from '../connection';
+import { indexSection, removeSectionFromIndex } from './search-repo';
 import { captureSection } from './undo-repo';
 import type { DeletionSnapshot } from '../../../shared/domain-types';
 import { sections } from '../schema';
@@ -33,6 +34,7 @@ export function createSection(input: CreateSectionInput): Section {
     updatedAt: now,
   };
   getDb().insert(sections).values(section).run();
+  indexSection(section.id);
   return section;
 }
 
@@ -49,12 +51,15 @@ export function updateSection(input: UpdateSectionInput): Section {
     updatedAt: new Date().toISOString(),
   };
   getDb().update(sections).set(updated).where(eq(sections.id, input.id)).run();
+  // Keep search in step with the writing; this runs on every debounced save.
+  indexSection(input.id);
   return updated;
 }
 
 export function deleteSection(id: string): DeletionSnapshot {
   const snapshot = captureSection(id);
   getDb().delete(sections).where(eq(sections.id, id)).run();
+  removeSectionFromIndex(id);
   return snapshot;
 }
 

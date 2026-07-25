@@ -659,6 +659,20 @@ await shot('21-highlight-mode', {
 await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
 await page.waitForTimeout(300);
 
+
+// Searching the writing itself.
+await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+await page.waitForTimeout(300);
+await page.locator('.sidebar-search-input').fill('recognised');
+await page.waitForTimeout(900);
+await shot('33-search', {
+  clip: '.left-sidebar',
+  pad: 300,
+  marks: [{ selector: '.sidebar-writing-results', label: 'Matches from your writing', place: 'right' }],
+});
+await page.locator('.sidebar-search-input').fill('');
+await page.waitForTimeout(300);
+
 // ── 6. Arrange tab and Settings ───────────────────────────────────────────────
 
 await page.locator('.sidebar-tab', { hasText: 'Arrange' }).click();

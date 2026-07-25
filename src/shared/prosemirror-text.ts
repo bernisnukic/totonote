@@ -175,3 +175,32 @@ export function imagesFromContent(contentJson: string, from: number, to: number)
     return [];
   }
 }
+
+/**
+ * All the text in a stored document, for the search index.
+ *
+ * Unlike `extractTextBetween` this ignores positions entirely — it just wants the words,
+ * with block boundaries separated so a search for "dragon lair" can't match across an
+ * unrelated paragraph break.
+ */
+export function plainTextFromContent(contentJson: string): string {
+  if (!contentJson) return '';
+  let doc: PMJsonNode;
+  try {
+    doc = JSON.parse(contentJson);
+  } catch {
+    return '';
+  }
+  const parts: string[] = [];
+  const walk = (node: PMJsonNode): void => {
+    if (node.text != null) {
+      parts.push(node.text);
+      return;
+    }
+    if (LEAF_NODES.has(node.type)) return;
+    for (const child of node.content ?? []) walk(child);
+    parts.push('\n');
+  };
+  walk(doc);
+  return parts.join(' ').replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
+}

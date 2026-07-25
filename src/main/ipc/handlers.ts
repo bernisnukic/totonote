@@ -1,4 +1,5 @@
-import { ipcMain, shell, app } from 'electron';
+import fs from 'node:fs';
+import { ipcMain, shell, app, dialog, BrowserWindow } from 'electron';
 import * as workspaceRepo from '../db/repositories/workspace-repo';
 import * as documentRepo from '../db/repositories/document-repo';
 import * as sectionRepo from '../db/repositories/section-repo';
@@ -11,6 +12,8 @@ import * as sectionTagRepo from '../db/repositories/section-tag-repo';
 import * as preferenceRepo from '../db/repositories/preference-repo';
 import * as mediaRepo from '../db/repositories/media-repo';
 import * as drawingRepo from '../db/repositories/drawing-repo';
+import * as searchRepo from '../db/repositories/search-repo';
+import { queueImageForOcr } from '../services/ocr-queue';
 import { mediaIdsInContent, drawingIdsInContent } from '../../shared/media-refs';
 import { checkForUpdates } from '../services/update-checker';
 import type { CreateCategoryInput, BulkAddSubcategoryInput, CreateMediaInput } from '../../shared/domain-types';
@@ -109,7 +112,12 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('preference:set', (_, args: { key: string; value: string }) => preferenceRepo.setPreference(args.key, args.value));
 
   // Embedded images
-  ipcMain.handle('media:create', (_, args: CreateMediaInput) => mediaRepo.createMedia(args));
+  ipcMain.handle('media:create', (_, args: CreateMediaInput) => {
+    const meta = mediaRepo.createMedia(args);
+    // Not awaited: the picture should appear instantly and become searchable a moment later.
+    queueImageForOcr(meta.id);
+    return meta;
+  });
   ipcMain.handle('media:get-meta', (_, args: { id: string }) => mediaRepo.getMediaMeta(args.id));
   ipcMain.handle('media:usage', () => mediaRepo.mediaUsage());
   ipcMain.handle('media:purge-unused', () => {
@@ -139,6 +147,23 @@ export function registerIpcHandlers(): void {
   );
   ipcMain.handle('drawing:get', (_, args: { id: string }) => drawingRepo.getDrawing(args.id));
   ipcMain.handle('drawing:save', (_, args: { id: string; strokes: string }) => drawingRepo.saveDrawing(args));
+
+  // Search
+  ipcMain.handle('search:writing', (_, args: { query: string; workspaceId?: string }) =>
+    searchRepo.searchWriting(args.query, args.workspaceId)
+  );
+
+  // Export
+  ipcMain.handle('export:save-text', async (_, args: { suggestedName: string; contents: string }) => {
+    const window = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+    const { canceled, filePath } = await dialog.showSaveDialog(window!, {
+      defaultPath: args.suggestedName,
+      filters: [{ name: 'Markdown', extensions: ['md'] }],
+    });
+    if (canceled || !filePath) return null;
+    await fs.promises.writeFile(filePath, args.contents, 'utf8');
+    return filePath;
+  });
 
   // App / Updates
   // Undo

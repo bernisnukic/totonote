@@ -30,6 +30,7 @@ import type {
   CreateMediaInput,
   DrawingRecord,
   SaveDrawingInput,
+  SearchHit,
 } from './domain-types';
 
 export interface IpcHandlerMap {
@@ -134,6 +135,12 @@ export interface IpcHandlerMap {
   'drawing:get': { args: { id: string }; result: DrawingRecord | null };
   'drawing:save': { args: SaveDrawingInput; result: DrawingRecord | null };
 
+  // Full-text search over everything written, including text read out of images.
+  'search:writing': { args: { query: string; workspaceId?: string }; result: SearchHit[] };
+
+  /** Write text to a file the user picks. Returns the path, or null if they cancelled. */
+  'export:save-text': { args: { suggestedName: string; contents: string }; result: string | null };
+
   // Unsaved-changes tracking (manual-save mode). The renderer tells main whether there's
   // unsaved work so the window can warn before closing; force-quit skips that warning.
   'window:set-dirty': { args: { dirty: boolean }; result: void };
@@ -209,6 +216,8 @@ export const IPC_CHANNELS = [
   'drawing:create',
   'drawing:get',
   'drawing:save',
+  'search:writing',
+  'export:save-text',
 ] as const;
 
 type ListedChannel = (typeof IPC_CHANNELS)[number];
