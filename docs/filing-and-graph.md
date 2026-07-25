@@ -118,6 +118,13 @@ A tag's page lists **which documents mention it**, most-used first, with a count
 one opens that document. The graph draws the same connections as lines; this is the version
 you can read down and click through when you're chasing a name.
 
+## Changing where something is filed
+
+Every excerpt row — on a category page, on a tag's page, or in the **Info** tab — shows
+where it's filed. Click that to move it somewhere else, or to file something that isn't
+filed yet. You can still right-click the highlight in the document and choose **File
+under…** if you're already there.
+
 ## Putting filed excerpts in order of *when*
 
 Any filed excerpt can also be given a date — in your world's own words — and the **⌚

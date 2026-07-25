@@ -7,6 +7,8 @@ import { DrawingThumb } from './DrawingThumb';
 import type { AnnotationPlacement, Category } from '../../../shared/domain-types';
 import { clickable } from '../../lib/clickable';
 import { excerptTextFor } from '../../lib/excerpt-text';
+import { ToolbarIcon } from '../toolbar/toolbar-icons';
+import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
 
 export type PlacementSort = 'custom' | 'newest' | 'oldest' | 'document';
 
@@ -81,6 +83,10 @@ export function PlacementRow({
   showTag?: boolean;
 }) {
   const updateAnnotation = useStore(s => s.updateAnnotation);
+  const categories = useStore(s => s.categories);
+  const [refiling, setRefiling] = useState(false);
+  const filedCategories = useMemo(() => flattenCategoryTree(categories), [categories]);
+  const filedUnder = categories.find(c => c.id === placement.categoryId);
   const [editingNote, setEditingNote] = useState(false);
   const [note, setNote] = useState(placement.note);
   const [editingWhen, setEditingWhen] = useState(false);
@@ -163,6 +169,37 @@ export function PlacementRow({
       ) : (
         <button className="placement-note-add" onClick={() => setEditingNote(true)}>
           + note
+        </button>
+      )}
+
+      {/* Where this excerpt is filed. It used to be reachable only by right-clicking the
+          highlight in the document, which meant you had to go and find it first. */}
+      {refiling ? (
+        <select
+          className="input placement-file-input"
+          value={placement.categoryId ?? ''}
+          autoFocus
+          onChange={e => {
+            void updateAnnotation(placement.id, { categoryId: e.target.value || null });
+            setRefiling(false);
+          }}
+          onBlur={() => setRefiling(false)}
+        >
+          <option value="">&mdash; not filed &mdash;</option>
+          {filedCategories.map(({ category, depth }) => (
+            <option key={category.id} value={category.id}>
+              {optionIndent(depth)}
+              {category.name}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <button
+          className="placement-note-add placement-file"
+          onClick={() => setRefiling(true)}
+          title="Choose which page this excerpt is filed on"
+        >
+          {filedUnder ? `filed in ${filedUnder.name}` : '+ file'}
         </button>
       )}
 
@@ -398,18 +435,21 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
         <div className="info-section-title category-page-title">
           <span>{category.name}</span>
           <span style={{ display: 'flex', gap: 'var(--space-1)' }}>
-            {/* Hidden in the pop-out — the full-screen overlay carries its own close, and
-                two close buttons on one page look like a bug. */}
+            {/* Export stays available in the pop-out — it is the reading view, which is
+                exactly where someone decides to take the page elsewhere. Only the *close*
+                is hidden there, because the overlay carries its own and two close buttons
+                on one page look like a bug. */}
+            <button
+              className="btn btn-ghost btn-sm page-action"
+              onClick={exportPage}
+              data-tip="Export this page as Markdown"
+              aria-label="Export this page as Markdown"
+            >
+              {ToolbarIcon.export}
+              <span>Export</span>
+            </button>
             {!wikiOpen && (
               <>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={exportPage}
-                  data-tip="Export this page as Markdown"
-                  aria-label="Export this page"
-                >
-                  &#8681;
-                </button>
                 <button className="btn btn-ghost btn-sm" onClick={() => setWikiOpen(true)} data-tip="Open as full page" aria-label="Open as full page">&#10530;</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => setFocusedCategory(null)} aria-label="Close">
                   &times;

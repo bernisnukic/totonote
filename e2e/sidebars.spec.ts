@@ -706,8 +706,32 @@ test.describe('Editing settings and undo', () => {
       .locator('.history-item', { has: page.locator('.history-item-preview', { hasText: /^Alpha$/ }) })
       .click();
 
+    // It always asks first — rolling back discards everything written since, and the only
+    // way back is another checkpoint.
+    const warning = await acceptConfirm(page);
+    expect(warning).toContain('goes back to how it was');
+
     // The section rolls back — "Beta" is gone.
     await expect(editor).toContainText('Alpha');
     await expect(editor).not.toContainText('Beta');
+  });
+
+  test('a rollback can be called off, and then nothing changes', async () => {
+    await docWithSection();
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('Alpha', { delay: 20 });
+    await page.waitForTimeout(1400);
+    await editor.pressSequentially(' Beta', { delay: 20 });
+    await page.waitForTimeout(1400);
+
+    await page.locator('.sidebar-tab', { hasText: 'History' }).click();
+    await page
+      .locator('.history-item', { has: page.locator('.history-item-preview', { hasText: /^Alpha$/ }) })
+      .click();
+
+    // Dismissing the warning must mean "no", not "yes by default".
+    await page.locator('.modal-footer .btn-secondary', { hasText: 'Cancel' }).click();
+    await expect(editor).toContainText('Alpha Beta');
   });
 });

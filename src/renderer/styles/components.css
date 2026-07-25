@@ -142,7 +142,9 @@
   top: 100%;
   left: 0;
   right: 0;
-  max-height: 200px;
+  /* Was 200px, roughly five rows: enough while a world has a handful of tags, useless
+     once it has fifty. Grows with the window but always leaves the page visible. */
+  max-height: min(420px, 45vh);
   overflow-y: auto;
   background: var(--bg-elevated);
   border: 1px solid var(--border-strong);
@@ -405,7 +407,8 @@
 
 .shortcut-binding {
   padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-xs);
+  /* ⌘ ⇧ ⌥ are symbols, not letters — at the 10px used for hint text they were unreadable. */
+  font-size: var(--font-size-md);
   font-family: var(--font-mono);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-default);
@@ -423,7 +426,7 @@
 
 .shortcut-capture {
   padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-md);
   background: var(--accent-dim);
   border: 1px solid var(--accent-primary);
   border-radius: var(--radius-sm);
@@ -1258,7 +1261,7 @@
 .confirm-detail {
   margin: var(--space-2) 0 0;
   color: var(--text-muted);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   line-height: 1.5;
 }
 
@@ -1272,7 +1275,7 @@
 .settings-path {
   margin: var(--space-2) 0 0;
   color: var(--text-muted);
-  font-size: var(--font-xs);
+  font-size: var(--font-size-xs);
   word-break: break-all;
   opacity: 0.7;
 }
@@ -1302,7 +1305,7 @@
   min-width: 200px;
   max-width: 320px;
   background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: 0 6px 20px rgb(0 0 0 / 45%);
   padding: var(--space-1);
@@ -1311,7 +1314,7 @@
 }
 
 .doc-link-picker__hint {
-  font-size: var(--font-xs);
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
   padding: var(--space-1) var(--space-2);
 }
@@ -1322,7 +1325,7 @@
   border: none;
   color: var(--text-primary);
   font-family: inherit;
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -1370,7 +1373,7 @@ textarea:focus-visible {
 
 .timeline-title {
   margin: 0;
-  font-size: var(--font-lg);
+  font-size: var(--font-size-lg);
   color: var(--text-primary);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1385,7 +1388,7 @@ textarea:focus-visible {
   list-style: none;
   margin: 0;
   padding: 0 0 0 var(--space-4);
-  border-left: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-default);
 }
 
 .timeline-moment {
@@ -1407,7 +1410,7 @@ textarea:focus-visible {
 
 .timeline-moment__when {
   color: var(--accent-primary);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   margin-bottom: var(--space-2);
 }
 
@@ -1418,7 +1421,7 @@ textarea:focus-visible {
 }
 
 .timeline-event {
-  border-left: 3px solid var(--border-color);
+  border-left: 3px solid var(--border-default);
   background: var(--bg-secondary);
   border-radius: var(--radius-sm);
   padding: var(--space-2);
@@ -1431,7 +1434,7 @@ textarea:focus-visible {
 
 .timeline-event__text {
   color: var(--text-primary);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   line-height: 1.5;
 }
 
@@ -1440,24 +1443,44 @@ textarea:focus-visible {
   gap: var(--space-2);
   margin-top: var(--space-1);
   color: var(--text-muted);
-  font-size: var(--font-xs);
+  font-size: var(--font-size-xs);
 }
 
 .timeline-event__note {
   margin-top: var(--space-1);
   color: var(--text-muted);
-  font-size: var(--font-xs);
+  font-size: var(--font-size-xs);
   font-style: italic;
 }
 
 .placement-when {
   color: var(--accent-primary);
-  font-size: var(--font-xs);
+  font-size: var(--font-size-xs);
   padding: 2px var(--space-1);
   cursor: pointer;
 }
 
 .placement-when-input {
-  font-size: var(--font-xs);
+  font-size: var(--font-size-xs);
   padding: 2px var(--space-1);
+}
+
+/* "Export" on a compiled page: an icon with its label, so it reads as an action rather
+   than an unexplained arrow. */
+.page-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-action svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Filing an excerpt from wherever it is listed, instead of hunting down the highlight. */
+.placement-file-input {
+  font-size: var(--font-size-xs);
+  padding: 2px var(--space-1);
+  max-width: 100%;
 }

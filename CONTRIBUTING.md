@@ -138,6 +138,17 @@ measured: copying `totonote.db` alone while WAL holds recent writes yields *"no 
 documents"*. Restore validates first (required tables + not from a newer schema), keeps the
 replaced DB as `<db>.replaced`, clears the `-wal`/`-shm` sidecars, then relaunches.
 
+### Styling
+Tokens live in `styles/tokens.css` and are named `--font-size-*`, `--border-default`,
+`--radius-*`, `--space-*`. A misspelt custom property is **silent** — the declaration is
+dropped, the element falls back to a browser default, and nothing warns. Fourteen shipped at
+once (`--font-xs`, `--border-color`). `styles/tokens.test.ts` walks every CSS file and fails
+on any `var(--x)` that resolves to nothing, ignoring those with a fallback.
+
+Toolbar glyphs are **drawn**, in `toolbar-icons.tsx` — 16px inline SVG on `currentColor`. Do
+not mix HTML entities in beside them: the right-hand group was `&#9672;`/`&#9881;` and
+rendered visibly smaller than its neighbours, which is what the tester reported.
+
 ### History memory
 The History timeline is **session-only** — it lives in `history-slice.ts` and is never
 written to the database, so it costs no disk at all. It is capped at `MAX_SNAPSHOTS = 60`

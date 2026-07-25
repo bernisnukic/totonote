@@ -4,6 +4,7 @@ import { getEditor } from '../../lib/editor-registry';
 import { restoreDrawings } from '../../lib/drawing-registry';
 import type { Snapshot } from '../../stores/history-slice';
 import { confirmDialog } from '../common/ConfirmDialog';
+import { summarizeDoc } from '../../lib/doc-summary';
 
 /** "just now" / "3 min ago" — coarse, recomputed each render. */
 function relativeTime(iso: string): string {
@@ -60,18 +61,33 @@ export function HistoryPanel() {
       return;
     }
 
+    // Counted the same way a snapshot's `chars` is, so the two are comparable.
+    const currentChars = summarizeDoc(JSON.stringify(editor.getJSON())).chars;
+
+    // Always ask. Rolling back replaces everything written since the checkpoint, and the
+    // only way back is another checkpoint — one stray click on the wrong row otherwise
+    // silently discards an afternoon's writing.
     const keptIds = new Set(snap.annotations.map(a => a.id));
     const doomed = annotations.filter(a => a.sectionId === activeSectionId && !keptIds.has(a.id));
-    if (doomed.length > 0) {
-      const count = `${doomed.length} highlight${doomed.length === 1 ? '' : 's'}`;
-      const confirmed = await confirmDialog({
-        title: 'Restore this checkpoint?',
-        message: `This removes ${count} added since then, because the text they mark no longer exists.`,
-        confirmLabel: 'Restore anyway',
-        destructive: true,
-      });
-      if (!confirmed) return;
+    const losing = Math.max(0, currentChars - snap.chars);
+    const detail: string[] = [];
+    if (losing > 0) {
+      detail.push(`About ${losing.toLocaleString()} character${losing === 1 ? '' : 's'} written since then will go.`);
     }
+    if (doomed.length > 0) {
+      detail.push(
+        `${doomed.length} highlight${doomed.length === 1 ? '' : 's'} added since then will be removed, ` +
+          'because the text they mark no longer exists.',
+      );
+    }
+    const confirmed = await confirmDialog({
+      title: 'Roll this section back?',
+      message: `“${activeSection?.title ?? 'This section'}” goes back to how it was ${relativeTime(snap.at)}.`,
+      detail: detail.join(' ') || 'Anything written since this checkpoint is replaced.',
+      confirmLabel: 'Roll back',
+      destructive: true,
+    });
+    if (!confirmed) return;
 
     // emitUpdate:true so the restore is saved (and, in manual-save mode, marked dirty).
     editor.commands.setContent(parsed, { emitUpdate: true });

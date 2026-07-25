@@ -60,12 +60,13 @@ export function registerAppHooks(
  * Confirm the app's own dialog, which replaced `window.confirm`.
  *
  * Unlike the native one there is nothing to arm in advance: trigger the action first, then
- * call this. Returns the message it confirmed, for tests that assert on the wording.
+ * call this. Returns everything the dialog said — headline *and* detail — so a test can
+ * assert on any part of what the user was actually told.
  */
 export async function acceptConfirm(page: Page): Promise<string> {
   const modal = page.locator('.modal', { has: page.locator('.confirm-message') });
   await modal.waitFor({ state: 'visible' });
-  const message = (await modal.locator('.confirm-message').textContent()) ?? '';
+  const message = (await modal.locator('.modal-body').textContent()) ?? '';
   await modal.locator('.modal-footer .btn-primary, .modal-footer .btn-danger').click();
   await modal.waitFor({ state: 'detached' });
   return message;

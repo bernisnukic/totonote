@@ -1,5 +1,33 @@
 # What's New
 
+## 1.16.4
+
+**Rolling back History always asks first.** It only warned when highlights were about to be
+lost; otherwise one click on the wrong row silently replaced everything written since. The
+warning now names the section, says how far back it goes, and how much writing and how many
+highlights will go with it. Dismissing it means *no*.
+
+**File an excerpt from where you're reading it.** Every excerpt row — on a category page, on
+a tag's page, in the Info tab — now shows where it's filed and lets you change it. Before,
+the only way was to find the highlight in the document and right-click it.
+
+**The tag picker fits more tags.** "Add tag to selection" showed about five at a time in a
+narrow box, which stops working once a world has a lot of tags. The list is now up to three
+times taller and the box is wider.
+
+**Icons that match.** The graph, timeline, sidebar and settings buttons were text characters
+and rendered noticeably smaller than the drawn icons beside them — they're now drawn to
+match. The **⌘ ⇧ ⌥** symbols in the keyboard-shortcut list were 10px; they're readable now.
+The export button on a compiled page is an icon *and* the word **Export**, so it's findable.
+
+**Fixes**
+
+- Fourteen style rules referenced custom properties that don't exist (`--font-xs` where the
+  token is `--font-size-xs`, `--border-color` where it's `--border-default`), so text in the
+  timeline, the link picker, the backup panel and the confirm dialogs rendered at a browser
+  default size instead of the intended one. A test now fails the build on any unresolvable
+  property.
+
 ## 1.16.3
 
 **History uses far less memory when a section has a drawing in it.** Each checkpoint kept

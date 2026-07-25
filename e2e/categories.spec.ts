@@ -168,6 +168,30 @@ test.describe('Filing excerpts into categories', () => {
     await expect(info.locator('.category-page')).toBeVisible();
   });
 
+  test('an excerpt can be filed from its row, without hunting down the highlight', async () => {
+    await setup();
+    // Tag it but file it nowhere, which is the state the row control exists for.
+    await tagAndFile(null);
+
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.sidebar-search-input').fill('GURA TAG');
+    await page.locator('.tag-tree-item', { hasText: 'GURA TAG' }).first().click();
+
+    const info = page.locator('.right-sidebar');
+    const row = info.locator('.placement-row').first();
+    await expect(row.locator('.placement-file')).toHaveText('+ file');
+
+    await row.locator('.placement-file').click();
+    const select = row.locator('.placement-file-input');
+    const value = await select.locator('option', { hasText: 'HISTORY' }).first().getAttribute('value');
+    await select.selectOption(value!);
+
+    // The row now says where it lives, and HISTORY's own page has it.
+    await expect(info.locator('.placement-file')).toContainText('HISTORY');
+    // And the tag page now groups it under HISTORY, the same as filing from the document.
+    await expect(info.locator('.placement-subheading', { hasText: 'HISTORY' })).toBeVisible();
+  });
+
   test('clicking an excerpt jumps back to the text', async () => {
     await setup();
     await tagAndFile('HISTORY');

@@ -139,22 +139,14 @@ export function MainToolbar() {
         </>
       )}
 
+      {/* Drawn at the same 16px as the formatting icons — these were text glyphs, which
+          rendered noticeably smaller than the buttons beside them. */}
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={toggleLeftSidebar} data-tip="Toggle left sidebar" aria-label="Toggle left sidebar">
-          &#9776;
-        </button>
-        <button className="toolbar-btn" onClick={() => setGraphOpen(true)} data-tip="Graph view" aria-label="Graph view">
-          &#9672;
-        </button>
-        <button className="toolbar-btn" onClick={() => setTimelineOpen(true)} data-tip="Timeline" aria-label="Timeline">
-          &#8986;
-        </button>
-        <button className="toolbar-btn" onClick={toggleRightSidebar} data-tip="Toggle right sidebar" aria-label="Toggle right sidebar">
-          &#9776;
-        </button>
-        <button className="toolbar-btn" onClick={() => setSettingsOpen(true)} data-tip="Settings" aria-label="Settings">
-          &#9881;
-        </button>
+        {btn('sidebar', 'Toggle left sidebar', toggleLeftSidebar)}
+        {btn('graph', 'Graph view', () => setGraphOpen(true))}
+        {btn('timeline', 'Timeline', () => setTimelineOpen(true))}
+        {btn('sidebar', 'Toggle right sidebar', toggleRightSidebar)}
+        {btn('settings', 'Settings', () => setSettingsOpen(true))}
       </div>
 
     </div>

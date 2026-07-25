@@ -41,7 +41,12 @@ export type ToolbarIconName =
   | 'bullet'
   | 'ordered'
   | 'image'
-  | 'draw';
+  | 'draw'
+  | 'sidebar'
+  | 'graph'
+  | 'timeline'
+  | 'settings'
+  | 'export';
 
 export const ToolbarIcon: Record<ToolbarIconName, React.ReactElement> = {
   // A picture frame with a sun and a horizon — the convention everywhere.
@@ -50,6 +55,48 @@ export const ToolbarIcon: Record<ToolbarIconName, React.ReactElement> = {
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <circle cx="8.5" cy="8.5" r="1.5" />
       <path d="M21 15l-5-5L5 21" />
+    </Svg>
+  ),
+  // An arrow coming down into a tray: save this out.
+  export: (
+    <Svg>
+      <path d="M12 3v11" />
+      <path d="M8 10.5l4 4 4-4" />
+      <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </Svg>
+  ),
+  // A panel with a divider — the usual "show/hide the side panel".
+  sidebar: (
+    <Svg>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="9" y1="3" x2="9" y2="21" />
+    </Svg>
+  ),
+  // Connected nodes.
+  graph: (
+    <Svg>
+      <circle cx="6" cy="6" r="2.5" />
+      <circle cx="18" cy="7" r="2.5" />
+      <circle cx="12" cy="18" r="2.5" />
+      <line x1="7.8" y1="7.6" x2="10.6" y2="15.6" />
+      <line x1="16.4" y1="9" x2="13.4" y2="15.7" />
+      <line x1="8.5" y1="6.3" x2="15.5" y2="6.8" />
+    </Svg>
+  ),
+  // A clock, for time.
+  timeline: (
+    <Svg>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3.5 2" />
+    </Svg>
+  ),
+  // A cog: body, hole, and short teeth just outside the body. Radiating lines from a
+  // small centre circle read as a sun at 16px, which is what the first attempt did.
+  settings: (
+    <Svg>
+      <circle cx="12" cy="12" r="6.5" />
+      <circle cx="12" cy="12" r="2.2" />
+      <path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6" />
     </Svg>
   ),
   // A pencil, matching the ✎ this replaces.
