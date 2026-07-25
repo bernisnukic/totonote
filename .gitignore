@@ -102,3 +102,6 @@ dist/
 # Playwright
 test-results/
 playwright-report/
+
+# Local editor/tooling pointer at CONTRIBUTING.md; not part of the project.
+CLAUDE.md
