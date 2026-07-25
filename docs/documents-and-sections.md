@@ -199,18 +199,29 @@ works on the Documents screen. It holds:
 
 - **Startup** — whether the opening animation plays. Turn it off to go straight to your
   documents.
-- **Appearance** — four themes.
+- **Appearance** — four themes, plus **System**, which follows whether your computer is set
+  to light or dark and keeps following it.
 - **Editing** — the **Auto-save** toggle (see [Saving](#saving), above).
 - **History** — how often a checkpoint is taken, from every pause up to every 10 seconds.
+- **Backup** — save your whole world to one file, or restore one.
+  → [Backup and restore](backup-and-restore.md)
 - **Storage** — how much space embedded pictures use, and a button to reclaim what nothing
   points at any more. Pictures from a deleted section are kept so an undo can restore them,
   so this is the way to clear them out once you're sure.
 - **Keyboard shortcuts**.
 
-![The Settings box showing the four themes and the auto-save toggle](screenshots/23-settings.png)
+![The Settings box showing the themes and the auto-save toggle](screenshots/23-settings.png)
 
 On macOS it's also under **TotoNote → Settings…** (**⌘,**), which works anywhere — including
 the Documents screen, where there's no toolbar to click.
 
 See [Keyboard shortcuts](keyboard-shortcuts.md) for what actually works, and an important
 caveat about the rebinding list.
+
+## Pointing one document at another
+
+Type `[[` while writing and pick a document from the list — that inserts a link you can
+click to jump there, and the document you linked to gains a **Linked from** entry pointing
+back. Renaming a document updates every link to it automatically.
+
+→ [Links and the timeline](links-and-timeline.md)

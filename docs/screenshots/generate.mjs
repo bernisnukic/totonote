@@ -703,12 +703,141 @@ await shot('30-history', {
 });
 await page.locator('.sidebar-tab', { hasText: 'Info' }).click();
 
+// ── 7. Links between documents ────────────────────────────────────────────────
+
+// A second document, so there is something to link to.
+await page.locator('.toolbar-back-btn').click();
+await page.waitForSelector('.document-card-new');
+await page.locator('.document-card-new').click();
+await page.locator('.modal input.input').first().fill('Atlantis');
+await page.locator('.modal .btn-primary').click();
+await page.waitForSelector('.tab-bar');
+await newSection('Overview', 'OVR');
+const atlantisEditor = page.locator('.tiptap').first();
+await atlantisEditor.click();
+await atlantisEditor.pressSequentially('A drowned city beneath the northern sea.', { delay: 8 });
+await page.waitForTimeout(1400);
+
+// Back into Hololore, and start a link.
+await page.locator('.toolbar-back-btn').click();
+await page.locator('.document-card', { hasText: 'Hololore' }).first().click();
+await page.waitForSelector('.tiptap');
+const linkEditor = page.locator('.tiptap').first();
+await linkEditor.click();
+// A fresh paragraph, so the picker opens near the left margin instead of being pushed
+// off the right edge by whatever was already on the line.
+await page.keyboard.press('End');
+await page.keyboard.press('Enter');
+await linkEditor.pressSequentially('She came from [[Atl', { delay: 25 });
+await page.waitForTimeout(400);
+await shot('34-link-picker', {
+  clip: '.tiptap',
+  pad: 140,
+  marks: [
+    { selector: '.doc-link-picker', label: 'Type [[ and pick a document', place: 'right' },
+  ],
+});
+
+await page.keyboard.press('Enter');
+await page.waitForTimeout(1500);
+await shot('35-doc-link', {
+  clip: '.tiptap',
+  pad: 24,
+  marks: [{ selector: '.doc-link', label: 'Click to jump there', place: 'right' }],
+});
+
+// The other direction: Atlantis now shows what links to it.
+await page.locator('.toolbar-back-btn').click();
+await page.locator('.document-card', { hasText: 'Atlantis' }).first().click();
+await page.waitForSelector('.tiptap');
+await page.locator('.sidebar-tab', { hasText: 'Info' }).click();
+await page.waitForTimeout(600);
+await shot('36-linked-from', {
+  clip: '.right-sidebar',
+  pad: 300,
+  marks: [{ selector: '.backlink-row', label: 'Everywhere that mentions this document', place: 'left' }],
+});
+
+// ── 8. Dating an excerpt, and the timeline ────────────────────────────────────
+
+await page.locator('.toolbar-back-btn').click();
+await page.locator('.document-card', { hasText: 'Hololore' }).first().click();
+await page.waitForSelector('.tiptap');
+await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+await page.locator('.category-name-link', { hasText: 'HISTORY' }).first().click();
+await page.waitForTimeout(500);
+await page.locator('.placement-note-add', { hasText: '+ when' }).first().click();
+await page.locator('.placement-when-input').fill('Year 300 of the Third Age');
+await shot('37-when-field', {
+  clip: '.right-sidebar',
+  pad: 300,
+  marks: [{ selector: '.placement-when-input', label: 'Your calendar, in your own words', place: 'left' }],
+});
+await page.keyboard.press('Enter');
+await page.waitForTimeout(700);
+await page.keyboard.press('Escape');
+
+// A second event, earlier and in another document — a timeline of one entry proves
+// nothing about ordering, or about gathering from across the world.
+await page.locator('.toolbar-back-btn').click();
+await page.locator('.document-card', { hasText: 'Atlantis' }).first().click();
+await page.waitForSelector('.tiptap');
+await page.locator('.tiptap').first().click();
+await page.keyboard.press('Meta+A');
+await page.waitForTimeout(400);
+await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+await page.waitForTimeout(300);
+const atlModal = page.locator('.modal', { hasText: 'Add Tag' });
+const atlHistory = await atlModal
+  .locator('select.input option', { hasText: 'HISTORY' })
+  .first()
+  .getAttribute('value');
+await atlModal.locator('select.input').selectOption(atlHistory);
+await atlModal.locator('.autocomplete-item', { hasText: 'Gura' }).first().click();
+await page.waitForTimeout(900);
+
+await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+await page.locator('.category-name-link', { hasText: 'HISTORY' }).first().click();
+await page.waitForTimeout(500);
+const undatedRow = page.locator('.placement-row', { hasText: 'drowned city' });
+await undatedRow.locator('.placement-note-add', { hasText: '+ when' }).click();
+await page.locator('.placement-when-input').fill('Year 12 of the Third Age');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(700);
+await page.keyboard.press('Escape');
+
+await page.locator('.toolbar-btn[aria-label="Timeline"]').click();
+await page.waitForTimeout(700);
+await shot('38-timeline', {
+  clip: '.timeline-overlay',
+  pad: 0,
+  marks: [
+    { selector: '.timeline-moment__when', label: 'Earliest first, whatever your calendar', place: 'right' },
+    { selector: '.timeline-event', nth: 1, label: 'Click to open the passage it came from', place: 'right' },
+  ],
+});
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+
+// ── 9. Settings, including backup ─────────────────────────────────────────────
+
 await page.locator('.toolbar-btn[aria-label="Settings"]').click();
 await page.waitForTimeout(400);
 await shot('23-settings', {
   clip: '.modal',
   pad: 150,
-  marks: [{ selector: '.theme-grid', label: 'Four themes', place: 'right' }],
+  marks: [{ selector: '.theme-grid', label: 'Four themes, or follow your system', place: 'right' }],
+});
+
+// Scroll the Backup section into view inside the modal before shooting it.
+await page.locator('.settings-button-row').scrollIntoViewIfNeeded();
+await page.waitForTimeout(300);
+await shot('39-backup', {
+  clip: '.modal',
+  pad: 150,
+  marks: [
+    { selector: '.settings-button-row', label: 'Everything, in one file', place: 'below' },
+  ],
 });
 await page.locator('.modal .btn-primary', { hasText: 'Done' }).click();
 

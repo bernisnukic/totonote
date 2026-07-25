@@ -117,3 +117,11 @@ was and where to find it.
 A tag's page lists **which documents mention it**, most-used first, with a count. Clicking
 one opens that document. The graph draws the same connections as lines; this is the version
 you can read down and click through when you're chasing a name.
+
+## Putting filed excerpts in order of *when*
+
+Any filed excerpt can also be given a date — in your world's own words — and the **⌚
+Timeline** then lays every dated excerpt out in order, across all your documents. Where the
+graph answers *what connects to what*, the timeline answers *what happened first*.
+
+→ [Links and the timeline](links-and-timeline.md)

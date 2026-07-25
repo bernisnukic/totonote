@@ -11,6 +11,8 @@ Two ways, both the same thing:
 - **Settings → Backup → Back up everything…**
 - **File → Back Up Everything…**
 
+![The Backup section of Settings](screenshots/39-backup.png)
+
 Choose where to save it. You get one file, `TotoNote-backup-2026-07-25.totonote`, holding:
 
 - every document and section

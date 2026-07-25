@@ -82,6 +82,35 @@ categories, the tags inside them, and every filing drawn as a line between a tag
 page it's filed on. Good for spotting what connects to what.
 → [Filing and the graph](filing-and-graph.md)
 
+## Connecting documents, and time
+
+**Link** (also **`[[wiki link]]`**) — a clickable jump from one document to another, made by
+typing `[[` and picking from the list. A link points at the *document*, not at its name, so
+renaming the target updates every link to it.
+→ [Links and the timeline](links-and-timeline.md)
+
+**Linked from** (also **backlinks**) — the list, in a document's **Info** tab, of every other
+document that links *to* it. The direction you didn't write.
+→ [Links and the timeline](links-and-timeline.md)
+
+**When** — an optional date on a filed excerpt, written however your world writes dates:
+`Year 300 of the Third Age` and `1885-03-12` both work. TotoNote sorts by the first number
+it finds and shows back exactly what you typed.
+→ [Links and the timeline](links-and-timeline.md)
+
+**Timeline** — the ⌚ view: every excerpt that has a *when*, earliest first, gathered from
+every document. Things dated in words with no number in them collect under **Undated**.
+→ [Links and the timeline](links-and-timeline.md)
+
+## Keeping it safe
+
+**Backup** — one file holding your entire world: every document, highlight, category,
+drawing and picture. **Restore** puts one back, replacing everything currently in the app.
+→ [Backup and restore](backup-and-restore.md)
+
+**Workspace** — see *Where things live*, above. A backup covers *every* workspace, not just
+the one you have open.
+
 ## Reading everything back
 
 These are the four modes down the left of the browse sidebar. All four work on your tagged

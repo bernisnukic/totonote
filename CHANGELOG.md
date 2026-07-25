@@ -24,6 +24,10 @@ words with no number ("long ago") gather at the end rather than disappearing.
 system's own, in the wrong colours and naming the wrong thing. They are now part of TotoNote,
 and dismissing one always means *no*.
 
+**A theme that follows your system.** A fifth option in **Settings → Appearance**: pick
+**System** and TotoNote is light when your computer is light and dark when it's dark,
+switching as your computer does — no need to come back and change it.
+
 **The keyboard reaches everything.** Rows, tabs, menu items and cards that could only be
 clicked can now be reached with Tab and activated with Enter or Space, with a visible ring
 around whatever is focused.

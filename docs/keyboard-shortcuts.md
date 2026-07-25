@@ -60,8 +60,23 @@ editor, where they previously did nothing.
 | Key | What it does |
 |-----|--------------|
 | `⌘,` (macOS) | Opens Settings, from anywhere in the app |
-| `Escape` | Closes the open dialog, or a right-click menu |
+| `Escape` | Closes the open dialog, right-click menu, page pop-out, graph or timeline |
 | `↑` / `↓` | Moves through tags in the left sidebar, once you've clicked one |
+| `Tab` | Moves to the next control — rows, tabs, cards and menu items are all reachable |
+| `Enter` / `Space` | Activates whatever is focused, with a ring showing where you are |
+
+## Linking to another document
+
+Type `[[` while writing and a list of your documents appears.
+
+| Key | What it does |
+|-----|--------------|
+| Keep typing | Narrows the list |
+| `↑` / `↓` | Moves through the matches |
+| `Enter` or `Tab` | Inserts a link to the highlighted document |
+| `Escape` | Dismisses the list, leaving the brackets as ordinary text |
+
+→ [Links and the timeline](links-and-timeline.md)
 
 ## Saving
 

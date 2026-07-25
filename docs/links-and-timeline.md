@@ -8,9 +8,11 @@ documents, and a **timeline** of everything you've dated.
 While writing, type `[[`. A list of your other documents appears — keep typing to narrow it,
 then press **Enter** (or click) to insert the link.
 
-```
-She once fought [[GUR      →   She once fought GURA
-```
+![The document picker open after typing two square brackets](screenshots/34-link-picker.png)
+
+Pick one and the brackets and half-typed name are replaced by the link itself:
+
+![A finished link inside a sentence](screenshots/35-doc-link.png)
 
 The link is one clickable thing, not styled text. Click it and that document opens.
 
@@ -30,6 +32,8 @@ Open a document and look at the **Info** tab in the right sidebar. If anything l
 a **Linked from** list appears, with a count of how many times each one mentions it. Click a
 row to go there.
 
+![The Linked from list in the Info tab](screenshots/36-linked-from.png)
+
 This is the half of a link you didn't write. Standing on GURA, the useful question is
 usually *what mentions her* — and that's what this answers.
 
@@ -48,6 +52,8 @@ Any filed excerpt can be given a **when**:
 1. Open the category page holding the excerpt (see [Filing](filing-and-graph.md)).
 2. Under the excerpt, click **+ when**.
 3. Type when it happened. Press **Enter**.
+
+![Typing a date under a filed excerpt](screenshots/37-when-field.png)
 
 ### It's your calendar, not ours
 
@@ -71,6 +77,8 @@ what you typed. Anything with no number in it isn't guessed at — it gathers un
 Click **⌚** in the toolbar. Everything dated appears earliest first, grouped by moment,
 across every document in the current workspace. Each entry shows the excerpt, its tag, and
 which document and section it came from.
+
+![The timeline, with two events from two different documents in order](screenshots/38-timeline.png)
 
 Click one to jump to that passage. **Escape** closes the timeline.
 

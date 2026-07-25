@@ -90,3 +90,5 @@ right of the status bar shows **Saved** or **Saving...**.
 - [Documents and sections](documents-and-sections.md)
 - [Tags and annotations](tags-and-annotations.md) — the heart of the app
 - [Categories and rules](categories-and-rules.md)
+- [Links and the timeline](links-and-timeline.md) — joining documents up, and ordering events
+- [Backup and restore](backup-and-restore.md) — worth doing before you have much to lose
