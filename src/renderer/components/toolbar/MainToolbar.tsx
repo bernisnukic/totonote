@@ -4,6 +4,8 @@ import { getActiveEditor } from '../../lib/editor-registry';
 import { ToolbarIcon, type ToolbarIconName } from './toolbar-icons';
 import { invoke } from '../../lib/ipc-client';
 import { mediaIdFromUrl } from '../../../shared/media-refs';
+import { importImageFile, isSupportedImage, SUPPORTED_IMAGE_TYPES } from '../../lib/image-import';
+import { alertDialog } from '../common/ConfirmDialog';
 
 export function MainToolbar() {
   const closeDocument = useStore(s => s.closeDocument);
@@ -37,6 +39,29 @@ export function MainToolbar() {
     ? (editor.getAttributes('image') as { src?: string; width?: number })
     : null;
   const drawOverImage = Boolean(selectedImage?.src && mediaIdFromUrl(selectedImage.src));
+
+  /** Pick an image file and drop it in at the caret. */
+  const insertImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = SUPPORTED_IMAGE_TYPES.join(',');
+    input.multiple = true;
+    input.onchange = async () => {
+      const files = [...(input.files ?? [])].filter(isSupportedImage);
+      for (const file of files) {
+        try {
+          const { meta, url } = await importImageFile(file);
+          editor?.chain().focus().setImage({ src: url, width: meta.width }).run();
+        } catch (err) {
+          await alertDialog(
+            `Could not add "${file.name}".`,
+            err instanceof Error ? err.message : String(err),
+          );
+        }
+      }
+    };
+    input.click();
+  };
 
   const insertDrawing = async () => {
     if (!editor) return;
@@ -108,14 +133,8 @@ export function MainToolbar() {
           </div>
 
           <div className="toolbar-group">
-            <button
-              className="toolbar-btn"
-              onClick={insertDrawing}
-              data-tip={drawOverImage ? 'Draw on this image' : 'Insert a drawing'}
-              aria-label={drawOverImage ? 'Draw on this image' : 'Insert a drawing'}
-            >
-              &#9998;
-            </button>
+            {btn('image', 'Insert a picture', insertImage)}
+            {btn('draw', drawOverImage ? 'Draw on this image' : 'Insert a drawing', () => void insertDrawing())}
           </div>
         </>
       )}

@@ -1,0 +1,72 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>TotoNote</title>
+<style>
+  /* A splash window: no frame, no chrome, nothing behind it. The rounded corners are
+     drawn here because the window itself is transparent and frameless. */
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    -webkit-user-select: none;
+    cursor: default;
+  }
+  .splash {
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    /* Pure black, because the mark's own background is — anything lighter draws a
+       visible square around the logo. */
+    background: #000;
+    border: 1px solid #262626;
+    border-radius: 12px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace;
+  }
+  img { width: 120px; height: auto; }
+  .name {
+    color: #e0e0e0;
+    font-size: 15px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+  }
+  .version { color: #666; font-size: 11px; letter-spacing: 0.08em; }
+  .bar {
+    width: 180px;
+    height: 2px;
+    border-radius: 2px;
+    background: #232323;
+    overflow: hidden;
+  }
+  /* Indeterminate progress — it says "starting", it does not claim to measure anything. */
+  .bar span {
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: #48dbfb;
+    animation: slide 1.1s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bar span { animation: none; width: 100%; opacity: 0.5; }
+  }
+</style>
+<div class="splash" onclick="window.close()" title="Click to skip">
+  <img src="intro.gif" alt="" />
+  <div class="name">TotoNote</div>
+  <div class="version" id="version"></div>
+  <div class="bar"><span></span></div>
+</div>
+<script>
+  // The version is passed in on the query string — the splash has no preload and no
+  // access to the app, deliberately: it must never be able to delay startup.
+  const v = new URLSearchParams(location.search).get('v');
+  if (v) document.getElementById('version').textContent = 'Version ' + v;
+</script>

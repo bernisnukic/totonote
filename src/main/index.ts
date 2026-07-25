@@ -6,6 +6,8 @@ import { buildAppMenu } from './menu';
 import { getMediaBytes } from './db/repositories/media-repo';
 import { MEDIA_SCHEME, MEDIA_HOST } from '../shared/media-refs';
 import { queueOcrBacklog } from './services/ocr-queue';
+import { runSplash } from './services/splash';
+import { getPreference } from './db/repositories/preference-repo';
 import { shutdownOcr } from './services/ocr';
 
 // Set before anything reads it. Without this the app identifies itself as "Electron":
@@ -35,12 +37,21 @@ let mainWindow: BrowserWindow | null = null;
 let unsavedChanges = false;
 
 const createWindow = (): void => {
+  // The splash is a separate window shown while this one loads. Switched off in Settings,
+  // or under automation (where a three-second window would sit in front of every test),
+  // there is no splash and this window is simply created visible — deciding here rather
+  // than after construction means the no-splash path never depends on 'ready-to-show'.
+  const splashWanted = getPreference('introEnabled') !== 'false' && process.env.NODE_ENV !== 'test';
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#0a0a0a',
+    // Hidden only while a splash is up, so the first thing on screen is the splash and
+    // the second is a fully-drawn app — never a half-painted window behind a logo.
+    show: !splashWanted,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 12, y: 12 },
     webPreferences: {
@@ -68,6 +79,8 @@ const createWindow = (): void => {
   if (!app.isPackaged && process.env.NODE_ENV !== 'test') {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
+
+  if (splashWanted) void runSplash(mainWindow);
 
   // Warn before closing with unsaved work (manual-save mode only). Under automation we
   // never prompt, so tests can close the window freely.

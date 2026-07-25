@@ -1,5 +1,29 @@
 # What's New
 
+## 1.16.2
+
+**A real splash screen.** Opening TotoNote now shows a small splash window — the mark, the
+name, the version — on its own while the app loads, then hands over to a fully drawn app.
+Before, it was drawn *on top of* the main window, so you saw the app sitting behind it,
+which isn't what a splash screen is.
+
+**And it appears every time.** It used to play once per world, ever — after that the
+**Play the opening animation** setting did nothing at all, whichever way you set it, and
+there was no way to see the splash again. Now the setting means what it says: on shows it
+every launch, off never shows it. Click it or press any key to skip.
+
+**A button for inserting pictures.** There wasn't one — pasting or dragging a file in was
+the only way, so if you went looking for a button you'd reasonably conclude the app couldn't
+do it. The toolbar now has one, next to the pencil that adds a drawing.
+
+**Fixes**
+
+- The Timeline's heading sat underneath the macOS window buttons unless the app was
+  fullscreen. Every full-screen view is now checked for this, not just the two that had
+  been reported.
+- The picture and drawing buttons were plain text characters among the drawn icons; they're
+  now drawn to match.
+
 ## 1.16.1
 
 **The built-in guide caught up with 1.16.0.** Nothing in the app itself changed. The pages on

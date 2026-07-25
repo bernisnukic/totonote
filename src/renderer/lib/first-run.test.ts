@@ -1,75 +1,41 @@
 import { describe, it, expect } from 'vitest';
 import { decideFirstRun } from './first-run';
 
-const base = { seenIntro: null, lastVersion: null, version: '1.5.0', isAutomation: false };
+const base = { lastVersion: null, version: '1.5.0', isAutomation: false };
 
-describe('decideFirstRun', () => {
-  it('plays the intro and shows the changelog on a brand-new database', () => {
-    expect(decideFirstRun(base)).toEqual({
-      playIntro: true,
-      showChangelog: true,
-      writeIntroSeen: true,
-      writeLastVersion: true,
-    });
-  });
-
-  it("shows the changelog for the tester's case: an existing DB with no recorded version", () => {
-    // Intro was already seen, but the version was never recorded (older builds, or the
-    // old localStorage attempt that never touched the database).
-    const d = decideFirstRun({ ...base, seenIntro: '1', lastVersion: null });
+describe('the changelog', () => {
+  it('opens on a brand-new database, which has recorded no version', () => {
+    const d = decideFirstRun(base);
     expect(d.showChangelog).toBe(true);
-    expect(d.playIntro).toBe(false);
     expect(d.writeLastVersion).toBe(true);
   });
 
-  it('shows the changelog after an upgrade', () => {
-    const d = decideFirstRun({ ...base, seenIntro: '1', lastVersion: '1.4.0', version: '1.5.0' });
+  it("opens for the tester's case: an existing database that never recorded a version", () => {
+    const d = decideFirstRun({ ...base, lastVersion: null });
     expect(d.showChangelog).toBe(true);
-    expect(d.playIntro).toBe(false);
   });
 
-  it('does nothing once the current version has been seen', () => {
-    const d = decideFirstRun({ ...base, seenIntro: '1', lastVersion: '1.5.0', version: '1.5.0' });
-    expect(d).toEqual({
-      playIntro: false,
-      showChangelog: false,
-      writeIntroSeen: false,
-      writeLastVersion: false,
-    });
+  it('opens after an upgrade', () => {
+    expect(decideFirstRun({ ...base, lastVersion: '1.4.0', version: '1.5.0' }).showChangelog).toBe(true);
   });
 
-  it('never replays the intro once seen, even across versions', () => {
-    expect(decideFirstRun({ ...base, seenIntro: '1', lastVersion: '1.4.0' }).playIntro).toBe(false);
+  it('stays shut once the running version has been recorded', () => {
+    const d = decideFirstRun({ ...base, lastVersion: '1.5.0', version: '1.5.0' });
+    expect(d.showChangelog).toBe(false);
+    expect(d.writeLastVersion).toBe(false);
   });
 
-  it('suppresses the popups under automation but still records the flags', () => {
-    expect(decideFirstRun({ ...base, isAutomation: true })).toEqual({
-      playIntro: false,
-      showChangelog: false,
-      writeIntroSeen: true,
-      writeLastVersion: true,
-    });
+  it('is news, not decoration — a downgrade counts as a change too', () => {
+    expect(decideFirstRun({ ...base, lastVersion: '1.6.0', version: '1.5.0' }).showChangelog).toBe(true);
   });
 });
 
-describe('the opening animation setting', () => {
-  const base = { seenIntro: null, lastVersion: '1.0.0', version: '1.0.0', isAutomation: false };
-
-  it('plays on a new database by default', () => {
-    expect(decideFirstRun(base).playIntro).toBe(true);
+describe('under automation', () => {
+  it('keeps the release notes shut so they never block a test run', () => {
+    expect(decideFirstRun({ ...base, isAutomation: true }).showChangelog).toBe(false);
   });
 
-  it('skips it when the setting is off', () => {
-    expect(decideFirstRun({ ...base, introEnabled: false }).playIntro).toBe(false);
-  });
-
-  it('still records that it is seen when skipped', () => {
-    // Otherwise switching the setting back on would replay an intro for a database that
-    // is no longer new.
-    expect(decideFirstRun({ ...base, introEnabled: false }).writeIntroSeen).toBe(true);
-  });
-
-  it('treats an unset preference as on, for callers written before it existed', () => {
-    expect(decideFirstRun({ ...base, introEnabled: undefined }).playIntro).toBe(true);
+  it('still records the version, keeping the write path under test', () => {
+    expect(decideFirstRun({ ...base, isAutomation: true }).writeLastVersion).toBe(true);
   });
 });

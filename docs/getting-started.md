@@ -74,6 +74,16 @@ Once a document is open you get five areas:
 > screen there are no sidebars, no toolbar and no Settings button — **open a document
 > first** if you're looking for any of those.
 
+## The splash screen
+
+Opening TotoNote shows a small splash window with the mark and the version while the app
+loads, then the app appears. Click it or press any key to skip straight through.
+
+![The splash window](screenshots/40-splash.png)
+
+It plays every time. If you'd rather go straight to your documents, turn off **Play the
+opening animation** in **Settings → Startup**.
+
 ## Saving
 
 There's no save button and no save shortcut, because there's nothing to save by hand.

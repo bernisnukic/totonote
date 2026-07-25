@@ -78,3 +78,14 @@ if (sqlFiles.length === 0) {
   fail(`No .sql migration files in ${migrationsDir}.`);
 }
 console.log(`✓ verify-package: Drizzle migrations bundled (${sqlFiles.length} file(s))`);
+
+// The splash is a main-process window loading a file from Resources. If it did not get
+// copied the app still starts — it just silently never shows a splash, which is exactly
+// the kind of packaged-only regression nobody notices until a user reports it.
+const splashDir = join(res, 'splash');
+for (const f of ['splash.html', 'intro.gif']) {
+  if (!existsSync(join(splashDir, f))) {
+    fail(`Missing ${join(splashDir, f)} — the splash wasn't copied. Check extraResource in forge.config.ts.`);
+  }
+}
+console.log('✓ verify-package: splash bundled');

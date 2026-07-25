@@ -114,10 +114,21 @@ test.describe('Help', () => {
     await page.locator('.document-card-new').click();
     await page.locator('.modal input.input').first().fill('Overlay Test');
     await page.locator('.modal .btn-primary').click();
-    await page.locator('.toolbar-btn[aria-label="Graph view"]').click();
-    await expect(page.locator('.graph-overlay')).toBeVisible();
-    const graphTitle = await page.locator('.graph-title').boundingBox();
-    expect(graphTitle!.y).toBeGreaterThanOrEqual(38);
+
+    // Every full-window overlay, not just the two that were reported — the timeline
+    // shipped with its heading under the buttons because nothing checked the new ones.
+    const overlays = [
+      { button: 'Graph view', overlay: '.graph-overlay', title: '.graph-title' },
+      { button: 'Timeline', overlay: '.timeline-overlay', title: '.timeline-title' },
+    ];
+    for (const o of overlays) {
+      await page.locator(`.toolbar-btn[aria-label="${o.button}"]`).click();
+      await expect(page.locator(o.overlay)).toBeVisible();
+      const title = await page.locator(o.title).boundingBox();
+      expect(title!.y, `${o.button} heading sits under the traffic lights`).toBeGreaterThanOrEqual(38);
+      await page.keyboard.press('Escape');
+      await expect(page.locator(o.overlay)).toHaveCount(0);
+    }
   });
 
   test('lists guide pages in reading order', async () => {

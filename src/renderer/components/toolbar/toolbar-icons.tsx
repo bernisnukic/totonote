@@ -39,9 +39,26 @@ export type ToolbarIconName =
   | 'h2'
   | 'h3'
   | 'bullet'
-  | 'ordered';
+  | 'ordered'
+  | 'image'
+  | 'draw';
 
 export const ToolbarIcon: Record<ToolbarIconName, React.ReactElement> = {
+  // A picture frame with a sun and a horizon — the convention everywhere.
+  image: (
+    <Svg>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5L5 21" />
+    </Svg>
+  ),
+  // A pencil, matching the ✎ this replaces.
+  draw: (
+    <Svg>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </Svg>
+  ),
   bold: (
     <Svg>
       <path d="M6 4h8a4 4 0 0 1 0 8H6z" />

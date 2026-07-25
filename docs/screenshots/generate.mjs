@@ -194,6 +194,40 @@ async function editTab() {
 
 console.log('Generating documentation screenshots…');
 
+// ── 0. The splash window ──────────────────────────────────────────────────────
+// A separate window with no preload, so it cannot be annotated the way the others are —
+// captured as-is, which is all it needs.
+{
+  const splashDb = path.join(HERE, '.splash.db');
+  for (const f of [splashDb, `${splashDb}-wal`, `${splashDb}-shm`]) {
+    if (fs.existsSync(f)) fs.unlinkSync(f);
+  }
+  const splashApp = await electron.launch({
+    args: [path.join(ROOT, '.vite/build/index.js')],
+    // Deliberately *not* NODE_ENV=test: that is what suppresses the splash.
+    env: { ...process.env, TOTONOTE_DB_PATH: splashDb },
+  });
+  await new Promise(r => setTimeout(r, 2000));
+  const splashPage = splashApp.windows().find(w => w.url().includes('splash.html'));
+  if (splashPage) {
+    // Unpackaged, app.getVersion() reports Electron's version rather than TotoNote's, so
+    // the shot would show something no user ever sees. Put the real one in.
+    const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+    await splashPage.evaluate(v => {
+      const el = document.getElementById('version');
+      if (el) el.textContent = `Version ${v}`;
+    }, version);
+    await splashPage.screenshot({ path: path.join(HERE, '40-splash.png') });
+    console.log('  ✓ 40-splash.png');
+  } else {
+    console.warn('  ! splash window not found — skipping 40-splash.png');
+  }
+  await splashApp.close();
+  for (const f of [splashDb, `${splashDb}-wal`, `${splashDb}-shm`]) {
+    if (fs.existsSync(f)) fs.unlinkSync(f);
+  }
+}
+
 // ── 1. Documents screen ───────────────────────────────────────────────────────
 
 await shot('01-documents-screen', {

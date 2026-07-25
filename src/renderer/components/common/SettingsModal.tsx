@@ -106,7 +106,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <span className="settings-toggle-label">Play the opening animation</span>
             <span className="settings-toggle-hint">
               {introEnabled
-                ? 'Shown once, the first time you open a new world.'
+                ? 'Plays each time you open TotoNote. Click or press any key to skip.'
                 : 'Off — TotoNote opens straight into your documents.'}
             </span>
           </span>

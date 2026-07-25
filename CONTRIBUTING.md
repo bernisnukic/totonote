@@ -138,6 +138,22 @@ measured: copying `totonote.db` alone while WAL holds recent writes yields *"no 
 documents"*. Restore validates first (required tables + not from a newer schema), keeps the
 replaced DB as `<db>.replaced`, clears the `-wal`/`-shm` sidecars, then relaunches.
 
+### The splash window
+`main/services/splash.ts` creates a **separate frameless BrowserWindow** and the main window
+is constructed with `show: !splashWanted`; `runSplash()` closes the splash and shows the main
+window once *both* one play-through has elapsed and `ready-to-show` has fired, with a 12s
+backstop. It was previously an in-app React overlay, which meant the main window was visible
+behind it — not a splash screen. The splash has **no preload and no IPC**: the version
+arrives on the query string, because a splash that can fail is worse than no splash.
+
+`assets/splash/` ships via `extraResource` and `findSplashFile()` probes dev/packaged
+candidates, the same shape as `findMigrationsFolder()`. `scripts/verify-package.mjs` fails
+the build if it did not get copied — without that check a packaged build silently never
+shows a splash. Automation (`NODE_ENV=test`) skips it entirely, so it never sits in front of
+the E2E suite; `e2e/startup.spec.ts` therefore launches its own instances *without* that env
+var and observes windows through `app.evaluate`, since the splash has no DOM the driver can
+reach.
+
 ### Editor Structure
 All sections render as one scrollable page. Each section gets its own `SectionEditor` (TipTap instance). `useSectionScroll` uses IntersectionObserver for scroll-based tab switching. Content is debounce-saved (1000ms).
 
@@ -186,11 +202,12 @@ Dark theme. CSS custom properties in `tokens.css`. Key tokens:
 16. **Every inline atom must be in `LEAF_NODES`** (`shared/prosemirror-text.ts`). Miss one and every highlight *after* it reads back one position short, so wiki excerpts silently show the wrong words — the same class of bug as the history-restore corruption. `doc-links.test.ts` guards it: remove `DOCUMENT_LINK_NODE` from the set and 3 tests fail.
 17. **Excerpts computed in main trail the debounced save by ≤1s.** Anything rendering an excerpt must go through `renderer/lib/excerpt-text.ts`, which falls back to the live editor. The timeline shipped without it and showed "(no text)" for anything just dated.
 18. **`window.confirm`/`alert` are banned in the renderer** — use `confirmDialog`/`alertDialog` (`components/common/ConfirmDialog.tsx`), mounted once as `ConfirmDialogHost` in `App.tsx`. E2E: the `page.once('dialog', …)` pattern no longer applies; use `acceptConfirm(page)` / `dismissConfirmIfShown(page)` from `e2e/fixtures.ts`, called *after* triggering the action.
-19. **Clickable `<div>`/`<span>` must spread `lib/clickable.ts`**, which adds `role="button"`, `tabIndex` and Enter/Space handling. A div with a bare `onClick` cannot be reached by keyboard at all.
-20. **Manual-save mode: saving a section needs the live editor, not just the store.** Annotation positions are mapped through edits and only the editor knows the current ones, so each `SectionEditor` registers a flusher in `lib/save-registry.ts`; `saveAllDirty()` calls those (content + positions). Warn-on-exit is a main↔renderer handshake: the renderer pushes `window:set-dirty`, the window `close` handler shows the dialog, and "Save" → `app:save-and-quit` → flush → `app:force-quit`.
-21. **Anything that unmounts the section editors must call `leaveDocument()` first.** A flusher only works while its editor is mounted, so tearing the editors down without flushing silently destroys unsaved work — that shipped once, via `closeDocument`. `leaveDocument()` (document-slice) flushes dirty sections *and* drops the session History for them; `closeDocument`, `openDocument` (when switching) and `setActiveWorkspace` all go through it. `deleteDocument` deliberately doesn't flush, but still clears the dirty ids and history so a deleted document can't leave the app marked unsaved. `document-slice.test.ts` guards all of this.
-22. **The renderer↔main surface is allowlisted in both directions.** `preload.ts` rejects any channel not in `IPC_CHANNELS` (invoke) or `MENU_CHANNELS` (push). `IPC_CHANNELS` is a runtime array in `shared/ipc-types.ts` kept in step with `IpcHandlerMap` by two type assertions — add a channel to one and forget the other and the build fails.
-23. **CI gates the release.** `.github/workflows/build.yml` runs lint + unit + E2E first; `build` and `release` only run for a `v*` tag and only after that job passes. Keep `npm run lint` at **zero errors** or nothing can ship (warnings are fine).
+19. **A full-window overlay must start at `var(--title-bar-height)`, not `inset: 0`** — otherwise its heading sits under the macOS traffic lights in windowed mode. `.graph-overlay`, `.help-overlay`, `.wiki-overlay` and `.timeline-overlay` all do; the timeline shipped without it. The check in `app-shell.spec.ts` loops over every overlay, so add new ones to that list.
+20. **Clickable `<div>`/`<span>` must spread `lib/clickable.ts`**, which adds `role="button"`, `tabIndex` and Enter/Space handling. A div with a bare `onClick` cannot be reached by keyboard at all.
+21. **Manual-save mode: saving a section needs the live editor, not just the store.** Annotation positions are mapped through edits and only the editor knows the current ones, so each `SectionEditor` registers a flusher in `lib/save-registry.ts`; `saveAllDirty()` calls those (content + positions). Warn-on-exit is a main↔renderer handshake: the renderer pushes `window:set-dirty`, the window `close` handler shows the dialog, and "Save" → `app:save-and-quit` → flush → `app:force-quit`.
+22. **Anything that unmounts the section editors must call `leaveDocument()` first.** A flusher only works while its editor is mounted, so tearing the editors down without flushing silently destroys unsaved work — that shipped once, via `closeDocument`. `leaveDocument()` (document-slice) flushes dirty sections *and* drops the session History for them; `closeDocument`, `openDocument` (when switching) and `setActiveWorkspace` all go through it. `deleteDocument` deliberately doesn't flush, but still clears the dirty ids and history so a deleted document can't leave the app marked unsaved. `document-slice.test.ts` guards all of this.
+23. **The renderer↔main surface is allowlisted in both directions.** `preload.ts` rejects any channel not in `IPC_CHANNELS` (invoke) or `MENU_CHANNELS` (push). `IPC_CHANNELS` is a runtime array in `shared/ipc-types.ts` kept in step with `IpcHandlerMap` by two type assertions — add a channel to one and forget the other and the build fails.
+24. **CI gates the release.** `.github/workflows/build.yml` runs lint + unit + E2E first; `build` and `release` only run for a `v*` tag and only after that job passes. Keep `npm run lint` at **zero errors** or nothing can ship (warnings are fine).
 
 ## Documentation
 

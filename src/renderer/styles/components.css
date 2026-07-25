@@ -1351,8 +1351,10 @@ textarea:focus-visible {
 
 /* Timeline: dated excerpts across the whole world, earliest first. */
 .timeline-overlay {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  /* Same as .graph-overlay and .help-overlay — starts below the reserved title-bar
+     strip, or the heading sits under the macOS traffic lights in windowed mode. */
+  inset: var(--title-bar-height) 0 0 0;
   z-index: 900;
   background: var(--bg-primary);
   overflow-y: auto;

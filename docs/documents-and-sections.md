@@ -98,8 +98,14 @@ reorders both the tabs and the page.
 
 ## Pictures
 
-Paste or drag an image straight into a section — a character reference, a map, a piece of
-concept art. Supported: PNG, JPEG, WebP, GIF and AVIF.
+Three ways in, whichever suits:
+
+- the **picture** button in the toolbar, which opens a file picker
+- **paste** an image straight into a section
+- **drag** an image file onto a section
+
+A character reference, a map, a piece of concept art. Supported: PNG, JPEG, WebP, GIF and
+AVIF.
 
 ![A section with an embedded image](screenshots/31-images.png)
 
@@ -130,9 +136,9 @@ See [Filing and the graph](filing-and-graph.md) for how filing works.
 
 ## Drawing
 
-The **✎** button in the toolbar adds a drawing surface. Select an image first and it draws
-*on top of that image* instead — for putting arrows on a map, circling a region, or
-labelling a floorplan.
+The **pencil** button in the toolbar — right next to the picture button — adds a blank
+drawing surface at the caret. Select an image first and it draws *on top of that image* instead, for putting arrows
+on a map, circling a region, or labelling a floorplan.
 
 ![A drawing over an embedded image, with the pen tools](screenshots/32-drawing.png)
 
@@ -197,8 +203,8 @@ throws the "future" away the moment you make a new edit.
 The gear button in the toolbar — or **TotoNote → Settings…** (**⌘,**) on macOS, which also
 works on the Documents screen. It holds:
 
-- **Startup** — whether the opening animation plays. Turn it off to go straight to your
-  documents.
+- **Startup** — whether the splash screen appears while TotoNote opens. Turn it off to go
+  straight to your documents. → [The splash screen](getting-started.md#the-splash-screen)
 - **Appearance** — four themes, plus **System**, which follows whether your computer is set
   to light or dark and keeps following it.
 - **Editing** — the **Auto-save** toggle (see [Saving](#saving), above).

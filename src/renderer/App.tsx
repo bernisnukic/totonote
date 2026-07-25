@@ -11,7 +11,6 @@ import { SettingsModal } from './components/common/SettingsModal';
 import { UndoToast } from './components/common/UndoToast';
 import { HelpViewer } from './components/help/HelpViewer';
 import { WikiView } from './components/right-sidebar/WikiView';
-import { IntroAnimation, INTRO_SEEN_KEY } from './components/intro/IntroAnimation';
 import { UpdateBanner } from './components/common/UpdateBanner';
 import { invoke } from './lib/ipc-client';
 import { decideFirstRun } from './lib/first-run';
@@ -35,10 +34,6 @@ export function App() {
   const openHelp = useStore(s => s.openHelp);
   const theme = useStore(s => s.theme);
 
-  // 'checking' until we've read the flags from the database; then 'playing' or 'done'.
-  const [introState, setIntroState] = useState<'checking' | 'playing' | 'done'>('checking');
-  // Whether the changelog should open once the first-run intro (if any) has finished.
-  const [changelogPending, setChangelogPending] = useState(false);
 
   useEffect(() => {
     loadPreferences();
@@ -66,49 +61,30 @@ export function App() {
     document.documentElement.dataset.theme = resolveTheme(theme, prefersDark);
   }, [theme, prefersDark]);
 
-  // First-run experience, decided from the database so it survives a re-download the
-  // way localStorage did not. The intro plays once ever per database; the changelog
-  // opens whenever the running version differs from the last one recorded — including
-  // the first launch — and, when both apply, waits for the intro to finish.
+  // What's New opens when the running version differs from the last one recorded — kept
+  // in the database, so it survives the re-download that used to wipe localStorage. The
+  // splash is not handled here at all: it is a real window the main process puts on screen
+  // while this one loads hidden, so by the time anyone sees this, it is already gone.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [seenIntro, lastVersion, version] = await Promise.all([
-        readPreference(INTRO_SEEN_KEY),
+      const [lastVersion, version] = await Promise.all([
         readPreference(LAST_SEEN_VERSION_KEY),
         invoke('app:version'),
       ]);
       if (cancelled) return;
 
-      const introEnabled = (await readPreference('introEnabled')) !== 'false';
-      const d = decideFirstRun({ seenIntro, lastVersion, version, isAutomation: navigator.webdriver, introEnabled });
+      const d = decideFirstRun({ lastVersion, version, isAutomation: navigator.webdriver });
       if (d.writeLastVersion) await writePreference(LAST_SEEN_VERSION_KEY, version);
-      if (d.writeIntroSeen) await writePreference(INTRO_SEEN_KEY, '1');
-
-      if (d.playIntro) {
-        setChangelogPending(d.showChangelog);
-        setIntroState('playing');
-      } else {
-        setIntroState('done');
-        if (d.showChangelog) openHelp('CHANGELOG');
-      }
+      if (d.showChangelog) openHelp('CHANGELOG');
     })();
     return () => {
       cancelled = true;
     };
   }, [readPreference, writePreference, openHelp]);
 
-  const handleIntroDone = () => {
-    setIntroState('done');
-    if (changelogPending) {
-      setChangelogPending(false);
-      openHelp('CHANGELOG');
-    }
-  };
-
   return (
     <>
-      {introState === 'playing' && <IntroAnimation onDone={handleIntroDone} />}
       <AppLayout>
         {activeDocumentId ? <EditorArea /> : <DocumentList />}
         <TagContextMenu />

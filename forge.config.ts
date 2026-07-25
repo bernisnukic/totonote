@@ -51,7 +51,7 @@ const config: ForgeConfig = {
     // so `process.resourcesPath/migrations/` resolves in packaged builds.
     // migrations: read at startup by the migrator.
     // ocr: the vendored language data, so reading text out of pictures never needs the network.
-    extraResource: ['./src/main/db/migrations', './assets/ocr'],
+    extraResource: ['./src/main/db/migrations', './assets/ocr', './assets/splash'],
   },
   rebuildConfig: {},
   hooks: {
