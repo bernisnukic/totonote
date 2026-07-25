@@ -254,3 +254,48 @@ test.describe('Drawing', () => {
     expect(await background.getAttribute('src')).toMatch(/^totonote:\/\/media\//);
   });
 });
+
+test.describe('Drawings on wiki pages', () => {
+  test('a filed drawing shows its strokes on the category page', async () => {
+    // Images got this in v1.11.0; a filed drawing used to render as an empty row.
+    await docWithSection('Drawing Page');
+
+    await page.locator('.sidebar-tab', { hasText: 'Edit' }).click();
+    await page.locator('.btn', { hasText: '+ New Category' }).click();
+    await page.locator('.category-new-form input.input').fill('MAPS');
+    await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.category-node-name', { hasText: 'MAPS' })).toBeVisible();
+
+    await insertDrawing();
+    await drawStroke([
+      [0.2, 0.2],
+      [0.8, 0.8],
+    ]);
+    await expect.poll(async () => (await storedStrokes()).length, { timeout: 10000 }).toBe(1);
+    await page.locator('.drawing-node .btn', { hasText: 'Done' }).click();
+
+    // Select the drawing node and file it under MAPS.
+    await page.locator('.tiptap').first().click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await expect(page.locator('.selection-toolbar')).toBeVisible();
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    const value = await modal
+      .locator('select.input option', { hasText: 'MAPS' })
+      .first()
+      .getAttribute('value');
+    await modal.locator('select.input').selectOption(value!);
+    await modal.locator('.autocomplete input.input').fill('Region');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await page.waitForTimeout(1600);
+
+    await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
+    await page.locator('.category-name-link', { hasText: 'MAPS' }).click();
+    const info = page.locator('.right-sidebar');
+    await expect(info.locator('.placement-row')).toHaveCount(1);
+    // Named rather than shown as an empty "…", and the strokes actually render.
+    await expect(info.locator('.placement-excerpt')).toContainText('Drawing');
+    await expect(info.locator('.placement-thumb--drawing canvas')).toBeVisible();
+  });
+});

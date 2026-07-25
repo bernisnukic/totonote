@@ -472,3 +472,19 @@
 .drawing-done {
   margin-left: auto;
 }
+
+/* A filed drawing on a compiled page: strokes over their background, both scaled down. */
+.placement-thumb--drawing {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+.placement-thumb--drawing img,
+.placement-thumb--drawing canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractTextBetween, nodeSize, excerptFromContent, type PMJsonNode, imagesInRange } from './prosemirror-text';
+import { extractTextBetween, nodeSize, excerptFromContent, type PMJsonNode, imagesInRange, drawingsInRange } from './prosemirror-text';
 
 const text = (t: string): PMJsonNode => ({ type: 'text', text: t });
 const p = (...content: PMJsonNode[]): PMJsonNode => ({ type: 'paragraph', content });
@@ -141,5 +141,37 @@ describe('imagesInRange', () => {
       ],
     };
     expect(imagesInRange(doc, 0, nodeSize(doc))).toEqual(['nested']);
+  });
+});
+
+describe('drawingsInRange', () => {
+  const draw = (id: string) => ({ type: 'drawing', attrs: { drawingId: id } });
+  const para = (text: string) => ({ type: 'paragraph', content: [{ type: 'text', text }] });
+
+  it('finds a drawing inside the range', () => {
+    const doc = { type: 'doc', content: [para('abc'), draw('d1')] };
+    expect(drawingsInRange(doc, 5, 6)).toEqual(['d1']);
+  });
+
+  it('ignores one outside the range', () => {
+    const doc = { type: 'doc', content: [para('abc'), draw('d1')] };
+    expect(drawingsInRange(doc, 0, 5)).toEqual([]);
+  });
+
+  it('keeps images and drawings apart', () => {
+    const doc = {
+      type: 'doc',
+      content: [{ type: 'image', attrs: { src: 'totonote://media/img' } }, draw('d1')],
+    };
+    expect(imagesInRange(doc, 0, 2)).toEqual(['img']);
+    expect(drawingsInRange(doc, 0, 2)).toEqual(['d1']);
+  });
+
+  it('counts a drawing as one position, like an image', () => {
+    // Both are atoms; if either measured differently every annotation after it in the
+    // section would be off by that difference.
+    const withImage = { type: 'doc', content: [{ type: 'image', attrs: {} }] };
+    const withDrawing = { type: 'doc', content: [draw('d1')] };
+    expect(nodeSize(withDrawing)).toBe(nodeSize(withImage));
   });
 });

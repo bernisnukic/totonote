@@ -26,6 +26,16 @@ const THEMES = [
   },
 ] as const;
 
+/** Offered checkpoint intervals. The pause after a keystroke is ~100-300ms when typing. */
+const HISTORY_INTERVALS = [
+  { ms: 50, label: 'Every pause (50ms)' },
+  { ms: 250, label: 'Quarter second' },
+  { ms: 500, label: 'Half a second' },
+  { ms: 1000, label: '1 second (default)' },
+  { ms: 3000, label: '3 seconds' },
+  { ms: 10000, label: '10 seconds' },
+];
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,6 +46,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const setTheme = useStore(s => s.setTheme);
   const autoSaveEnabled = useStore(s => s.autoSaveEnabled);
   const setAutoSaveEnabled = useStore(s => s.setAutoSaveEnabled);
+  const historyIntervalMs = useStore(s => s.historyIntervalMs);
+  const setHistoryIntervalMs = useStore(s => s.setHistoryIntervalMs);
   const isMac = /Mac/i.test(navigator.platform);
 
   return (
@@ -88,6 +100,28 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </span>
           </span>
         </label>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">History</h3>
+        <label className="settings-field">
+          <span className="settings-toggle-label">Checkpoint every</span>
+          <select
+            className="input"
+            value={historyIntervalMs}
+            onChange={e => setHistoryIntervalMs(Number(e.target.value))}
+          >
+            {HISTORY_INTERVALS.map(({ ms, label }) => (
+              <option key={ms} value={ms}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="settings-toggle-hint">
+          How long after you stop typing the History tab takes a checkpoint. Shorter fills the
+          timeline as you write; longer keeps it reaching further back.
+        </p>
       </div>
 
       <div className="settings-section">

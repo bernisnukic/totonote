@@ -2,7 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { eq, inArray, isNotNull, max, sql } from 'drizzle-orm';
 import { getDb } from '../connection';
 import { annotations, sections, documents, tags } from '../schema';
-import { excerptFromContent, imagesFromContent } from '../../../shared/prosemirror-text';
+import { excerptFromContent, imagesFromContent, drawingsFromContent } from '../../../shared/prosemirror-text';
 import type {
   Annotation,
   AnnotationPlacement,
@@ -158,6 +158,7 @@ export function listPlacements(filter: { categoryIds?: string[]; tagId?: string 
     ...row,
     excerpt: excerptFromContent(content, row.fromPos, row.toPos),
     imageIds: imagesFromContent(content, row.fromPos, row.toPos),
+    drawingIds: drawingsFromContent(content, row.fromPos, row.toPos),
   }));
 }
 

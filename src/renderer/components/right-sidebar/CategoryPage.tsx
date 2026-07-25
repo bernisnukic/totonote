@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../stores';
 import { getEditor } from '../../lib/editor-registry';
 import { mediaUrl } from '../../../shared/media-refs';
+import { DrawingThumb } from './DrawingThumb';
 import type { AnnotationPlacement, Category } from '../../../shared/domain-types';
 
 export type PlacementSort = 'custom' | 'newest' | 'oldest' | 'document';
@@ -97,8 +98,12 @@ export function PlacementRow({
   // A picture filed on its own has no text; the thumbnail below carries the meaning, so
   // name it rather than showing a bare ellipsis.
   const imageCount = placement.imageIds.length;
-  if (!excerpt && imageCount > 0) {
-    excerpt = imageCount === 1 ? 'Image' : `${imageCount} images`;
+  const drawingCount = placement.drawingIds.length;
+  if (!excerpt && imageCount + drawingCount > 0) {
+    const parts: string[] = [];
+    if (imageCount) parts.push(imageCount === 1 ? 'Image' : `${imageCount} images`);
+    if (drawingCount) parts.push(drawingCount === 1 ? 'Drawing' : `${drawingCount} drawings`);
+    excerpt = parts.join(' + ');
   }
   excerpt = excerpt || '…';
   const display = excerpt.length > 110 ? `${excerpt.slice(0, 110)}…` : excerpt;
@@ -121,10 +126,13 @@ export function PlacementRow({
         <span>{display}</span>
       </div>
       {/* An excerpt that is a picture has no text of its own — show it instead. */}
-      {placement.imageIds.length > 0 && (
+      {(placement.imageIds.length > 0 || placement.drawingIds.length > 0) && (
         <div className="placement-thumbs" onDoubleClick={() => onNavigate(placement)}>
           {placement.imageIds.map(id => (
             <img key={id} className="placement-thumb" src={mediaUrl(id)} alt="" draggable={false} />
+          ))}
+          {placement.drawingIds.map(id => (
+            <DrawingThumb key={id} drawingId={id} />
           ))}
         </div>
       )}

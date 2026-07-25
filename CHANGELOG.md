@@ -1,5 +1,19 @@
 # What's New
 
+## 1.13.0
+
+**Fixed: rolling back History could put wrong text on your wiki pages.** Restoring a
+checkpoint put the words back but left every highlight pointing at the *positions* it had
+in the newer text — so a compiled page could show a passage you never highlighted, with no
+sign anything was wrong. Checkpoints now record where the highlights were and put them back
+with the text. If a rollback would remove highlights added since, TotoNote says so first.
+
+**The History interval is now a setting.** *Settings → History* — from a checkpoint at every
+pause (a timeline that fills in as you write) up to every 10 seconds. One second by default.
+
+**Filed drawings show up on wiki pages.** A drawing filed under a category used to render as
+an empty row; it now shows its actual strokes, over its background image.
+
 ## 1.12.0
 
 **Drawing.** The **✎** button adds a drawing surface to a section. Select an image first and

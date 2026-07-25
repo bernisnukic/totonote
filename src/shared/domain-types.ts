@@ -93,6 +93,8 @@ export interface AnnotationPlacement {
   excerpt: string;
   /** Media ids of any images inside the range — a filed portrait has no text to show. */
   imageIds: string[];
+  /** Drawing ids inside the range, for the same reason. */
+  drawingIds: string[];
 }
 
 /**

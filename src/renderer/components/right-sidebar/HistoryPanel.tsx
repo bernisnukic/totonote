@@ -26,12 +26,28 @@ export function HistoryPanel() {
   const historyBySection = useStore(s => s.historyBySection);
   const currentSnapshotId = useStore(s => s.currentSnapshotId);
   const markCurrentSnapshot = useStore(s => s.markCurrentSnapshot);
+  const annotations = useStore(s => s.documentAnnotations);
+  const deleteAnnotation = useStore(s => s.deleteAnnotation);
+  const batchUpdatePositions = useStore(s => s.batchUpdatePositions);
+  const loadAnnotations = useStore(s => s.loadAnnotations);
+  const loadDocumentAnnotations = useStore(s => s.loadDocumentAnnotations);
+  const activeDocumentId = useStore(s => s.activeDocumentId);
 
   const activeSection = sections.find(s => s.id === activeSectionId);
   const snapshots = activeSectionId ? historyBySection[activeSectionId] ?? [] : [];
   const currentId = activeSectionId ? currentSnapshotId[activeSectionId] : undefined;
 
-  const restore = (snap: Snapshot) => {
+  /**
+   * Roll the section back to a checkpoint — text *and* highlights.
+   *
+   * Restoring text alone corrupts the compiled pages: a highlight's position is measured
+   * against the document it was made in, so older text leaves every highlight pointing at
+   * whatever now sits at those offsets, and the wiki quietly shows words the user never
+   * marked. Each checkpoint records where the highlights were, and they are put back with
+   * it. Highlights made *after* the checkpoint have no text to attach to, so they go —
+   * which is what "put it back how it was" means, and we say so before doing it.
+   */
+  const restore = async (snap: Snapshot) => {
     if (!activeSectionId) return;
     const editor = getEditor(activeSectionId);
     if (!editor) return;
@@ -41,9 +57,33 @@ export function HistoryPanel() {
     } catch {
       return;
     }
+
+    const keptIds = new Set(snap.annotations.map(a => a.id));
+    const doomed = annotations.filter(a => a.sectionId === activeSectionId && !keptIds.has(a.id));
+    if (doomed.length > 0) {
+      const count = `${doomed.length} highlight${doomed.length === 1 ? '' : 's'}`;
+      const confirmed = window.confirm(
+        `Going back to this checkpoint removes ${count} added since then, because the text they mark no longer exists.\n\nRestore anyway?`,
+      );
+      if (!confirmed) return;
+    }
+
     // emitUpdate:true so the restore is saved (and, in manual-save mode, marked dirty).
     editor.commands.setContent(parsed, { emitUpdate: true });
     editor.commands.focus();
+
+    for (const annotation of doomed) {
+      await deleteAnnotation(annotation.id);
+    }
+    if (snap.annotations.length > 0) {
+      await batchUpdatePositions(
+        snap.annotations.map(a => ({ id: a.id, fromPos: a.fromPos, toPos: a.toPos })),
+      );
+    }
+    // Re-read so the decorations redraw at the restored positions.
+    await loadAnnotations(activeSectionId);
+    if (activeDocumentId) await loadDocumentAnnotations(activeDocumentId);
+
     markCurrentSnapshot(activeSectionId, snap.id);
   };
 
@@ -77,7 +117,7 @@ export function HistoryPanel() {
               <button
                 key={snap.id}
                 className={`history-item${isCurrent ? ' current' : ''}`}
-                onClick={() => restore(snap)}
+                onClick={() => void restore(snap)}
                 disabled={isCurrent}
                 title={isCurrent ? 'This is the current state' : 'Restore this state'}
               >

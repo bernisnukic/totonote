@@ -1235,3 +1235,15 @@
 .wiki-content .placement-row {
   cursor: default;
 }
+
+/* A labelled control on its own row in Settings (e.g. the History interval). */
+.settings-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.settings-field .input {
+  width: auto;
+  min-width: 170px;
+}

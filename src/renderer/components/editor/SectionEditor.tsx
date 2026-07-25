@@ -34,9 +34,12 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const batchUpdatePositions = useStore(s => s.batchUpdatePositions);
   const markSectionDirty = useStore(s => s.markSectionDirty);
   const pushSnapshot = useStore(s => s.pushSnapshot);
+  const historyIntervalMs = useStore(s => s.historyIntervalMs);
 
   const annotationsRef = useRef<Annotation[]>([]);
   const contentLoadedRef = useRef(false);
+  /** The first annotation load is the starting state, not an edit worth checkpointing. */
+  const annotationsSeededRef = useRef(false);
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
 
   // Persist this section now: its content plus any annotation positions that moved with
@@ -71,11 +74,33 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     persistSection(sectionId, content);
   }, 1000);
 
-  // Snapshot the section a beat after editing stops, for the History timeline. Independent
-  // of saving so the timeline fills in whether auto-save is on or off. pushSnapshot dedupes.
+  // Snapshot for the History timeline, independent of saving so it fills in whether
+  // auto-save is on or off. The interval is a setting: a short one lands a checkpoint in
+  // the gaps between keystrokes, so the timeline grows visibly as you write, at the cost of
+  // filling the 60-checkpoint cap sooner. pushSnapshot dedupes, so a pause that changed
+  // nothing costs nothing.
   const debouncedSnapshot = useDebounce((sectionId: string, content: string) => {
-    pushSnapshot(sectionId, content);
-  }, 1200);
+    pushSnapshot(sectionId, content, currentAnnotationPositions());
+  }, historyIntervalMs);
+
+  /**
+   * Where each highlight sits right now, straight from the live decorations.
+   *
+   * Recorded with every checkpoint so a restore can put the highlights back where they
+   * were — positions are relative to the document they were made in, so restoring text
+   * alone leaves them pointing at whatever moved into those offsets.
+   */
+  function currentAnnotationPositions() {
+    const ed = editorRef.current;
+    if (!ed) return [];
+    const decos = annotationPluginKey.getState(ed.state)?.find() ?? [];
+    const positions: { id: string; fromPos: number; toPos: number }[] = [];
+    for (const d of decos) {
+      const id = d.spec?.annotationId;
+      if (id) positions.push({ id, fromPos: d.from, toPos: d.to });
+    }
+    return positions;
+  }
 
   /**
    * Store each file, then insert an image node pointing at it. Sequential rather than
@@ -255,6 +280,17 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     if (!editor || !isActive) return;
     annotationsRef.current = globalAnnotations;
     syncDecorations(globalAnnotations);
+
+    // Adding or removing a highlight changes the section's state without changing a
+    // character, so it gets its own checkpoint — otherwise the timeline has no record that
+    // the highlight ever existed, and rolling back to "the same text" would destroy it.
+    if (!contentLoadedRef.current) return;
+    if (!annotationsSeededRef.current) {
+      annotationsSeededRef.current = true; // the initial load is the starting state
+      return;
+    }
+    const ed = editorRef.current;
+    if (ed) pushSnapshot(section.id, JSON.stringify(ed.getJSON()), currentAnnotationPositions());
   }, [editor, isActive, globalAnnotations]);
 
   const syncDecorations = useCallback(

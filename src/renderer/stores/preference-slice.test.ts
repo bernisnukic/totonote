@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import { createPreferenceSlice, type PreferenceSlice } from './preference-slice';
+import { createPreferenceSlice, clampHistoryInterval, type PreferenceSlice } from './preference-slice';
 
 /**
  * Preferences live in the SQLite `preferences` table rather than localStorage, so they
@@ -86,5 +86,43 @@ describe('preference slice', () => {
     await store.getState().loadPreferences();
     await store.getState().updateShortcut('italic', 'Cmd+I');
     expect(store.getState().shortcuts).toEqual({ bold: 'Cmd+B', italic: 'Cmd+I' });
+  });
+});
+
+describe('history checkpoint interval', () => {
+  it('defaults to one second when never set', async () => {
+    mockApi({});
+    await store.getState().loadPreferences();
+    expect(store.getState().historyIntervalMs).toBe(1000);
+  });
+
+  it('reads back a stored interval', async () => {
+    mockApi({ historyInterval: '250' });
+    await store.getState().loadPreferences();
+    expect(store.getState().historyIntervalMs).toBe(250);
+  });
+
+  it('falls back to the default for anything unusable', async () => {
+    for (const raw of ['', 'nonsense', 'NaN']) {
+      const s = createStore<PreferenceSlice>((...a) => createPreferenceSlice(...a));
+      mockApi({ historyInterval: raw });
+      await s.getState().loadPreferences();
+      expect(s.getState().historyIntervalMs, JSON.stringify(raw)).toBe(1000);
+    }
+  });
+
+  it('clamps out-of-range values rather than trusting them', () => {
+    // A zero would fire the debounce constantly; an hour would look broken.
+    expect(clampHistoryInterval(0)).toBe(50);
+    expect(clampHistoryInterval(-100)).toBe(50);
+    expect(clampHistoryInterval(999999)).toBe(10000);
+    expect(clampHistoryInterval(Number.NaN)).toBe(1000);
+  });
+
+  it('persists the choice as a string', async () => {
+    const writes = mockApi({});
+    await store.getState().setHistoryIntervalMs(50);
+    expect(writes).toContainEqual({ key: 'historyInterval', value: '50' });
+    expect(store.getState().historyIntervalMs).toBe(50);
   });
 });

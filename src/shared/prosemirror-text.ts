@@ -124,6 +124,48 @@ export function imagesInRange(doc: PMJsonNode, from: number, to: number): string
   return ids;
 }
 
+/**
+ * The drawing ids inside a document range.
+ *
+ * Same reasoning as images: a filed drawing has no text of its own, so a compiled page
+ * would show an empty row for it. Drawing nodes carry a bare `drawingId` attribute rather
+ * than a url, so they need their own pass.
+ */
+export function drawingsInRange(doc: PMJsonNode, from: number, to: number): string[] {
+  const ids: string[] = [];
+
+  const walk = (node: PMJsonNode, pos: number): void => {
+    if (node.text != null) return;
+
+    if (LEAF_NODES.has(node.type)) {
+      if (node.type === 'drawing' && pos >= from && pos < to) {
+        const id = (node as { attrs?: { drawingId?: string } }).attrs?.drawingId;
+        if (id && !ids.includes(id)) ids.push(id);
+      }
+      return;
+    }
+
+    let childPos = node === doc ? 0 : pos + 1;
+    for (const child of node.content ?? []) {
+      walk(child, childPos);
+      childPos += nodeSize(child);
+    }
+  };
+
+  walk(doc, 0);
+  return ids;
+}
+
+/** `drawingsInRange` against stored JSON, tolerating unparsable content. */
+export function drawingsFromContent(contentJson: string, from: number, to: number): string[] {
+  if (!contentJson) return [];
+  try {
+    return drawingsInRange(JSON.parse(contentJson), from, to);
+  } catch {
+    return [];
+  }
+}
+
 /** `imagesInRange` against stored JSON, tolerating unparsable content. */
 export function imagesFromContent(contentJson: string, from: number, to: number): string[] {
   if (!contentJson) return [];
