@@ -1,5 +1,15 @@
 # What's New
 
+## 1.16.1
+
+**The built-in guide caught up with 1.16.0.** Nothing in the app itself changed. The pages on
+backup, links and the timeline now have pictures of what they describe, the glossary defines
+the new words (*link*, *linked from*, *when*, *timeline*, *backup*), and the shortcut list
+covers the keys the `[[` picker responds to and the fact that Tab now reaches every control.
+
+The 1.16.0 notes below also gained the **System** theme, which shipped in that release but
+went unmentioned.
+
 ## 1.16.0
 
 **Back up everything, and put it back.** Everything you have written lives in a single file
