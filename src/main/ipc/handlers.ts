@@ -10,7 +10,8 @@ import * as annotationRepo from '../db/repositories/annotation-repo';
 import * as sectionTagRepo from '../db/repositories/section-tag-repo';
 import * as preferenceRepo from '../db/repositories/preference-repo';
 import * as mediaRepo from '../db/repositories/media-repo';
-import { mediaIdsInContent } from '../../shared/media-refs';
+import * as drawingRepo from '../db/repositories/drawing-repo';
+import { mediaIdsInContent, drawingIdsInContent } from '../../shared/media-refs';
 import { checkForUpdates } from '../services/update-checker';
 import type { CreateCategoryInput, BulkAddSubcategoryInput, CreateMediaInput } from '../../shared/domain-types';
 
@@ -112,13 +113,32 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('media:get-meta', (_, args: { id: string }) => mediaRepo.getMediaMeta(args.id));
   ipcMain.handle('media:usage', () => mediaRepo.mediaUsage());
   ipcMain.handle('media:purge-unused', () => {
-    // An image counts as in use if any section's stored content still points at it.
-    const referenced = new Set<string>();
+    // An image counts as in use if any section still points at it — either directly, or as
+    // the background of a drawing. A drawing node stores the background as a bare id with
+    // no url, so scanning content alone would miss it and delete the map out from under
+    // someone's annotations.
+    const referencedMedia = new Set<string>();
+    const referencedDrawings = new Set<string>();
     for (const content of sectionRepo.allSectionContent()) {
-      for (const id of mediaIdsInContent(content)) referenced.add(id);
+      for (const id of mediaIdsInContent(content)) referencedMedia.add(id);
+      for (const id of drawingIdsInContent(content)) referencedDrawings.add(id);
     }
-    return { removed: mediaRepo.deleteUnusedMedia(referenced) };
+    for (const drawingId of referencedDrawings) {
+      const background = drawingRepo.getDrawing(drawingId)?.backgroundMediaId;
+      if (background) referencedMedia.add(background);
+    }
+    return {
+      removed: mediaRepo.deleteUnusedMedia(referencedMedia),
+      drawingsRemoved: drawingRepo.deleteUnusedDrawings(referencedDrawings),
+    };
   });
+
+  // Drawings
+  ipcMain.handle('drawing:create', (_, args: { backgroundMediaId?: string | null; aspectRatio?: number }) =>
+    drawingRepo.createDrawing(args ?? {})
+  );
+  ipcMain.handle('drawing:get', (_, args: { id: string }) => drawingRepo.getDrawing(args.id));
+  ipcMain.handle('drawing:save', (_, args: { id: string; strokes: string }) => drawingRepo.saveDrawing(args));
 
   // App / Updates
   // Undo

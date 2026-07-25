@@ -37,3 +37,18 @@ export function mediaIdsInContent(content: string): string[] {
   }
   return [...ids];
 }
+
+/**
+ * Every drawing id referenced in stored content.
+ *
+ * Drawing nodes carry `drawingId` as a plain attribute, so — unlike images — there is no
+ * url to match on.
+ */
+export function drawingIdsInContent(content: string): string[] {
+  if (!content) return [];
+  const ids = new Set<string>();
+  for (const match of content.matchAll(/"drawingId"\s*:\s*"([A-Za-z0-9_-]+)"/g)) {
+    ids.add(match[1]);
+  }
+  return [...ids];
+}

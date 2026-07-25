@@ -28,6 +28,8 @@ import type {
   PositionUpdate,
   MediaMeta,
   CreateMediaInput,
+  DrawingRecord,
+  SaveDrawingInput,
 } from './domain-types';
 
 export interface IpcHandlerMap {
@@ -125,7 +127,12 @@ export interface IpcHandlerMap {
   'media:create': { args: CreateMediaInput; result: MediaMeta };
   'media:get-meta': { args: { id: string }; result: MediaMeta | null };
   'media:usage': { args: void; result: { count: number; totalBytes: number } };
-  'media:purge-unused': { args: void; result: { removed: number } };
+  'media:purge-unused': { args: void; result: { removed: number; drawingsRemoved: number } };
+
+  // Drawings. Mutable, unlike media — the id stays put while the strokes are rewritten.
+  'drawing:create': { args: { backgroundMediaId?: string | null; aspectRatio?: number }; result: DrawingRecord };
+  'drawing:get': { args: { id: string }; result: DrawingRecord | null };
+  'drawing:save': { args: SaveDrawingInput; result: DrawingRecord | null };
 
   // Unsaved-changes tracking (manual-save mode). The renderer tells main whether there's
   // unsaved work so the window can warn before closing; force-quit skips that warning.
@@ -199,6 +206,9 @@ export const IPC_CHANNELS = [
   'media:get-meta',
   'media:usage',
   'media:purge-unused',
+  'drawing:create',
+  'drawing:get',
+  'drawing:save',
 ] as const;
 
 type ListedChannel = (typeof IPC_CHANNELS)[number];

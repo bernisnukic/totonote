@@ -530,6 +530,78 @@ await shot('31-images', {
   marks: [{ selector: '.tiptap img', label: 'Pasted in — kept inside your world file', place: 'right' }],
 });
 
+
+// ── Drawing over an image ─────────────────────────────────────────────────────
+
+// Paste into the third (empty) section and draw on it while it is still selected — the
+// same path a user takes, and the moment the toolbar offers "Draw on this image".
+// Make CHARACTERS the active section first: the toolbar reads the *active* section's
+// editor, so pasting into a different one leaves it offering a blank drawing instead.
+await page.locator('.section-tab', { hasText: 'CHR' }).click();
+await page.waitForTimeout(800);
+await page.locator('.tiptap').nth(2).click();
+await page.waitForTimeout(300);
+await page.evaluate(async b64 => {
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const file = new File([bytes], 'map.png', { type: 'image/png' });
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  document
+    .querySelectorAll('.tiptap')[2]
+    ?.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+}, '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');
+await page.waitForTimeout(900);
+await page.locator('.toolbar-btn[aria-label="Draw on this image"]').click();
+await page.waitForSelector('.drawing-node', { timeout: 10000 });
+await page.locator('.drawing-node .btn', { hasText: 'Draw' }).click();
+await page.waitForTimeout(300);
+
+// A ring around something and an arrow pointing at it — the marking-up case.
+await page.evaluate(() => {
+  const canvas = document.querySelector('.drawing-canvas__live');
+  const r = canvas.getBoundingClientRect();
+  canvas.setPointerCapture = () => undefined;
+  canvas.hasPointerCapture = () => true;
+  canvas.releasePointerCapture = () => undefined;
+  const send = (type, fx, fy, pressure, id) =>
+    canvas.dispatchEvent(new PointerEvent(type, {
+      pointerId: id, pointerType: 'pen', isPrimary: true, bubbles: true, cancelable: true,
+      clientX: r.left + r.width * fx, clientY: r.top + r.height * fy, pressure }));
+
+  send('pointerdown', 0.66, 0.30, 0.7, 1);
+  for (let i = 1; i <= 44; i++) {
+    const a = (i / 44) * Math.PI * 2;
+    send('pointermove', 0.60 + Math.cos(a) * 0.11, 0.52 + Math.sin(a) * 0.22, 0.7, 1);
+  }
+  send('pointerup', 0.71, 0.52, 0, 1);
+
+  // Shaft, then back down one barb and out the other — a proper arrowhead.
+  send('pointerdown', 0.16, 0.84, 0.9, 2);
+  send('pointermove', 0.30, 0.75, 0.9, 2);
+  send('pointerup', 0.44, 0.66, 0, 2);
+  send('pointerdown', 0.44, 0.66, 0.9, 3);
+  send('pointermove', 0.36, 0.665, 0.9, 3);
+  send('pointerup', 0.36, 0.665, 0, 3);
+  send('pointerdown', 0.44, 0.66, 0.9, 4);
+  send('pointermove', 0.435, 0.745, 0.9, 4);
+  send('pointerup', 0.435, 0.745, 0, 4);
+});
+// The paste left the image selected, which floats the Tag toolbar over the picture.
+// Placing a caret in another section clears it; then come back to the drawing.
+// (The drawing stays in edit mode across the switch, so the tools are still showing.)
+await page.locator('.tiptap').nth(0).click();
+await page.waitForTimeout(400);
+await page.locator('.section-tab', { hasText: 'CHR' }).click();
+await page.mouse.move(20, 20);
+await page.waitForTimeout(900);
+await shot('32-drawing', {
+  clip: '.drawing-node',
+  pad: 24,
+  marks: [{ selector: '.drawing-toolbar', label: 'Pen, highlighter, eraser', place: 'below' }],
+});
+await page.locator('.drawing-node .btn', { hasText: 'Done' }).click();
+await page.waitForTimeout(200);
+
 // ── 5. Browse sidebar ─────────────────────────────────────────────────────────
 
 await shot('19-browse-modes', {

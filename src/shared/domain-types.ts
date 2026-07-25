@@ -281,3 +281,20 @@ export interface CreateMediaInput {
   height: number;
   data: Uint8Array;
 }
+
+/** A stored drawing: the stroke JSON plus what it is drawn over. */
+export interface DrawingRecord {
+  id: string;
+  /** Serialised Drawing from shared/drawing.ts; empty string for a new one. */
+  strokes: string;
+  /** The image being marked up, or null for a blank sketch surface. */
+  backgroundMediaId: string | null;
+  aspectRatio: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SaveDrawingInput {
+  id: string;
+  strokes: string;
+}

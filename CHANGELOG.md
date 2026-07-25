@@ -1,5 +1,22 @@
 # What's New
 
+## 1.12.0
+
+**Drawing.** The **✎** button adds a drawing surface to a section. Select an image first and
+it draws *on top of that image* instead — for putting arrows on a map, circling a region, or
+labelling a floorplan.
+
+If you draw with a **graphics tablet the pen is pressure-sensitive**: press harder for a
+thicker line. There's a highlighter for shading an area, and an eraser that removes a whole
+stroke wherever you touch it rather than rubbing away pixels. Plus colours, four nib sizes,
+and undo/redo for the drawing itself.
+
+Strokes are saved as lines, not as a picture, so a drawing stays sharp at any size, costs
+almost nothing in space, and stays lined up with whatever is underneath it.
+
+**Also fixed:** the toolbar's buttons now update as you move around the document — Bold and
+the rest showed a stale state until something else happened to refresh them.
+
 ## 1.11.0
 
 **Pictures.** Paste or drag an image straight into a section — character references, maps,

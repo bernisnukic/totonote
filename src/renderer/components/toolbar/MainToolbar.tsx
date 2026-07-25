@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { useStore } from '../../stores';
 import { getActiveEditor } from '../../lib/editor-registry';
 import { SettingsModal } from '../common/SettingsModal';
 import { ToolbarIcon, type ToolbarIconName } from './toolbar-icons';
+import { invoke } from '../../lib/ipc-client';
+import { mediaIdFromUrl } from '../../../shared/media-refs';
 
 export function MainToolbar() {
   const [showSettings, setShowSettings] = useState(false);
@@ -14,6 +16,43 @@ export function MainToolbar() {
   const setGraphOpen = useStore(s => s.setGraphOpen);
 
   const editor = getActiveEditor(activeSectionId);
+
+  // Everything below asks the editor what's active right now — whether Bold applies, and
+  // whether an image is selected. React has no idea when a ProseMirror selection moves, so
+  // without this the toolbar only refreshes when some *other* state happens to change, and
+  // the button states are stale until then.
+  const [, bumpToolbar] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    if (!editor) return;
+    const onTransaction = () => bumpToolbar();
+    editor.on('transaction', onTransaction);
+    return () => {
+      editor.off('transaction', onTransaction);
+    };
+  }, [editor]);
+
+  // With an image selected, a drawing goes on top of it — the marking-up-a-map case.
+  // Otherwise it's a blank sketch surface.
+  const selectedImage = editor?.isActive('image')
+    ? (editor.getAttributes('image') as { src?: string; width?: number })
+    : null;
+  const drawOverImage = Boolean(selectedImage?.src && mediaIdFromUrl(selectedImage.src));
+
+  const insertDrawing = async () => {
+    if (!editor) return;
+    const backgroundMediaId = selectedImage?.src ? mediaIdFromUrl(selectedImage.src) : null;
+    let aspectRatio = 1.5;
+    if (backgroundMediaId) {
+      const meta = await invoke('media:get-meta', { id: backgroundMediaId });
+      if (meta && meta.height > 0) aspectRatio = meta.width / meta.height;
+    }
+    const record = await invoke('drawing:create', { backgroundMediaId, aspectRatio });
+    editor
+      .chain()
+      .focus()
+      .insertDrawing({ drawingId: record.id, backgroundMediaId, aspectRatio })
+      .run();
+  };
 
   // Each formatting button shows a familiar icon; `tip` is the hover label and the
   // accessible name (the icon itself is aria-hidden).
@@ -66,6 +105,17 @@ export function MainToolbar() {
           <div className="toolbar-group">
             {btn('bullet', 'Bullet list', () => editor.chain().focus().toggleBulletList().run(), editor.isActive('bulletList'))}
             {btn('ordered', 'Numbered list', () => editor.chain().focus().toggleOrderedList().run(), editor.isActive('orderedList'))}
+          </div>
+
+          <div className="toolbar-group">
+            <button
+              className="toolbar-btn"
+              onClick={insertDrawing}
+              data-tip={drawOverImage ? 'Draw on this image' : 'Insert a drawing'}
+              aria-label={drawOverImage ? 'Draw on this image' : 'Insert a drawing'}
+            >
+              &#9998;
+            </button>
           </div>
         </>
       )}

@@ -118,6 +118,34 @@ their page.
 
 See [Filing and the graph](filing-and-graph.md) for how filing works.
 
+## Drawing
+
+The **✎** button in the toolbar adds a drawing surface. Select an image first and it draws
+*on top of that image* instead — for putting arrows on a map, circling a region, or
+labelling a floorplan.
+
+![A drawing over an embedded image, with the pen tools](screenshots/32-drawing.png)
+
+Press **Draw** under the surface to pick up the pen; press **Done** when you've finished.
+While you're drawing you get:
+
+- **Pen** — pressure-sensitive if you're using a graphics tablet. Press harder for a
+  thicker line. A mouse or trackpad draws at an even width.
+- **Highlighter** — translucent, for shading an area without hiding what's under it.
+- **Eraser** — removes a whole stroke wherever you touch it, rather than rubbing away
+  pixels. Quicker, and usually what you meant.
+- Colours, four nib sizes, **undo** and **redo** for the drawing itself, and **clear**.
+
+Strokes are stored as lines rather than as a picture, so a drawing stays sharp at any size,
+takes almost no space, and stays lined up with the image underneath however the page is
+resized.
+
+> The drawing's undo is separate from the editor's. **⌘Z** undoes your *typing*; the arrows
+> in the drawing tools undo your *strokes*.
+
+> This is for marking things up, not for making art — a proper drawing program will always
+> be better at that. Draw there, then paste the result in as a picture.
+
 ## Saving
 
 By default your writing is stored automatically about a second after you stop typing —

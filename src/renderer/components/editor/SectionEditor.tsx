@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit';
 import { Placeholder } from '@tiptap/extensions';
 import { importImageFile, imageFilesFrom } from '../../lib/image-import';
 import { SizedImage } from '../../extensions/sized-image';
+import { DrawingNode } from '../../extensions/drawing-node';
 import { AnnotationDecoration, annotationPluginKey } from '../../extensions/annotation-decoration';
 import { useStore } from '../../stores';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -104,6 +105,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       Placeholder.configure({ placeholder: 'Start writing...' }),
       SizedImage,
+      DrawingNode,
       AnnotationDecoration,
     ],
     content: '',

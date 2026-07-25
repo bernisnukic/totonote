@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mediaUrl, mediaIdFromUrl, mediaIdsInContent, MEDIA_URL_PREFIX } from './media-refs';
+import { mediaUrl, mediaIdFromUrl, mediaIdsInContent, drawingIdsInContent, MEDIA_URL_PREFIX } from './media-refs';
 
 describe('media urls', () => {
   it('round-trips an id', () => {
@@ -67,5 +67,37 @@ describe('mediaIdsInContent', () => {
       content: [{ type: 'customBlock', attrs: { background: mediaUrl('deep') } }],
     });
     expect(mediaIdsInContent(nested)).toEqual(['deep']);
+  });
+});
+
+describe('drawingIdsInContent', () => {
+  const withDrawing = (drawingId: string, backgroundMediaId: string | null = null) =>
+    JSON.stringify({
+      type: 'doc',
+      content: [{ type: 'drawing', attrs: { drawingId, backgroundMediaId, aspectRatio: 1.5 } }],
+    });
+
+  it('finds a drawing node id', () => {
+    expect(drawingIdsInContent(withDrawing('draw-1'))).toEqual(['draw-1']);
+  });
+
+  it('finds nothing when there are no drawings', () => {
+    expect(drawingIdsInContent('{"type":"doc","content":[]}')).toEqual([]);
+    expect(drawingIdsInContent('')).toEqual([]);
+  });
+
+  it('deduplicates and finds several', () => {
+    const doc = JSON.stringify({
+      content: [{ attrs: { drawingId: 'a' } }, { attrs: { drawingId: 'b' } }, { attrs: { drawingId: 'a' } }],
+    });
+    expect(drawingIdsInContent(doc).sort()).toEqual(['a', 'b']);
+  });
+
+  it("does not mistake a drawing's background for a document media reference", () => {
+    // The background is a bare id, not a totonote:// url — which is exactly why the purge
+    // has to resolve drawings separately instead of scanning content for urls alone.
+    const doc = withDrawing('draw-1', 'media-9');
+    expect(mediaIdsInContent(doc)).toEqual([]);
+    expect(drawingIdsInContent(doc)).toEqual(['draw-1']);
   });
 });

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, blob, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, blob, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // SQLite timestamps are ISO strings (matches the existing schema and domain-types).
@@ -202,4 +202,26 @@ export const media = sqliteTable('media', {
   byteSize: integer('byte_size').notNull(),
   data: blob('data', { mode: 'buffer' }).notNull(),
   createdAt: text('created_at').notNull().default(isoNow),
+});
+
+/**
+ * Freehand drawings — a pen layer over an image, or a blank sketch.
+ *
+ * Separate from `media` because the two have opposite lifecycles: image bytes are written
+ * once and never change, while a drawing is edited stroke by stroke. Keeping strokes here
+ * rather than in the document also keeps `sections.content` small, which matters because
+ * it is re-saved on a debounce and snapshotted by the History timeline.
+ *
+ * `strokes` is the JSON from shared/drawing.ts. `backgroundMediaId` is the image being
+ * marked up, or null for a blank canvas — deleting that image leaves the strokes alone
+ * rather than destroying the annotation.
+ */
+export const drawings = sqliteTable('drawings', {
+  id: text('id').primaryKey(),
+  strokes: text('strokes').notNull().default(''),
+  backgroundMediaId: text('background_media_id').references(() => media.id, { onDelete: 'set null' }),
+  /** Aspect ratio of the surface the strokes were drawn on, so it renders back the same. */
+  aspectRatio: real('aspect_ratio').notNull().default(1.5),
+  createdAt: text('created_at').notNull().default(isoNow),
+  updatedAt: text('updated_at').notNull().default(isoNow),
 });

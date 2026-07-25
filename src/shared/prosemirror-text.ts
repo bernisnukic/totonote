@@ -24,7 +24,7 @@ export interface PMJsonNode {
 }
 
 /** Nodes that occupy a single position and can never have children. */
-const LEAF_NODES = new Set(['hardBreak', 'horizontalRule', 'image']);
+const LEAF_NODES = new Set(['hardBreak', 'horizontalRule', 'image', 'drawing']);
 
 /** Size of a node in ProseMirror positions. An empty paragraph is 2, not 1. */
 export function nodeSize(node: PMJsonNode): number {

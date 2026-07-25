@@ -42,6 +42,12 @@ writing; "excerpt" is the words it holds.
 **Section tag** — a tag attached to *a whole section* rather than a piece of text. It shows
 up as a small badge above the section instead of colouring anything.
 
+**Drawing** — a freehand layer you can add to a section, either blank or on top of an
+embedded image. Strokes are stored as lines rather than as a picture, so they stay sharp,
+take almost no space, and stay lined up with the image beneath them. Pressure-sensitive if
+you draw with a graphics tablet.
+→ [Drawing](documents-and-sections.md#drawing)
+
 **Note** — an optional line of your own you can attach to a single filed excerpt (click
 **+ note** under it on a page). It's a reminder to yourself — *"this is the first time she
 mentions the sword"* — and never appears in the document itself.
