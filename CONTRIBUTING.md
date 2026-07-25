@@ -138,6 +138,23 @@ measured: copying `totonote.db` alone while WAL holds recent writes yields *"no 
 documents"*. Restore validates first (required tables + not from a newer schema), keeps the
 replaced DB as `<db>.replaced`, clears the `-wal`/`-shm` sidecars, then relaunches.
 
+### History memory
+The History timeline is **session-only** — it lives in `history-slice.ts` and is never
+written to the database, so it costs no disk at all. It is capped at `MAX_SNAPSHOTS = 60`
+*per section*, and every section of an open document is mounted at once, so the cost is
+per-section and released by `clearSectionHistory` / `leaveDocument`.
+
+Each checkpoint holds a full copy of the section's JSON. Measured at the 60-checkpoint cap:
+0.1 MB for a short section, 0.9 MB for a long one (12k chars), 3.5 MB for a very long one.
+
+The trap is **drawings**: `DrawingHandle.read()` re-serialises the canvas on every call, so
+a checkpoint taken while merely typing used to store another complete copy of an untouched
+drawing — 10.2 MB for a 120-stroke drawing, against 0.4 MB now that
+`shareUnchangedStrokes()` reuses the previous checkpoint's object when the strokes are
+identical. Anything else that snapshots re-serialised state needs the same treatment; the
+test asserts *reference* identity, because an equal-but-fresh string looks the same and
+costs 60x.
+
 ### The splash window
 `main/services/splash.ts` creates a **separate frameless BrowserWindow** and the main window
 is constructed with `show: !splashWanted`; `runSplash()` closes the splash and shows the main

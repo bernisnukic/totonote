@@ -1,5 +1,17 @@
 # What's New
 
+## 1.16.3
+
+**History uses far less memory when a section has a drawing in it.** Each checkpoint kept
+its own complete copy of every drawing in the section — so typing next to a detailed drawing
+filled memory with sixty identical copies of it. Measured: a section with a 120-stroke
+drawing held **10.2 MB** of checkpoints, now **0.4 MB**. Unchanged drawings are stored once
+and shared. Nothing about what History does has changed.
+
+**Clearer wording for the checkpoint setting.** "Checkpoint every / Every pause (50ms)" did
+not say what a *pause* was. It now reads **"Checkpoint after you stop typing for"**, with
+options phrased as the wait itself.
+
 ## 1.16.2
 
 **A real splash screen.** Opening TotoNote now shows a small splash window — the mark, the

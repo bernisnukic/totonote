@@ -35,9 +35,10 @@ const THEMES = [
 ] as const;
 
 /** Offered checkpoint intervals. The pause after a keystroke is ~100-300ms when typing. */
+// Phrased as the wait itself, because "every pause" left people asking what a pause was.
 const HISTORY_INTERVALS = [
-  { ms: 50, label: 'Every pause (50ms)' },
-  { ms: 250, label: 'Quarter second' },
+  { ms: 50, label: 'The moment you stop (0.05s)' },
+  { ms: 250, label: 'A quarter of a second' },
   { ms: 500, label: 'Half a second' },
   { ms: 1000, label: '1 second (default)' },
   { ms: 3000, label: '3 seconds' },
@@ -136,7 +137,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       <div className="settings-section">
         <h3 className="settings-section-title">History</h3>
         <label className="settings-field">
-          <span className="settings-toggle-label">Checkpoint every</span>
+          <span className="settings-toggle-label">Checkpoint after you stop typing for</span>
           <select
             className="input"
             value={historyIntervalMs}
@@ -150,8 +151,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </select>
         </label>
         <p className="settings-toggle-hint">
-          How long after you stop typing the History tab takes a checkpoint. Shorter fills the
-          timeline as you write; longer keeps it reaching further back.
+          The History tab saves a checkpoint once you've paused this long. Shorter fills the
+          timeline as you write; longer keeps its 60 checkpoints reaching further back.
         </p>
       </div>
 
