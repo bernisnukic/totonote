@@ -1247,3 +1247,215 @@
   width: auto;
   min-width: 170px;
 }
+
+/* Confirm dialog — the app's replacement for window.confirm/alert. */
+.confirm-message {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.confirm-detail {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-sm);
+  line-height: 1.5;
+}
+
+/* Settings: side-by-side actions, and a path shown small enough to be reference, not noise. */
+.settings-button-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.settings-path {
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  word-break: break-all;
+  opacity: 0.7;
+}
+
+/* [[Document]] links, and the list that appears while typing one. */
+.doc-link {
+  color: var(--accent-primary);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-primary) 40%, transparent);
+  cursor: pointer;
+  padding: 0 1px;
+  white-space: nowrap;
+}
+
+.doc-link:hover {
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+}
+
+.doc-link--missing {
+  color: var(--text-muted);
+  border-bottom-style: dashed;
+  cursor: default;
+}
+
+.doc-link-picker {
+  position: fixed;
+  z-index: 1000;
+  min-width: 200px;
+  max-width: 320px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 45%);
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-link-picker__hint {
+  font-size: var(--font-xs);
+  color: var(--text-muted);
+  padding: var(--space-1) var(--space-2);
+}
+
+.doc-link-picker__item {
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--font-sm);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-link-picker__item.is-highlighted {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+}
+
+/* Keyboard focus has to be visible, or tabbing through the app is guesswork. Applied to
+   the divs and spans made keyboard-operable by lib/clickable, alongside real controls. */
+[role='button']:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Timeline: dated excerpts across the whole world, earliest first. */
+.timeline-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  background: var(--bg-primary);
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.timeline-title {
+  margin: 0;
+  font-size: var(--font-lg);
+  color: var(--text-primary);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.timeline-empty {
+  color: var(--text-muted);
+  max-width: 46ch;
+}
+
+.timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--space-4);
+  border-left: 1px solid var(--border-color);
+}
+
+.timeline-moment {
+  position: relative;
+  margin-bottom: var(--space-4);
+}
+
+/* The dot on the spine. */
+.timeline-moment::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-4) * -1 - 4px);
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+}
+
+.timeline-moment__when {
+  color: var(--accent-primary);
+  font-size: var(--font-sm);
+  margin-bottom: var(--space-2);
+}
+
+.timeline-moment__events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.timeline-event {
+  border-left: 3px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  cursor: pointer;
+}
+
+.timeline-event:hover {
+  background: var(--bg-tertiary);
+}
+
+.timeline-event__text {
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  line-height: 1.5;
+}
+
+.timeline-event__meta {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+}
+
+.timeline-event__note {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-style: italic;
+}
+
+.placement-when {
+  color: var(--accent-primary);
+  font-size: var(--font-xs);
+  padding: 2px var(--space-1);
+  cursor: pointer;
+}
+
+.placement-when-input {
+  font-size: var(--font-xs);
+  padding: 2px var(--space-1);
+}

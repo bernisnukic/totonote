@@ -1,4 +1,5 @@
 import React from 'react';
+import { clickable } from '../../lib/clickable';
 
 interface SectionTabProps {
   id: string;
@@ -10,7 +11,11 @@ interface SectionTabProps {
 
 export function SectionTab({ label, isActive, onClick, onClose }: SectionTabProps) {
   return (
-    <div className={`section-tab${isActive ? ' active' : ''}`} onClick={onClick}>
+    <div
+      className={`section-tab${isActive ? ' active' : ''}`}
+      {...clickable(onClick)}
+      aria-current={isActive ? 'true' : undefined}
+    >
       <span className="tab-label">{label}</span>
       <button
         className="tab-close"

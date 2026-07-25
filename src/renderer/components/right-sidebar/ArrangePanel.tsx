@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../stores';
+import { clickable } from '../../lib/clickable';
 
 export function ArrangePanel() {
   const sections = useStore(s => s.sections);
@@ -83,10 +84,10 @@ export function ArrangePanel() {
           ) : (
             <div
               className="arrange-row arrange-row--title"
-              onClick={() => {
+              {...clickable(() => {
                 setRenamingId('document');
                 setRenameValue(activeDocument.title);
-              }}
+              })}
               title="Click to rename"
             >
               <span className="arrange-row__title">{activeDocument.title}</span>
@@ -149,10 +150,10 @@ export function ArrangePanel() {
             ) : (
               <span
                 className="arrange-row__title arrange-row__title--editable"
-                onClick={() => {
+                {...clickable(() => {
                   setRenamingId(section.id);
                   setRenameValue(section.title);
-                }}
+                })}
                 title="Click to rename"
               >
                 {section.title}

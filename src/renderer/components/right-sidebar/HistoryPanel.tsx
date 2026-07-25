@@ -1,7 +1,9 @@
 import React from 'react';
 import { useStore } from '../../stores';
 import { getEditor } from '../../lib/editor-registry';
+import { restoreDrawings } from '../../lib/drawing-registry';
 import type { Snapshot } from '../../stores/history-slice';
+import { confirmDialog } from '../common/ConfirmDialog';
 
 /** "just now" / "3 min ago" — coarse, recomputed each render. */
 function relativeTime(iso: string): string {
@@ -62,9 +64,12 @@ export function HistoryPanel() {
     const doomed = annotations.filter(a => a.sectionId === activeSectionId && !keptIds.has(a.id));
     if (doomed.length > 0) {
       const count = `${doomed.length} highlight${doomed.length === 1 ? '' : 's'}`;
-      const confirmed = window.confirm(
-        `Going back to this checkpoint removes ${count} added since then, because the text they mark no longer exists.\n\nRestore anyway?`,
-      );
+      const confirmed = await confirmDialog({
+        title: 'Restore this checkpoint?',
+        message: `This removes ${count} added since then, because the text they mark no longer exists.`,
+        confirmLabel: 'Restore anyway',
+        destructive: true,
+      });
       if (!confirmed) return;
     }
 
@@ -80,6 +85,12 @@ export function HistoryPanel() {
         snap.annotations.map(a => ({ id: a.id, fromPos: a.fromPos, toPos: a.toPos })),
       );
     }
+    // Drawings keep their strokes in their own table, so they are restored separately —
+    // after setContent, since the nodes have to exist before they can be written to.
+    if (snap.drawings.length > 0) {
+      requestAnimationFrame(() => restoreDrawings(snap.drawings));
+    }
+
     // Re-read so the decorations redraw at the restored positions.
     await loadAnnotations(activeSectionId);
     if (activeDocumentId) await loadDocumentAnnotations(activeDocumentId);

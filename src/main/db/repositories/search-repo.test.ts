@@ -17,6 +17,7 @@ import {
   searchWriting,
   toMatchQuery,
 } from './search-repo';
+import { updateDocument } from './document-repo';
 
 /** A TipTap document with one paragraph per line of text. */
 const doc = (...lines: string[]) =>
@@ -186,5 +187,37 @@ describe('text read out of images', () => {
     reindexSectionsUsingMedia('m1');
 
     expect(searchWriting('harbour').map(h => h.sectionId)).toEqual(['s1']);
+  });
+});
+
+describe('keeping denormalised fields in step', () => {
+  // Regression: the index stores each section's document title, so renaming a document
+  // used to leave every row pointing at the old name — the new name found nothing and the
+  // old one still matched.
+  function seedDoc() {
+    sqlite.exec(`INSERT INTO documents (id, workspace_id, title) VALUES ('d1','ws-default','OldName')`);
+    sqlite
+      .prepare(`INSERT INTO sections (id, document_id, title, abbreviation, sort_order, content) VALUES (?,?,?,?,?,?)`)
+      .run('s1', 'd1', 'Main', 'M', 0, doc('body words'));
+    indexSection('s1');
+  }
+
+  it('reports the new title after a rename', () => {
+    seedDoc();
+    updateDocument({ id: 'd1', title: 'NewName' });
+    expect(searchWriting('body')[0].documentTitle).toBe('NewName');
+  });
+
+  it('matches the new document name and no longer the old one', () => {
+    seedDoc();
+    updateDocument({ id: 'd1', title: 'NewName' });
+    expect(searchWriting('NewName')).toHaveLength(1);
+    expect(searchWriting('OldName')).toHaveLength(0);
+  });
+
+  it('leaves the index alone when the title did not change', () => {
+    seedDoc();
+    updateDocument({ id: 'd1', description: 'just a description' });
+    expect(searchWriting('body')).toHaveLength(1);
   });
 });

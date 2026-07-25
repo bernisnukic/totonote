@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../stores';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import { alertDialog, confirmDialog } from '../common/ConfirmDialog';
+import { clickable } from '../../lib/clickable';
 
 /**
  * Workspace switcher, shown above the document grid.
@@ -70,14 +72,18 @@ export function WorkspaceBar() {
   const handleDelete = async () => {
     if (!active) return;
     setOpen(false);
-    const confirmed = window.confirm(
-      `Delete the workspace "${active.name}"?\n\nEvery document, category and tag inside it goes too. This cannot be undone.`,
-    );
+    const confirmed = await confirmDialog({
+      title: 'Delete workspace?',
+      message: `Delete the workspace "${active.name}"?`,
+      detail: 'Every document, category and tag inside it goes too. This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
     if (!confirmed) return;
     try {
       await deleteWorkspace(active.id);
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : String(err));
+      await alertDialog('That workspace could not be deleted.', err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -128,23 +134,23 @@ export function WorkspaceBar() {
               <div
                 key={w.id}
                 className={`workspace-bar__item${w.id === activeWorkspaceId ? ' active' : ''}`}
-                onClick={() => {
+                {...clickable(() => {
                   setActiveWorkspace(w.id);
                   setOpen(false);
-                }}
+                })}
               >
                 {w.name}
               </div>
             ))}
             <div className="workspace-bar__separator" />
-            <div className="workspace-bar__item" onClick={startCreate}>
+            <div className="workspace-bar__item" {...clickable(startCreate)}>
               + New workspace
             </div>
-            <div className="workspace-bar__item" onClick={startRename}>
+            <div className="workspace-bar__item" {...clickable(startRename)}>
               Rename &ldquo;{active?.name}&rdquo;
             </div>
             {workspaces.length > 1 && (
-              <div className="workspace-bar__item danger" onClick={handleDelete}>
+              <div className="workspace-bar__item danger" {...clickable(handleDelete)}>
                 Delete &ldquo;{active?.name}&rdquo;
               </div>
             )}

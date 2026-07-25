@@ -1,5 +1,39 @@
 # What's New
 
+## 1.16.0
+
+**Back up everything, and put it back.** Everything you have written lives in a single file
+on one computer, and until now there was no copy of it anywhere. **Settings → Backup**, or
+**File → Back Up Everything**, writes the whole world — documents, highlights, categories,
+drawings, pictures — to one file you can put on a drive or send to someone. **Restore from a
+backup** puts one back; it checks the file first, keeps the world it replaces alongside in
+case you picked the wrong one, and restarts.
+
+**Link documents to each other.** Type `[[` anywhere in your writing and a list of your
+documents appears — pick one and it becomes a link you can click to jump there. Rename that
+document later and every link to it follows, because a link points at the document, not at
+its name. The document you land on shows a **Linked from** list of everywhere that mentions
+it.
+
+**A timeline.** Give any highlight a *when* — "Year 300 of the Third Age" works as well as
+"1885-03-12" — and the new **⌚ Timeline** button lays out everything dated, earliest first,
+across every document. Click an entry to jump to the passage it came from. Things dated in
+words with no number ("long ago") gather at the end rather than disappearing.
+
+**Prompts look like the rest of the app.** The "are you sure?" boxes were the operating
+system's own, in the wrong colours and naming the wrong thing. They are now part of TotoNote,
+and dismissing one always means *no*.
+
+**The keyboard reaches everything.** Rows, tabs, menu items and cards that could only be
+clicked can now be reached with Tab and activated with Enter or Space, with a visible ring
+around whatever is focused.
+
+**Fixes**
+
+- Renaming a document no longer leaves search looking for its old name.
+- Rolling back to a checkpoint now restores drawings alongside the text, instead of leaving
+  them at their latest state.
+
 ## 1.15.1
 
 **Better reading of text in pictures.** Two fixes to what shipped in 1.15.0:

@@ -12,6 +12,7 @@ export function MainToolbar() {
   const toggleLeftSidebar = useStore(s => s.toggleLeftSidebar);
   const toggleRightSidebar = useStore(s => s.toggleRightSidebar);
   const setGraphOpen = useStore(s => s.setGraphOpen);
+  const setTimelineOpen = useStore(s => s.setTimelineOpen);
   const setSettingsOpen = useStore(s => s.setSettingsOpen);
 
   const editor = getActiveEditor(activeSectionId);
@@ -125,6 +126,9 @@ export function MainToolbar() {
         </button>
         <button className="toolbar-btn" onClick={() => setGraphOpen(true)} data-tip="Graph view" aria-label="Graph view">
           &#9672;
+        </button>
+        <button className="toolbar-btn" onClick={() => setTimelineOpen(true)} data-tip="Timeline" aria-label="Timeline">
+          &#8986;
         </button>
         <button className="toolbar-btn" onClick={toggleRightSidebar} data-tip="Toggle right sidebar" aria-label="Toggle right sidebar">
           &#9776;

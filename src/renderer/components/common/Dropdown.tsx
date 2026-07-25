@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import { clickable } from '../../lib/clickable';
 
 interface DropdownItem {
   label: string;
@@ -18,17 +19,19 @@ export function Dropdown({ trigger, items }: DropdownProps) {
 
   return (
     <div className="dropdown" ref={ref}>
-      <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
+      <div {...clickable(() => setIsOpen(!isOpen))} aria-expanded={isOpen} aria-haspopup="menu">
+        {trigger}
+      </div>
       {isOpen && (
-        <div className="dropdown-menu">
+        <div className="dropdown-menu" role="menu">
           {items.map((item, i) => (
             <div
               key={i}
               className={`dropdown-item${item.danger ? ' danger' : ''}`}
-              onClick={() => {
+              {...clickable(() => {
                 item.onClick();
                 setIsOpen(false);
-              }}
+              })}
             >
               {item.label}
             </div>

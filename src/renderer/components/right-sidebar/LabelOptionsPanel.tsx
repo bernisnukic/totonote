@@ -3,6 +3,7 @@ import type { Tag } from '../../../shared/domain-types';
 import { ColorPicker } from '../common/ColorPicker';
 import { useStore } from '../../stores';
 import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
+import { confirmDialog } from '../common/ConfirmDialog';
 
 interface LabelOptionsPanelProps {
   tag: Tag;
@@ -62,7 +63,13 @@ export function LabelOptionsPanel({ tag, onClose, hideHeader }: LabelOptionsPane
   const handleDelete = async () => {
     // Deleting cascades to every annotation using this tag, in every document, with no
     // undo. The sidebar's own delete confirms; these two paths should not differ.
-    if (!window.confirm(`Delete the tag "${tag.name}" and all of its highlights?`)) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete tag?',
+      message: `Delete the tag "${tag.name}" and all of its highlights?`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!confirmed) return;
     await deleteTag(tag.id);
     onClose();
   };

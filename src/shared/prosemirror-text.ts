@@ -15,6 +15,7 @@
  * inside the range collapse to a single separator, and leaves contribute nothing.
  */
 
+import { DOCUMENT_LINK_NODE } from './doc-links';
 import { mediaIdFromUrl } from './media-refs';
 
 export interface PMJsonNode {
@@ -23,8 +24,19 @@ export interface PMJsonNode {
   content?: PMJsonNode[];
 }
 
-/** Nodes that occupy a single position and can never have children. */
-const LEAF_NODES = new Set(['hardBreak', 'horizontalRule', 'image', 'drawing']);
+/**
+ * Nodes that occupy a single position and can never have children.
+ *
+ * Every inline atom belongs here. Miss one and every highlight after it in the section is
+ * read back one position short, so wiki excerpts quietly show the wrong words.
+ */
+const LEAF_NODES = new Set([
+  'hardBreak',
+  'horizontalRule',
+  'image',
+  'drawing',
+  DOCUMENT_LINK_NODE,
+]);
 
 /** Size of a node in ProseMirror positions. An empty paragraph is 2, not 1. */
 export function nodeSize(node: PMJsonNode): number {

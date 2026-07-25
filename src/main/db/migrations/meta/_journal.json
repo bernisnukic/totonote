@@ -50,6 +50,13 @@
       "when": 1784965812280,
       "tag": "0006_material_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1784973610231,
+      "tag": "0007_spooky_the_watchers",
+      "breakpoints": true
     }
   ]
 }

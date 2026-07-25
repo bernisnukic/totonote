@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { invoke } from '../../lib/ipc-client';
+import { formatBytes } from '../../lib/format-bytes';
 
 /**
  * How much space embedded pictures take, and a way to get some back.
@@ -9,18 +10,6 @@ import { invoke } from '../../lib/ipc-client';
  * default, but it means an active world only ever grows — so reclaiming is offered here as
  * something the user chooses to do, once they're sure they don't want those deletions back.
  */
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB'];
-  let value = bytes / 1024;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit++;
-  }
-  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`;
-}
-
 export function StorageSettings() {
   const [usage, setUsage] = useState<{ count: number; totalBytes: number } | null>(null);
   const [busy, setBusy] = useState(false);

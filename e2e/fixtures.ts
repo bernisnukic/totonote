@@ -12,7 +12,9 @@ const ROOT = path.resolve(__dirname, '..');
  * bodies go on using them directly. Every test starts from an empty database — the file
  * is deleted between runs — so nothing leaks from one test to the next.
  */
-export function registerAppHooks(onReady: (handles: { app: ElectronApplication; page: Page }) => void): void {
+export function registerAppHooks(
+  onReady: (handles: { app: ElectronApplication; page: Page; dbPath: string }) => void,
+): void {
   let testDbPath: string;
   let app: ElectronApplication;
 
@@ -42,7 +44,7 @@ export function registerAppHooks(onReady: (handles: { app: ElectronApplication; 
     await page.waitForLoadState('domcontentloaded');
     // Wait for React to mount.
     await page.waitForSelector('.app-container', { timeout: 10000 });
-    onReady({ app, page });
+    onReady({ app, page, dbPath: testDbPath });
   });
 
   test.afterEach(async () => {
@@ -52,4 +54,32 @@ export function registerAppHooks(onReady: (handles: { app: ElectronApplication; 
   test.afterAll(() => {
     if (testDbPath && fs.existsSync(testDbPath)) fs.unlinkSync(testDbPath);
   });
+}
+
+/**
+ * Confirm the app's own dialog, which replaced `window.confirm`.
+ *
+ * Unlike the native one there is nothing to arm in advance: trigger the action first, then
+ * call this. Returns the message it confirmed, for tests that assert on the wording.
+ */
+export async function acceptConfirm(page: Page): Promise<string> {
+  const modal = page.locator('.modal', { has: page.locator('.confirm-message') });
+  await modal.waitFor({ state: 'visible' });
+  const message = (await modal.locator('.confirm-message').textContent()) ?? '';
+  await modal.locator('.modal-footer .btn-primary, .modal-footer .btn-danger').click();
+  await modal.waitFor({ state: 'detached' });
+  return message;
+}
+
+/**
+ * Confirm the dialog if one appeared, and carry on if it did not.
+ *
+ * For actions that only sometimes ask — restoring a checkpoint prompts only when there are
+ * later highlights to discard.
+ */
+export async function dismissConfirmIfShown(page: Page): Promise<boolean> {
+  const modal = page.locator('.modal', { has: page.locator('.confirm-message') });
+  if (!(await modal.isVisible())) return false;
+  await acceptConfirm(page);
+  return true;
 }

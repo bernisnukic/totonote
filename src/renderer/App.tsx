@@ -5,6 +5,7 @@ import { DocumentList } from './components/document-list/DocumentList';
 import { EditorArea } from './components/editor/EditorArea';
 import { TagContextMenu } from './components/editor/TagContextMenu';
 import { GraphView } from './components/graph/GraphView';
+import { TimelineView } from './components/timeline/TimelineView';
 import { TooltipHost } from './components/common/TooltipHost';
 import { SettingsModal } from './components/common/SettingsModal';
 import { UndoToast } from './components/common/UndoToast';
@@ -14,6 +15,8 @@ import { IntroAnimation, INTRO_SEEN_KEY } from './components/intro/IntroAnimatio
 import { UpdateBanner } from './components/common/UpdateBanner';
 import { invoke } from './lib/ipc-client';
 import { decideFirstRun } from './lib/first-run';
+import { resolveTheme, followsSystem } from './lib/theme';
+import { ConfirmDialogHost } from './components/common/ConfirmDialog';
 
 /** Preference key holding the last app version whose changelog was shown. */
 const LAST_SEEN_VERSION_KEY = 'last-seen-version';
@@ -21,6 +24,7 @@ const LAST_SEEN_VERSION_KEY = 'last-seen-version';
 export function App() {
   const activeDocumentId = useStore(s => s.activeDocumentId);
   const graphOpen = useStore(s => s.graphOpen);
+  const timelineOpen = useStore(s => s.timelineOpen);
   const settingsOpen = useStore(s => s.settingsOpen);
   const setSettingsOpen = useStore(s => s.setSettingsOpen);
   const loadWorkspaces = useStore(s => s.loadWorkspaces);
@@ -41,9 +45,26 @@ export function App() {
     loadWorkspaces().then(() => loadDocuments());
   }, [loadPreferences, loadWorkspaces, loadDocuments]);
 
+  // Follow the OS when "system" is chosen — and keep following it, so switching appearance
+  // while the app is open takes effect rather than waiting for a restart.
+  const [prefersDark, setPrefersDark] = useState(
+    () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true,
+  );
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    if (!followsSystem(theme)) return;
+    const query = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!query) return;
+    const update = (e: MediaQueryListEvent) => setPrefersDark(e.matches);
+    setPrefersDark(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+    // Only the choice matters here; this effect *sets* prefersDark, so depending on it
+    // would tear the listener down and rebuild it on every change for nothing.
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolveTheme(theme, prefersDark);
+  }, [theme, prefersDark]);
 
   // First-run experience, decided from the database so it survives a re-download the
   // way localStorage did not. The intro plays once ever per database; the changelog
@@ -92,10 +113,12 @@ export function App() {
         {activeDocumentId ? <EditorArea /> : <DocumentList />}
         <TagContextMenu />
         {graphOpen && <GraphView />}
+        {timelineOpen && <TimelineView />}
       </AppLayout>
       <UpdateBanner />
       <TooltipHost />
       <UndoToast />
+      <ConfirmDialogHost />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <HelpViewer />
       <WikiView />

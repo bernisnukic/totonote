@@ -3,8 +3,15 @@ import { useStore } from '../../stores';
 import { Modal } from './Modal';
 import { ShortcutSettingsContent } from './ShortcutSettings';
 import { StorageSettings } from './StorageSettings';
+import { BackupSettings } from './BackupSettings';
 
 const THEMES = [
+  {
+    // Follows the OS, and keeps following it while the app is open.
+    id: 'system',
+    label: 'System',
+    colors: { bg: '#1a1a1a', surface: '#f5f5f5', accent: '#48dbfb', text: '#8f8f8f' },
+  },
   {
     id: 'light',
     label: 'Light',
@@ -146,6 +153,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           How long after you stop typing the History tab takes a checkpoint. Shorter fills the
           timeline as you write; longer keeps it reaching further back.
         </p>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">Backup</h3>
+        <BackupSettings />
       </div>
 
       <div className="settings-section">

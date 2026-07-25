@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test';
-import { registerAppHooks } from './fixtures';
+import { registerAppHooks, acceptConfirm } from './fixtures';
 
 // Full-text search over the writing itself — not just category and tag names.
 
@@ -71,8 +71,8 @@ test.describe('Searching your writing', () => {
     await page.locator('.sidebar-search-input').fill('findable');
     await expect(page.locator('.sidebar-writing-hit')).toHaveCount(1, { timeout: 10000 });
 
-    page.once('dialog', d => void d.accept());
     await page.locator('.section-tab', { hasText: 'Ancient Age' }).locator('.tab-close').click();
+    await acceptConfirm(page);
     await page.waitForTimeout(600);
 
     await page.locator('.sidebar-search-input').fill('');

@@ -9,6 +9,8 @@ import { CategoryNode } from './CategoryNode';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { parseRuleTemplate, countRuleNodes } from '../../../shared/category-rule';
 import { categoryImpact, describeCategoryDeletion } from '../../lib/category-impact';
+import { confirmDialog } from '../common/ConfirmDialog';
+import { clickable } from '../../lib/clickable';
 
 export function EditPanel() {
   const categories = useStore(s => s.categories);
@@ -179,7 +181,13 @@ export function EditPanel() {
     // Everything nested underneath goes too, so the prompt counts the whole subtree —
     // see lib/category-impact, where that arithmetic is unit-tested.
     const impact = categoryImpact(id, categories, tags);
-    if (!window.confirm(describeCategoryDeletion(name, impact))) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete category?',
+      message: describeCategoryDeletion(name, impact),
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!confirmed) return;
     const { descendantIds } = impact;
 
     try {
@@ -343,7 +351,7 @@ export function EditPanel() {
       )}
 
       {status && (
-        <div className="category-status" onClick={() => setStatus('')} title="Click to dismiss">
+        <div className="category-status" {...clickable(() => setStatus(''))} title="Click to dismiss">
           {status}
         </div>
       )}
@@ -363,29 +371,29 @@ export function EditPanel() {
           <div className="context-menu-header">{contextCategory.name}</div>
           <div
             className="context-menu-item"
-            onClick={() => {
+            {...clickable(() => {
               startCreateSubCategory(contextMenu.categoryId);
               setContextMenu(null);
-            }}
+            })}
           >
             Add sub-category
           </div>
           <div
             className="context-menu-item"
-            onClick={() => {
+            {...clickable(() => {
               setRuleCategoryId(contextMenu.categoryId);
               setContextMenu(null);
-            }}
+            })}
           >
             {ruleSize(contextMenu.categoryId) > 0 ? 'Edit rule…' : 'Create rule…'}
           </div>
           {ruleSize(contextMenu.categoryId) > 0 && (
             <div
               className="context-menu-item"
-              onClick={() => {
+              {...clickable(() => {
                 handleApplyRuleToExisting(contextMenu.categoryId);
                 setContextMenu(null);
-              }}
+              })}
             >
               Apply rule to existing sub-categories
             </div>
@@ -393,19 +401,19 @@ export function EditPanel() {
           <div className="context-menu-separator" />
           <div
             className="context-menu-item"
-            onClick={() => {
+            {...clickable(() => {
               startRenameCategory(contextMenu.categoryId, contextCategory.name);
               setContextMenu(null);
-            }}
+            })}
           >
             Rename
           </div>
           <div
             className="context-menu-item danger"
-            onClick={() => {
+            {...clickable(() => {
               handleDeleteCategory(contextMenu.categoryId, contextCategory.name);
               setContextMenu(null);
-            }}
+            })}
           >
             Delete
           </div>

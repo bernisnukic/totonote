@@ -9,6 +9,7 @@ const placement = (over: Partial<AnnotationPlacement> = {}): AnnotationPlacement
   tagColor: '#48dbfb',
   categoryId: 'c1',
   placementOrder: 0,
+  whenText: '',
   fromPos: 0,
   toPos: 10,
   note: '',

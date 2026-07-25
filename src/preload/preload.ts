@@ -10,6 +10,8 @@ const MENU_CHANNELS = [
   'menu:redo',
   'menu:save-all',
   'menu:open-settings',
+  'menu:backup',
+  'menu:restore',
   'app:save-and-quit',
 ] as const;
 

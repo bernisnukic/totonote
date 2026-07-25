@@ -126,6 +126,10 @@ export const annotations = sqliteTable(
     // annotations are just highlights. Deleting the category unfiles, never deletes.
     categoryId: text('category_id').references(() => categories.id, { onDelete: 'set null' }),
     placementOrder: integer('placement_order').notNull().default(0),
+    // When this happened, in the world's own words — "Year 300 of the Third Age" as
+    // readily as "1885-03-12". Free text, because a world's calendar is not ours; what it
+    // sorts as is worked out by shared/when.ts. Empty means undated.
+    whenText: text('when_text').notNull().default(''),
     createdAt: text('created_at').notNull().default(isoNow),
   },
   t => ({

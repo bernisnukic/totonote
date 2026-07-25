@@ -16,6 +16,8 @@ import * as searchRepo from '../db/repositories/search-repo';
 import { queueImageForOcr } from '../services/ocr-queue';
 import { mediaIdsInContent, drawingIdsInContent } from '../../shared/media-refs';
 import { checkForUpdates } from '../services/update-checker';
+import { inspectBackup, replaceDatabase, suggestedBackupName, writeBackup } from '../services/backup';
+import { closeDb, getDbPath, getMigrationsFolder, getSqlite, initDb } from '../db/connection';
 import type { CreateCategoryInput, BulkAddSubcategoryInput, CreateMediaInput } from '../../shared/domain-types';
 
 const ALLOWED_EXTERNAL_PREFIX = 'https://github.com/bernisnukic/totonote/';
@@ -165,6 +167,73 @@ export function registerIpcHandlers(): void {
     if (canceled || !filePath) return null;
     await fs.promises.writeFile(filePath, args.contents, 'utf8');
     return filePath;
+  });
+
+  ipcMain.handle('annotation:timeline', (_, args: { workspaceId?: string }) =>
+    annotationRepo.listTimeline(args.workspaceId)
+  );
+
+  ipcMain.handle('document:backlinks', (_, args: { id: string }) => documentRepo.listBacklinks(args.id));
+
+  // Backup — the whole world in one file
+  ipcMain.handle('backup:status', () => {
+    const dbPath = getDbPath();
+    return { dbPath, bytes: fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0 };
+  });
+
+  ipcMain.handle('backup:create', async () => {
+    const window = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+    const { canceled, filePath } = await dialog.showSaveDialog(window!, {
+      title: 'Save a backup of everything',
+      defaultPath: suggestedBackupName(new Date()),
+      filters: [{ name: 'TotoNote backup', extensions: ['totonote'] }],
+    });
+    if (canceled || !filePath) return null;
+    // An existing file at the destination would be backed up *into*, not replaced.
+    if (fs.existsSync(filePath)) fs.rmSync(filePath);
+    return writeBackup(getSqlite(), filePath);
+  });
+
+  ipcMain.handle('backup:restore', async () => {
+    const window = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+    const { canceled, filePaths } = await dialog.showOpenDialog(window!, {
+      title: 'Restore everything from a backup',
+      properties: ['openFile'],
+      filters: [{ name: 'TotoNote backup', extensions: ['totonote', 'db'] }],
+    });
+    if (canceled || filePaths.length === 0) return null;
+
+    const check = inspectBackup(filePaths[0], getMigrationsFolder());
+    if (!check.ok) return { ok: false, reason: check.reason };
+
+    // Last chance to stop: this discards whatever is open right now.
+    const { response } = await dialog.showMessageBox(window!, {
+      type: 'warning',
+      buttons: ['Cancel', 'Replace everything'],
+      defaultId: 0,
+      cancelId: 0,
+      message: 'Replace everything with this backup?',
+      detail:
+        `The backup holds ${check.summary!.documents} document(s), ` +
+        `${check.summary!.sections} section(s) and ${check.summary!.annotations} highlight(s).\n\n` +
+        'Everything currently in TotoNote is replaced. The app restarts afterwards.',
+    });
+    if (response !== 1) return null;
+
+    const dbPath = getDbPath();
+    closeDb();
+    try {
+      const { keptAt } = replaceDatabase(dbPath, filePaths[0]);
+      // Nothing may touch the swapped-in file through a stale handle, so start over.
+      app.relaunch();
+      app.exit(0);
+      return { ok: true, keptAt };
+    } catch (err) {
+      // The swap failed, so the original file is still there — reopen it rather than
+      // leaving the app running with no database at all.
+      initDb();
+      return { ok: false, reason: err instanceof Error ? err.message : String(err) };
+    }
   });
 
   // App / Updates

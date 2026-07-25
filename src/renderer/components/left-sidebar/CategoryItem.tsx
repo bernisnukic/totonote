@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { BrowseCategory } from '../../../shared/domain-types';
+import { clickable } from '../../lib/clickable';
 
 interface CategoryItemProps {
   category: BrowseCategory;
@@ -16,10 +17,11 @@ export function CategoryItem({ category, children, onSelect, isActive }: Categor
     <div className="category-item">
       <div
         className={`category-header${isActive ? ' active' : ''}`}
-        onClick={() => {
+        {...clickable(() => {
           if (hasChildren) setExpanded(!expanded);
           onSelect(category.id);
-        }}
+        })}
+        {...(hasChildren ? { 'aria-expanded': expanded } : {})}
       >
         {hasChildren && (
           <span className={`category-expand-icon${expanded ? ' expanded' : ''}`}>&#9654;</span>

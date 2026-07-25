@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../stores';
-import { getEditor } from '../../lib/editor-registry';
 import { mediaUrl } from '../../../shared/media-refs';
 import { invoke } from '../../lib/ipc-client';
 import { pageToMarkdown, pageFilename } from '../../../shared/page-markdown';
 import { DrawingThumb } from './DrawingThumb';
 import type { AnnotationPlacement, Category } from '../../../shared/domain-types';
+import { clickable } from '../../lib/clickable';
+import { excerptTextFor } from '../../lib/excerpt-text';
 
 export type PlacementSort = 'custom' | 'newest' | 'oldest' | 'document';
 
@@ -82,21 +83,10 @@ export function PlacementRow({
   const updateAnnotation = useStore(s => s.updateAnnotation);
   const [editingNote, setEditingNote] = useState(false);
   const [note, setNote] = useState(placement.note);
+  const [editingWhen, setEditingWhen] = useState(false);
+  const [whenText, setWhenText] = useState(placement.whenText);
 
-  // Server excerpts come from persisted content, which trails the debounced save by up
-  // to a second — an excerpt filed moments ago would show as blank. If the section is
-  // open in an editor, read the text live instead.
-  let excerpt = placement.excerpt;
-  if (!excerpt) {
-    const editor = getEditor(placement.sectionId);
-    if (editor) {
-      try {
-        excerpt = editor.state.doc.textBetween(placement.fromPos, placement.toPos, ' ').trim();
-      } catch {
-        excerpt = '';
-      }
-    }
-  }
+  let excerpt = excerptTextFor(placement);
   // A picture filed on its own has no text; the thumbnail below carries the meaning, so
   // name it rather than showing a bare ellipsis.
   const imageCount = placement.imageIds.length;
@@ -113,6 +103,12 @@ export function PlacementRow({
   const saveNote = () => {
     setEditingNote(false);
     if (note !== placement.note) updateAnnotation(placement.id, { note });
+  };
+
+  const saveWhen = () => {
+    setEditingWhen(false);
+    const trimmed = whenText.trim();
+    if (trimmed !== placement.whenText) updateAnnotation(placement.id, { whenText: trimmed });
   };
 
   return (
@@ -161,12 +157,43 @@ export function PlacementRow({
           }}
         />
       ) : note ? (
-        <div className="placement-note" onClick={() => setEditingNote(true)} title="Click to edit this note">
+        <div className="placement-note" {...clickable(() => setEditingNote(true))} title="Click to edit this note">
           {note}
         </div>
       ) : (
         <button className="placement-note-add" onClick={() => setEditingNote(true)}>
           + note
+        </button>
+      )}
+
+      {/* When this happened, in the world's own words — this is what the Timeline reads. */}
+      {editingWhen ? (
+        <input
+          className="input placement-when-input"
+          value={whenText}
+          autoFocus
+          placeholder="Year 300 of the Third Age"
+          onChange={e => setWhenText(e.target.value)}
+          onBlur={saveWhen}
+          onKeyDown={e => {
+            if (e.key === 'Enter') saveWhen();
+            if (e.key === 'Escape') {
+              setWhenText(placement.whenText);
+              setEditingWhen(false);
+            }
+          }}
+        />
+      ) : whenText ? (
+        <div
+          className="placement-when"
+          {...clickable(() => setEditingWhen(true))}
+          title="Click to change when this happened"
+        >
+          {whenText}
+        </div>
+      ) : (
+        <button className="placement-note-add" onClick={() => setEditingWhen(true)}>
+          + when
         </button>
       )}
     </div>
@@ -274,7 +301,7 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
         {heading && (
           <div
             className="info-section-title placement-subheading"
-            onClick={() => setFocusedCategory(owner.id)}
+            {...clickable(() => setFocusedCategory(owner.id))}
             title="Open this page"
           >
             {owner.name} <span className="placement-count">{sorted.length}</span>
@@ -360,7 +387,7 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
           <div className="placement-breadcrumb">
             {breadcrumb.map(c => (
               <span key={c.id}>
-                <span className="placement-breadcrumb-link" onClick={() => setFocusedCategory(c.id)}>
+                <span className="placement-breadcrumb-link" {...clickable(() => setFocusedCategory(c.id))}>
                   {c.name}
                 </span>
                 {' › '}

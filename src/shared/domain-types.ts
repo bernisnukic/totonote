@@ -69,6 +69,11 @@ export interface Annotation {
   categoryId: string | null;
   /** Manual position among the excerpts filed in the same category. */
   placementOrder: number;
+  /**
+   * When this happened, in the world's own words — "Year 300 of the Third Age" as readily
+   * as "1885-03-12". Empty means undated. See shared/when.ts for how it is ordered.
+   */
+  whenText: string;
   createdAt: string;
 }
 
@@ -93,6 +98,8 @@ export interface AnnotationPlacement {
   excerpt: string;
   /** Media ids of any images inside the range — a filed portrait has no text to show. */
   imageIds: string[];
+  /** When this happened, as typed; '' when undated. */
+  whenText: string;
   /** Drawing ids inside the range, for the same reason. */
   drawingIds: string[];
 }
@@ -212,6 +219,8 @@ export interface CreateAnnotationInput {
   note?: string;
   /** File the new annotation under this category straight away. */
   categoryId?: string | null;
+  /** When this happened, free text; defaults to undated. */
+  whenText?: string;
 }
 
 export interface UpdateAnnotationInput {
@@ -222,6 +231,8 @@ export interface UpdateAnnotationInput {
   tagId?: string;
   /** Refile (or unfile with null). Filing appends to the end of the category's order. */
   categoryId?: string | null;
+  /** When this happened, free text; '' clears it. */
+  whenText?: string;
 }
 
 export interface PositionUpdate {
@@ -314,4 +325,13 @@ export interface DrawingRecord {
 export interface SaveDrawingInput {
   id: string;
   strokes: string;
+}
+
+/** A document that links to another one — see document-repo.listBacklinks. */
+export interface Backlink {
+  documentId: string;
+  documentTitle: string;
+  /** How many links, across all of that document's sections. */
+  count: number;
+  sections: Array<{ sectionId: string; sectionTitle: string }>;
 }

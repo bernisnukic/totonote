@@ -3,6 +3,7 @@ import { useStore } from '../../stores';
 import { SectionTab } from './SectionTab';
 import { Modal } from '../common/Modal';
 import { generateAbbreviation } from '../../lib/section-utils';
+import { confirmDialog } from '../common/ConfirmDialog';
 
 interface SectionTabBarProps {
   onTabClick: (sectionId: string) => void;
@@ -20,8 +21,15 @@ export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
 
   // A section holds a whole page of writing and its tags — big enough to confirm, the way
   // documents do. The undo toast still catches it if they change their mind after.
-  const handleDelete = (id: string, title: string) => {
-    if (window.confirm(`Delete the section "${title}" and everything tagged in it? You can undo right after.`)) {
+  const handleDelete = async (id: string, title: string) => {
+    const confirmed = await confirmDialog({
+      title: 'Delete section?',
+      message: `Delete the section "${title}" and everything tagged in it?`,
+      detail: 'You can undo this right after.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (confirmed) {
       deleteSection(id);
     }
   };
@@ -46,7 +54,7 @@ export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
             label={section.id === activeSectionId ? section.title : section.abbreviation}
             isActive={section.id === activeSectionId}
             onClick={() => onTabClick(section.id)}
-            onClose={() => handleDelete(section.id, section.title)}
+            onClose={() => void handleDelete(section.id, section.title)}
           />
         ))}
         <button className="tab-add" onClick={() => setShowCreate(true)} title="Add section">

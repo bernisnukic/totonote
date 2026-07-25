@@ -24,6 +24,7 @@ export interface UiSlice {
   /** Category whose compiled wiki page is showing in the Info tab. Mutually exclusive with focusedTagId. */
   focusedCategoryId: string | null;
   graphOpen: boolean;
+  timelineOpen: boolean;
   /** Settings modal. In the store so ⌘, works anywhere, including the Documents screen. */
   settingsOpen: boolean;
   /** Help page currently shown in the in-app guide, or null when closed. */
@@ -45,6 +46,7 @@ export interface UiSlice {
   setFocusedTag: (id: string | null) => void;
   setFocusedCategory: (id: string | null) => void;
   setGraphOpen: (open: boolean) => void;
+  setTimelineOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   openHelp: (page: string) => void;
   closeHelp: () => void;
@@ -62,6 +64,7 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
   focusedTagId: null,
   focusedCategoryId: null,
   graphOpen: false,
+  timelineOpen: false,
   settingsOpen: false,
   helpPage: null,
   wikiOpen: false,
@@ -94,6 +97,7 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
       ...(id ? { activeRightTab: 'info' as RightTab, focusedTagId: null } : {}),
     }),
   setGraphOpen: (open) => set({ graphOpen: open }),
+  setTimelineOpen: (open) => set({ timelineOpen: open }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   openHelp: (page) => set({ helpPage: page }),
   closeHelp: () => set({ helpPage: null }),

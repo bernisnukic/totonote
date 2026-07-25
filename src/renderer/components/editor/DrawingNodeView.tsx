@@ -12,6 +12,7 @@ import {
   type DrawingTool,
   type Stroke,
 } from '../../../shared/drawing';
+import { registerDrawing, unregisterDrawing } from '../../lib/drawing-registry';
 import { DrawingCanvas } from './DrawingCanvas';
 import { DrawingToolbar, PEN_COLORS, PEN_SIZES } from './DrawingToolbar';
 
@@ -113,6 +114,25 @@ export function DrawingNodeView({ node, selected, editor }: NodeViewProps) {
    * Commit a change. The ref is updated *before* the state, so two strokes finishing in
    * the same tick both land — React wouldn't have re-rendered between them.
    */
+  // Let the History timeline read and restore these strokes: they live in their own table,
+  // so a checkpoint of the section's text would otherwise miss them entirely.
+  useEffect(() => {
+    if (!drawingId) return;
+    registerDrawing(drawingId, {
+      read: () => serializeDrawing(drawingRef.current),
+      restore: (strokes: string) => {
+        const restored = parseDrawing(strokes);
+        drawingRef.current = restored;
+        setDrawing(restored);
+        // Straight to disk: a restore is not an edit the user can undo inside the drawing.
+        if (drawingId) {
+          invoke('drawing:save', { id: drawingId, strokes }).catch(() => undefined);
+        }
+      },
+    });
+    return () => unregisterDrawing(drawingId);
+  }, [drawingId]);
+
   const applyChange = useCallback(
     (next: Drawing) => {
       undoStack.current.push(drawingRef.current);

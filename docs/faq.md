@@ -16,14 +16,22 @@ database too.
 
 ## How do I back up?
 
-Quit TotoNote, then copy `totonote.db` (and the `-wal` / `-shm` files if they're there)
-somewhere safe. To restore, quit and copy them back.
+**Settings → Backup → Back up everything…**, or **File → Back Up Everything…**. You get one
+file holding your whole world, which you can keep anywhere. **Restore from a backup…** puts
+one back.
 
-Worth doing before you install a new version.
+Worth doing before you install a new version. Full details in
+[Backup and restore](backup-and-restore.md).
+
+> Copying `totonote.db` by hand also works if you quit the app first — but take the `-wal`
+> and `-shm` files with it, or you may miss your most recent writing. Backing up through the
+> app avoids that entirely.
 
 ## Can I export my notes?
 
-Not yet. There's no export or import in the app — the database file is the only copy.
+A backup is a complete export: one file with everything in it, readable by any SQLite tool
+if TotoNote ever stops existing. Individual category pages can also be exported to Markdown
+from the page itself.
 
 ## Why does my computer warn me when I open it?
 

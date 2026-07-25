@@ -1,0 +1,1 @@
+ALTER TABLE `annotations` ADD `when_text` text DEFAULT '' NOT NULL;

@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import { eq, inArray, isNotNull, max, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, max, ne, sql } from 'drizzle-orm';
 import { getDb } from '../connection';
 import { annotations, sections, documents, tags } from '../schema';
 import { excerptFromContent, imagesFromContent, drawingsFromContent } from '../../../shared/prosemirror-text';
@@ -32,6 +32,7 @@ export function listAnnotationsByDocument(documentId: string): Annotation[] {
       note: annotations.note,
       categoryId: annotations.categoryId,
       placementOrder: annotations.placementOrder,
+      whenText: annotations.whenText,
       createdAt: annotations.createdAt,
     })
     .from(annotations)
@@ -63,6 +64,7 @@ export function createAnnotation(input: CreateAnnotationInput): Annotation {
     note: input.note ?? '',
     categoryId,
     placementOrder: categoryId ? nextPlacementOrder(categoryId) : 0,
+    whenText: input.whenText ?? '',
     createdAt: new Date().toISOString(),
   };
   getDb().insert(annotations).values(annotation).run();
@@ -87,6 +89,7 @@ export function updateAnnotation(input: UpdateAnnotationInput): Annotation {
     toPos: input.toPos ?? existing.toPos,
     note: input.note ?? existing.note,
     tagId: input.tagId ?? existing.tagId,
+    whenText: input.whenText ?? existing.whenText,
     categoryId,
     placementOrder,
   };
@@ -117,6 +120,7 @@ const placementColumns = {
   tagColor: tags.color,
   categoryId: annotations.categoryId,
   placementOrder: annotations.placementOrder,
+  whenText: annotations.whenText,
   fromPos: annotations.fromPos,
   toPos: annotations.toPos,
   note: annotations.note,
@@ -153,6 +157,33 @@ export function listPlacements(filter: { categoryIds?: string[]; tagId?: string 
   } else {
     rows = q.where(isNotNull(annotations.categoryId)).all();
   }
+
+  return rows.map(({ content, ...row }) => ({
+    ...row,
+    excerpt: excerptFromContent(content, row.fromPos, row.toPos),
+    imageIds: imagesFromContent(content, row.fromPos, row.toPos),
+    drawingIds: drawingsFromContent(content, row.fromPos, row.toPos),
+  }));
+}
+
+/**
+ * Every excerpt that has been given a "when", across every document in a workspace.
+ *
+ * Ordering is left to the renderer: what a date means depends on shared/when.ts, which both
+ * processes share, and SQL cannot sort "Year 300 of the Third Age" against "1885-03-12".
+ */
+export function listTimeline(workspaceId?: string): AnnotationPlacement[] {
+  const q = getDb()
+    .select(placementColumns)
+    .from(annotations)
+    .innerJoin(tags, eq(tags.id, annotations.tagId))
+    .innerJoin(sections, eq(sections.id, annotations.sectionId))
+    .innerJoin(documents, eq(documents.id, sections.documentId));
+
+  const dated = ne(annotations.whenText, '');
+  const rows = workspaceId
+    ? q.where(and(dated, eq(documents.workspaceId, workspaceId))).all()
+    : q.where(dated).all();
 
   return rows.map(({ content, ...row }) => ({
     ...row,

@@ -3,6 +3,7 @@ import { useStore } from '../../stores';
 import { WorkspaceBar } from './WorkspaceBar';
 import { DocumentCard } from './DocumentCard';
 import { Modal } from '../common/Modal';
+import { confirmDialog } from '../common/ConfirmDialog';
 
 export function DocumentList() {
   const documents = useStore(s => s.documents);
@@ -35,9 +36,13 @@ export function DocumentList() {
     // Documents are the biggest unit — deleting one takes every section, highlight and
     // filing inside it. Smaller deletions rely on the undo toast instead of a prompt.
     const doc = documents.find(d => d.id === id);
-    const confirmed = window.confirm(
-      `Delete "${doc?.title ?? 'this document'}" and everything in it?\n\nAll of its sections and highlights go too.`,
-    );
+    const confirmed = await confirmDialog({
+      title: 'Delete document?',
+      message: `Delete "${doc?.title ?? 'this document'}" and everything in it?`,
+      detail: 'All of its sections and highlights go too.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
     if (!confirmed) return;
     await deleteDocument(id);
   };

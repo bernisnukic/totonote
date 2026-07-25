@@ -72,6 +72,17 @@ export function buildAppMenu(): void {
           click: () => sendToFocused('menu:save-all'),
         },
         { type: 'separator' },
+        // Backing up is the kind of thing people look for in a menu before they think to
+        // open Settings, so it lives in both places.
+        {
+          label: 'Back Up Everything…',
+          click: () => sendToFocused('menu:backup'),
+        },
+        {
+          label: 'Restore from Backup…',
+          click: () => sendToFocused('menu:restore'),
+        },
+        { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' },
       ],
     },
@@ -141,6 +152,8 @@ export function buildAppMenu(): void {
         { label: 'Glossary', click: () => openHelp('glossary') },
         { label: 'Categories and Rules', click: () => openHelp('categories-and-rules') },
         { label: 'Filing and the Graph', click: () => openHelp('filing-and-graph') },
+        { label: 'Links and the Timeline', click: () => openHelp('links-and-timeline') },
+        { label: 'Backup and Restore', click: () => openHelp('backup-and-restore') },
         { label: 'Keyboard Shortcuts', click: () => openHelp('keyboard-shortcuts') },
         { type: 'separator' },
         { label: "What's New", click: () => openHelp('CHANGELOG') },

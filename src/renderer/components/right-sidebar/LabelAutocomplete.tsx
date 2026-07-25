@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { Tag } from '../../../shared/domain-types';
+import { clickable } from '../../lib/clickable';
 
 interface LabelAutocompleteProps {
   tags: Tag[];
@@ -64,10 +65,10 @@ export function LabelAutocomplete({ tags, onSelect, placeholder, onCreateNew }: 
             <div
               key={tag.id}
               className={`autocomplete-item${i === highlightIndex ? ' highlighted' : ''}`}
-              onClick={() => {
+              {...clickable(() => {
                 onSelect(tag.id);
                 setQuery('');
-              }}
+              })}
             >
               <span
                 className="label-color-dot"
@@ -79,7 +80,7 @@ export function LabelAutocomplete({ tags, onSelect, placeholder, onCreateNew }: 
           {showCreateOption && (
             <div
               className={`autocomplete-item autocomplete-item-create${highlightIndex === filtered.length ? ' highlighted' : ''}`}
-              onClick={() => onCreateNew!(trimmedQuery)}
+              {...clickable(() => onCreateNew!(trimmedQuery))}
             >
               + Create &ldquo;{trimmedQuery}&rdquo;
             </div>

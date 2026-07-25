@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test';
-import { registerAppHooks } from './fixtures';
+import { registerAppHooks, acceptConfirm, dismissConfirmIfShown } from './fixtures';
 
 // Regression: restoring a checkpoint used to leave highlights at positions from the newer
 // document, so compiled wiki pages showed text the user never highlighted.
@@ -71,8 +71,8 @@ test.describe('History restore and highlights', () => {
       .filter({ has: page.locator('.history-item-preview', { hasText: /^GURA IS A SHARK$/ }) })
       .first();
     await expect(target).toBeVisible();
-    page.once('dialog', d => d.accept()); // in case anything post-dates the checkpoint
     await target.click();
+    await dismissConfirmIfShown(page); // in case anything post-dates the checkpoint
     await page.waitForTimeout(1500);
 
     // The page must still show what the user actually highlighted — this used to read
@@ -92,15 +92,8 @@ test.describe('History restore and highlights', () => {
 
     await page.locator('.sidebar-tab', { hasText: 'History' }).click();
     const items = page.locator('.history-item');
-    // Accept first and assert afterwards: an assertion that throws inside the handler
-    // leaves the dialog up, which blocks the window from closing and breaks the next test.
-    let warning = '';
-    page.once('dialog', d => {
-      warning = d.message();
-      void d.accept();
-    });
     await items.nth((await items.count()) - 1).click();
-    await page.waitForTimeout(300);
+    const warning = await acceptConfirm(page);
     expect(warning).toContain('1 highlight');
     await page.waitForTimeout(1500);
 

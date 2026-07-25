@@ -7,12 +7,17 @@ import { importImageFile, imageFilesFrom } from '../../lib/image-import';
 import { SizedImage } from '../../extensions/sized-image';
 import { DrawingNode } from '../../extensions/drawing-node';
 import { AnnotationDecoration, annotationPluginKey } from '../../extensions/annotation-decoration';
+import { DocumentLink } from '../../extensions/document-link';
+import { DocumentLinkPicker } from './DocumentLinkPicker';
 import { useStore } from '../../stores';
 import { useDebounce } from '../../hooks/useDebounce';
 import { registerEditor, unregisterEditor } from '../../lib/editor-registry';
 import { registerFlusher, unregisterFlusher } from '../../lib/save-registry';
+import { readDrawings } from '../../lib/drawing-registry';
+import { drawingsInRange } from '../../../shared/prosemirror-text';
 import type { Section, Annotation } from '../../../shared/domain-types';
 import { invoke } from '../../lib/ipc-client';
+import { alertDialog } from '../common/ConfirmDialog';
 
 interface SectionEditorProps {
   section: Section;
@@ -80,8 +85,19 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   // filling the 60-checkpoint cap sooner. pushSnapshot dedupes, so a pause that changed
   // nothing costs nothing.
   const debouncedSnapshot = useDebounce((sectionId: string, content: string) => {
-    pushSnapshot(sectionId, content, currentAnnotationPositions());
+    pushSnapshot(sectionId, content, currentAnnotationPositions(), currentDrawingStates(content));
   }, historyIntervalMs);
+
+  /** Strokes of the drawings in this section, so a rollback restores them along with the text. */
+  function currentDrawingStates(content: string) {
+    try {
+      const parsed = JSON.parse(content);
+      const ids = drawingsInRange(parsed, 0, Number.MAX_SAFE_INTEGER);
+      return readDrawings(ids);
+    } catch {
+      return [];
+    }
+  }
 
   /**
    * Where each highlight sits right now, straight from the live decorations.
@@ -120,7 +136,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
         if (pos !== undefined) pos += 1;
       } catch (err) {
         console.error('[image import]', err);
-        window.alert(`Could not add "${file.name}": ${err instanceof Error ? err.message : String(err)}`);
+        void alertDialog(`Could not add "${file.name}".`, err instanceof Error ? err.message : String(err));
       }
     }
   }, []);
@@ -132,6 +148,12 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       SizedImage,
       DrawingNode,
       AnnotationDecoration,
+      DocumentLink.configure({
+        // Read live rather than captured, so a rename shows up in existing links, and
+        // opening a link goes through the same path as clicking a document card.
+        resolveTitle: id => useStore.getState().documents.find(d => d.id === id)?.title ?? null,
+        onOpen: id => void useStore.getState().openDocument(id),
+      }),
     ],
     content: '',
     onUpdate: ({ editor }) => {
@@ -290,7 +312,10 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       return;
     }
     const ed = editorRef.current;
-    if (ed) pushSnapshot(section.id, JSON.stringify(ed.getJSON()), currentAnnotationPositions());
+    if (ed) {
+      const json = JSON.stringify(ed.getJSON());
+      pushSnapshot(section.id, json, currentAnnotationPositions(), currentDrawingStates(json));
+    }
   }, [editor, isActive, globalAnnotations]);
 
   const syncDecorations = useCallback(
@@ -340,6 +365,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       onContextMenu={handleContextMenu}
     >
       <EditorContent editor={editor} />
+      <DocumentLinkPicker editor={editor} />
     </div>
   );
 }

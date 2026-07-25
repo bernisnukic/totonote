@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../../stores';
 import { LabelItem } from './LabelItem';
 import { LabelOptionsPanel } from './LabelOptionsPanel';
+import { BacklinksSection } from './BacklinksSection';
 import { CategoryPage, PlacementRow, usePlacementNavigation } from './CategoryPage';
 import type { AnnotationPlacement, Tag } from '../../../shared/domain-types';
+import { clickable } from '../../lib/clickable';
 
 export function InfoPanel() {
   const activeSectionId = useStore(s => s.activeSectionId);
@@ -175,7 +177,11 @@ export function InfoPanel() {
           <div key={group.key} className="info-section">
             <div
               className={`info-section-title${group.categoryId ? ' placement-subheading' : ''}`}
-              onClick={group.categoryId ? () => setFocusedCategory(group.categoryId) : undefined}
+              {/* Only the rows that stand for a real category open one — the ungrouped
+                  heading is a label, so it stays out of the tab order entirely. */
+              ...(group.categoryId
+                ? clickable(() => setFocusedCategory(group.categoryId))
+                : {})}
               title={group.categoryId ? 'Open this page' : undefined}
             >
               {group.name} <span className="placement-count">{group.rows.length}</span>
@@ -218,6 +224,8 @@ export function InfoPanel() {
       <div className="info-section">
         <div className="info-section-title">{header}</div>
       </div>
+
+      <BacklinksSection />
 
       {tagsByCategory.map(group => (
         <div key={group.category.id} className="info-section">

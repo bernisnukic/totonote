@@ -208,8 +208,8 @@ describe('deleting', () => {
   it('deleteSection forgets its annotations, section tags, dirty flag and history', async () => {
     useStore.setState({
       documentAnnotations: [
-        { id: 'a1', sectionId: 's1', tagId: 't1', fromPos: 0, toPos: 5, note: '', categoryId: null, placementOrder: 0, createdAt: '2026-01-01T00:00:00.000Z' },
-        { id: 'a2', sectionId: 's2', tagId: 't1', fromPos: 0, toPos: 5, note: '', categoryId: null, placementOrder: 0, createdAt: '2026-01-01T00:00:00.000Z' },
+        { id: 'a1', sectionId: 's1', tagId: 't1', fromPos: 0, toPos: 5, note: '', categoryId: null, placementOrder: 0, whenText: '', createdAt: '2026-01-01T00:00:00.000Z' },
+        { id: 'a2', sectionId: 's2', tagId: 't1', fromPos: 0, toPos: 5, note: '', categoryId: null, placementOrder: 0, whenText: '', createdAt: '2026-01-01T00:00:00.000Z' },
       ],
       sectionTags: [
         { sectionId: 's1', tagId: 't9', createdAt: '2026-01-01T00:00:00.000Z' },

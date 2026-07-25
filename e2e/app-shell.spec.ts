@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test';
-import { registerAppHooks } from './fixtures';
+import { registerAppHooks, acceptConfirm } from './fixtures';
 
 // Undo and the in-app guide
 
@@ -35,9 +35,9 @@ test.describe('Undo', () => {
     // Delete the tag from the sidebar.
     await page.locator('.sidebar-mode-btn', { hasText: 'Search' }).click();
     await page.locator('.sidebar-search-input').fill('Dragon');
-    page.once('dialog', d => d.accept());
     await page.locator('.tag-tree-item', { hasText: 'Dragon' }).first().click({ button: 'right' });
     await page.locator('.context-menu-item', { hasText: 'Delete' }).click();
+    await acceptConfirm(page);
     await expect(page.locator('.annotation-highlight')).toHaveCount(0);
 
     // The toast offers it back.
@@ -64,9 +64,9 @@ test.describe('Undo', () => {
     await page.locator('.category-new-form .btn-primary', { hasText: 'Create' }).click();
     await expect(page.locator('.category-row', { hasText: 'GURA' })).toBeVisible();
 
-    page.once('dialog', d => d.accept());
     await page.locator('.category-row', { hasText: 'CHARACTERS' })
       .locator('.category-row-btn', { hasText: '×' }).click();
+    await acceptConfirm(page);
     await expect(page.locator('.category-row', { hasText: 'GURA' })).toHaveCount(0);
 
     await page.locator('.undo-toast__btn').click();
@@ -132,6 +132,9 @@ test.describe('Help', () => {
     expect(items[items.length - 1]).toBe("What's New");
     // Titles come from each page's own heading, not from CSS mangling the filename.
     expect(items).toContain('Documents and sections');
+    // Every guide page must be reachable from here, or it may as well not exist.
+    expect(items).toContain('Links and the timeline');
+    expect(items).toContain('Backup and restore');
   });
 
   test('records the app version in the database, and reaches the changelog', async () => {

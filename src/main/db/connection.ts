@@ -12,6 +12,23 @@ export type Db = BetterSQLite3Database<typeof schema>;
 
 let db: Db | null = null;
 let sqlite: Database.Database | null = null;
+let dbFilePath = '';
+
+/** The live connection, for the online backup — everything else should use getDb(). */
+export function getSqlite(): Database.Database {
+  if (!sqlite) throw new Error('Database not initialized. Call initDb() first.');
+  return sqlite;
+}
+
+/** Where the database file lives, so a restore knows what to replace. */
+export function getDbPath(): string {
+  return dbFilePath;
+}
+
+/** Exposed so a restore can validate a backup against the migrations this build ships. */
+export function getMigrationsFolder(): string {
+  return findMigrationsFolder();
+}
 
 export function getDb(): Db {
   if (!db) {
@@ -24,6 +41,7 @@ export function initDb(): Db {
   const dbPath = process.env.TOTONOTE_DB_PATH
     || path.join(app.getPath('userData'), 'totonote.db');
 
+  dbFilePath = dbPath;
   sqlite = new Database(dbPath);
   sqlite.pragma('journal_mode = WAL');
 

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { registerAppHooks } from './fixtures';
+import { registerAppHooks, acceptConfirm } from './fixtures';
 
 // Tags, highlights and the selection toolbar
 
@@ -335,9 +335,9 @@ test.describe('Deleting a tag', () => {
     await expect(sidebarTag).toBeVisible();
 
     // Delete it, accepting the confirmation.
-    page.once('dialog', d => d.accept());
     await sidebarTag.click({ button: 'right' });
     await page.locator('.context-menu-item', { hasText: 'Delete' }).click();
+    await acceptConfirm(page);
 
     // Sanity: the tag really is gone, so the assertion below is about highlights.
     await expect(page.locator('.tag-tree-item', { hasText: 'Dragon' })).toHaveCount(0);

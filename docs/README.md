@@ -15,7 +15,9 @@ offline.
 | [Tags and highlights](tags-and-annotations.md) | Highlighting text, tagging it, and the three kinds of tag |
 | [Categories and rules](categories-and-rules.md) | Organising tags, and auto-creating sub-category skeletons |
 | [Filing and the graph](filing-and-graph.md) | Compiling excerpts onto wiki pages, and the connections map |
+| [Links and the timeline](links-and-timeline.md) | `[[Linking]]` documents together, and ordering events in time |
 | [Search and filters](search-and-filters.md) | Finding things, filtering, sorting, and controlling highlights |
+| [Backup and restore](backup-and-restore.md) | Saving your whole world to a file, and putting it back |
 | [Keyboard shortcuts](keyboard-shortcuts.md) | Every shortcut, and how to rebind them |
 | [FAQ](faq.md) | Where your data lives, backups, security warnings, updates |
 

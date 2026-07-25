@@ -21,7 +21,14 @@ export interface AnnotationSlice {
   ) => Promise<Annotation>;
   updateAnnotation: (
     id: string,
-    updates: { fromPos?: number; toPos?: number; note?: string; tagId?: string; categoryId?: string | null },
+    updates: {
+      fromPos?: number;
+      toPos?: number;
+      note?: string;
+      tagId?: string;
+      categoryId?: string | null;
+      whenText?: string;
+    },
   ) => Promise<void>;
   loadPlacements: (filter: { categoryIds?: string[]; tagId?: string }) => Promise<AnnotationPlacement[]>;
   reorderPlacements: (categoryId: string, orderedIds: string[]) => Promise<void>;

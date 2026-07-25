@@ -1,4 +1,5 @@
 import type {
+  Backlink,
   Document,
   Section,
   Tag,
@@ -33,6 +34,29 @@ import type {
   SearchHit,
 } from './domain-types';
 
+export interface BackupResult {
+  path: string;
+  bytes: number;
+  documents: number;
+  sections: number;
+  annotations: number;
+  images: number;
+}
+
+export interface RestoreResult {
+  /** False when the chosen file could not be used; `reason` says why. */
+  ok: boolean;
+  reason?: string;
+  /** Where the world being replaced was kept, in case the wrong backup was picked. */
+  keptAt?: string;
+}
+
+export interface BackupStatus {
+  /** Full path of the live database, so Settings can show where the world is kept. */
+  dbPath: string;
+  bytes: number;
+}
+
 export interface IpcHandlerMap {
   // Workspaces
   'workspace:list': { args: void; result: Workspace[] };
@@ -46,6 +70,8 @@ export interface IpcHandlerMap {
   'document:create': { args: CreateDocumentInput; result: Document };
   'document:update': { args: UpdateDocumentInput; result: Document };
   'document:delete': { args: { id: string }; result: DeletionSnapshot };
+  /** Which documents point a [[link]] at this one. */
+  'document:backlinks': { args: { id: string }; result: Backlink[] };
 
   // Sections
   'section:list': { args: { documentId: string }; result: Section[] };
@@ -91,6 +117,8 @@ export interface IpcHandlerMap {
   'annotation:reorder-placements': { args: { categoryId: string; orderedIds: string[] }; result: void };
   /** Distinct tag→category filings, for the graph. */
   'annotation:filing-edges': { args: void; result: FilingEdge[] };
+  /** Every dated excerpt, for the timeline. Ordering happens in the renderer. */
+  'annotation:timeline': { args: { workspaceId?: string }; result: AnnotationPlacement[] };
 
   // Section Tags
   'section-tag:list': { args: { sectionId: string }; result: SectionTagWithDetails[] };
@@ -141,6 +169,12 @@ export interface IpcHandlerMap {
   /** Write text to a file the user picks. Returns the path, or null if they cancelled. */
   'export:save-text': { args: { suggestedName: string; contents: string }; result: string | null };
 
+  // Whole-world backup. The database is one file, so a backup is a consistent copy of it
+  // and a restore puts one back — see main/services/backup.ts.
+  'backup:create': { args: void; result: BackupResult | null };
+  'backup:restore': { args: void; result: RestoreResult | null };
+  'backup:status': { args: void; result: BackupStatus };
+
   // Unsaved-changes tracking (manual-save mode). The renderer tells main whether there's
   // unsaved work so the window can warn before closing; force-quit skips that warning.
   'window:set-dirty': { args: { dirty: boolean }; result: void };
@@ -164,6 +198,7 @@ export const IPC_CHANNELS = [
   'document:create',
   'document:update',
   'document:delete',
+  'document:backlinks',
   'section:list',
   'section:get',
   'section:create',
@@ -194,6 +229,7 @@ export const IPC_CHANNELS = [
   'annotation:placements',
   'annotation:reorder-placements',
   'annotation:filing-edges',
+  'annotation:timeline',
   'section-tag:list',
   'section-tag:add',
   'section-tag:remove',
@@ -218,6 +254,9 @@ export const IPC_CHANNELS = [
   'drawing:save',
   'search:writing',
   'export:save-text',
+  'backup:create',
+  'backup:restore',
+  'backup:status',
 ] as const;
 
 type ListedChannel = (typeof IPC_CHANNELS)[number];

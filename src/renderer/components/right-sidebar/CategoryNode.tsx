@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Category, Tag } from '../../../shared/domain-types';
+import { clickable } from '../../lib/clickable';
 
 /**
  * One category row in the Edit tab, with its tags and — recursively — its sub-categories.
@@ -87,7 +88,7 @@ export function CategoryNode(props: CategoryNodeProps) {
         ) : (
           <div
             className="info-section-title category-node-name"
-            onClick={() => (selectMode ? onToggleSelected(cat.id) : onStartRename(cat.id, cat.name))}
+            {...clickable(() => (selectMode ? onToggleSelected(cat.id) : onStartRename(cat.id, cat.name)))}
             title={selectMode ? 'Click to select' : 'Click to rename — right-click for more'}
           >
             {cat.name}

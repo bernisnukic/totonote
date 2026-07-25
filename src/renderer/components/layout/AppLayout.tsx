@@ -82,9 +82,19 @@ export function AppLayout({ children }: AppLayoutProps) {
     const offSaveQuit = window.api.onMenu('app:save-and-quit', () => {
       saveAllDirty().finally(() => invoke('app:force-quit'));
     });
+    // File > Back Up Everything / Restore. Both open a native file dialog in main, so
+    // there is nothing to do here but ask; the panel in Settings does the same.
+    const offBackup = window.api.onMenu('menu:backup', () => {
+      void invoke('backup:create');
+    });
+    const offRestore = window.api.onMenu('menu:restore', () => {
+      void invoke('backup:restore');
+    });
     return () => {
       offSave();
       offSaveQuit();
+      offBackup();
+      offRestore();
     };
   }, [saveAllDirty]);
 

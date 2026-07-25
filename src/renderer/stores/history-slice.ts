@@ -8,6 +8,12 @@ export interface SnapshotAnnotation {
   toPos: number;
 }
 
+/** A drawing's strokes at the moment a checkpoint was taken. */
+export interface SnapshotDrawing {
+  id: string;
+  strokes: string;
+}
+
 /** One saved state of a section, for the history timeline. Session-only (not persisted). */
 export interface Snapshot {
   id: string;
@@ -26,6 +32,13 @@ export interface Snapshot {
    * show text the user never highlighted.
    */
   annotations: SnapshotAnnotation[];
+  /**
+   * Strokes of any drawings in the section.
+   *
+   * They live in their own table rather than in the content, so without capturing them a
+   * rollback would restore the words and leave every drawing at its latest state.
+   */
+  drawings: SnapshotDrawing[];
 }
 
 /** Keep the timeline bounded — old states drop off the front. */
@@ -38,10 +51,22 @@ export interface HistorySlice {
   currentSnapshotId: Record<string, string>;
 
   /** Record the section's current content as a snapshot (no-op if unchanged). */
-  pushSnapshot: (sectionId: string, content: string, annotations?: SnapshotAnnotation[]) => void;
+  pushSnapshot: (
+    sectionId: string,
+    content: string,
+    annotations?: SnapshotAnnotation[],
+    drawings?: SnapshotDrawing[],
+  ) => void;
   /** Move the "you are here" marker (used when restoring a past state). */
   markCurrentSnapshot: (sectionId: string, snapshotId: string) => void;
   clearSectionHistory: (sectionId: string) => void;
+}
+
+function sameDrawings(a: SnapshotDrawing[], b: SnapshotDrawing[]): boolean {
+  if (a.length !== b.length) return false;
+  const key = (list: SnapshotDrawing[]) =>
+    list.map(x => `${x.id}:${x.strokes}`).sort().join('|');
+  return key(a) === key(b);
 }
 
 function samePositions(a: SnapshotAnnotation[], b: SnapshotAnnotation[]): boolean {
@@ -58,14 +83,21 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
   historyBySection: {},
   currentSnapshotId: {},
 
-  pushSnapshot: (sectionId, content, annotations = []) =>
+  pushSnapshot: (sectionId, content, annotations = [], drawings = []) =>
     set(s => {
       const list = s.historyBySection[sectionId] ?? [];
       const last = list[list.length - 1];
       // A highlight changes the section's state without touching a character of text, so
       // comparing content alone would drop the checkpoint that records it — and a later
       // restore would then have no idea the highlight existed.
-      if (last && last.content === content && samePositions(last.annotations, annotations)) return s;
+      if (
+        last &&
+        last.content === content &&
+        samePositions(last.annotations, annotations) &&
+        sameDrawings(last.drawings, drawings)
+      ) {
+        return s;
+      }
       const { chars, preview } = summarizeDoc(content);
       const snap: Snapshot = {
         id: crypto.randomUUID(),
@@ -74,6 +106,7 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
         chars,
         preview,
         annotations,
+        drawings,
       };
       const next = [...list, snap].slice(-MAX_SNAPSHOTS);
       return {

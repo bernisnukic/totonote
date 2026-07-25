@@ -5,6 +5,7 @@ import { findAdjacentAnnotations } from '../../lib/annotation-utils';
 import { Modal } from '../common/Modal';
 import { LabelAutocomplete } from '../right-sidebar/LabelAutocomplete';
 import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
+import { clickable } from '../../lib/clickable';
 
 export function TagContextMenu() {
   const contextMenu = useStore(s => s.contextMenu);
@@ -201,7 +202,7 @@ export function TagContextMenu() {
           className="context-menu"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
-          <div className="context-menu-item" onClick={() => { setShowAddTagModal(true); setContextMenu(null); }}>
+          <div className="context-menu-item" {...clickable(() => { setShowAddTagModal(true); setContextMenu(null); })}>
             Add tag to selection
           </div>
         </div>
@@ -225,11 +226,11 @@ export function TagContextMenu() {
           </div>
         )}
 
-        <div className="context-menu-item" onClick={handleRemove}>
+        <div className="context-menu-item" {...clickable(handleRemove)}>
           Remove annotation
         </div>
         {annotation && (
-          <div className="context-menu-item" onClick={openFileModal}>
+          <div className="context-menu-item" {...clickable(openFileModal)}>
             File under&hellip;
           </div>
         )}
@@ -237,13 +238,13 @@ export function TagContextMenu() {
         {selectedRange && annotation && (
           <>
             <div className="context-menu-separator" />
-            <div className="context-menu-item" onClick={handleExpandToSelection}>
+            <div className="context-menu-item" {...clickable(handleExpandToSelection)}>
               Expand to selection
             </div>
-            <div className="context-menu-item" onClick={handleShrinkToSelection}>
+            <div className="context-menu-item" {...clickable(handleShrinkToSelection)}>
               Shrink to selection
             </div>
-            <div className="context-menu-item" onClick={handleSplit}>
+            <div className="context-menu-item" {...clickable(handleSplit)}>
               Split at selection
             </div>
           </>
@@ -259,14 +260,14 @@ export function TagContextMenu() {
                   <div
                     key={adj.id}
                     className="context-menu-item"
-                    onClick={() => handleCombine(adj.id)}
+                    {...clickable(() => handleCombine(adj.id))}
                   >
                     Combine with: {adjTag?.name || 'Unknown'}
                   </div>
                 );
               })
             ) : (
-              <div className="context-menu-item" onClick={() => setShowCombineMenu(true)}>
+              <div className="context-menu-item" {...clickable(() => setShowCombineMenu(true))}>
                 Combine with adjacent...
               </div>
             )}
@@ -274,7 +275,7 @@ export function TagContextMenu() {
         )}
 
         <div className="context-menu-separator" />
-        <div className="context-menu-item" onClick={() => { setShowAddTagModal(true); setContextMenu(null); }}>
+        <div className="context-menu-item" {...clickable(() => { setShowAddTagModal(true); setContextMenu(null); })}>
           Add another tag to selection
         </div>
       </div>

@@ -12,6 +12,7 @@ function makeAnnotation(id: string, from: number, to: number): Annotation {
     note: '',
     categoryId: null,
     placementOrder: 0,
+  whenText: '',
     createdAt: '2024-01-01',
   };
 }

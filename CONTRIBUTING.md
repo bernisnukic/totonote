@@ -119,6 +119,25 @@ that clause from the generated 0002 ALTER and it was restored by hand; `migratio
 guards it. `GraphView.tsx` (toolbar ◈) draws categories/tags/filings with a hand-rolled force
 layout — no graph library.
 
+### Links, Timeline and Backup
+`[[Document]]` links are an **inline atom node** (`extensions/document-link/`), not a mark —
+one indivisible clickable thing costing exactly 1 position. `shared/doc-links.ts` finds them
+in stored JSON (main answers "what links here?" via `listBacklinks`; the renderer renders
+them). Links store `documentId`, so a rename updates every link with no rewrite; `label` is
+only the fallback for a deleted target. The `[[` picker is hand-rolled — no
+`@tiptap/suggestion` dependency — with the trigger rule isolated in `lib/link-trigger.ts`.
+
+The **timeline** reads `annotations.when_text`, free text because a world's calendar isn't
+ours. `shared/when.ts` extracts a sort key (ISO date, written-out date, or the first signed
+number) and returns null for text with no number, which groups under "Undated" rather than
+being guessed at. SQL can't order "Year 300 of the Third Age" against "1885-03-12", so
+`listTimeline()` returns unordered rows and the renderer sorts.
+
+**Backup** (`main/services/backup.ts`) is `better-sqlite3`'s online backup, not a file copy —
+measured: copying `totonote.db` alone while WAL holds recent writes yields *"no such table:
+documents"*. Restore validates first (required tables + not from a newer schema), keeps the
+replaced DB as `<db>.replaced`, clears the `-wal`/`-shm` sidecars, then relaunches.
+
 ### Editor Structure
 All sections render as one scrollable page. Each section gets its own `SectionEditor` (TipTap instance). `useSectionScroll` uses IntersectionObserver for scroll-based tab switching. Content is debounce-saved (1000ms).
 
@@ -164,10 +183,14 @@ Dark theme. CSS custom properties in `tokens.css`. Key tokens:
 13. **Two annotations over the identical range render as ONE `.annotation-highlight` span** — ProseMirror merges coinciding inline decorations, so E2E assertions counting spans must put overlapping tags on different ranges (or different sections) to observe them separately.
 14. **Databases from v1.0.4 and earlier need adopting** — they track migrations in `_migrations`, not `__drizzle_migrations`, so the migrator would re-run `0000_initial` and crash on "table already exists". `src/main/db/legacy-baseline.ts` rebuilds `categories` (its inline `UNIQUE` is an implicit autoindex that cannot be dropped) and records 0000 as applied, before `migrate()` runs.
 15. **Never give the Edit menu `role: 'undo'`/`'redo'`** — those fire the OS-native undo, which a ProseMirror editor doesn't hear, so Cmd+Z silently does nothing while typing. `menu.ts` sends `menu:undo`/`menu:redo` instead, and `AppLayout` routes them to the focused editor's history (or `execCommand` for a plain input). The same applies to any editor command you'd expect a menu role to cover.
-16. **Manual-save mode: saving a section needs the live editor, not just the store.** Annotation positions are mapped through edits and only the editor knows the current ones, so each `SectionEditor` registers a flusher in `lib/save-registry.ts`; `saveAllDirty()` calls those (content + positions). Warn-on-exit is a main↔renderer handshake: the renderer pushes `window:set-dirty`, the window `close` handler shows the dialog, and "Save" → `app:save-and-quit` → flush → `app:force-quit`.
-17. **Anything that unmounts the section editors must call `leaveDocument()` first.** A flusher only works while its editor is mounted, so tearing the editors down without flushing silently destroys unsaved work — that shipped once, via `closeDocument`. `leaveDocument()` (document-slice) flushes dirty sections *and* drops the session History for them; `closeDocument`, `openDocument` (when switching) and `setActiveWorkspace` all go through it. `deleteDocument` deliberately doesn't flush, but still clears the dirty ids and history so a deleted document can't leave the app marked unsaved. `document-slice.test.ts` guards all of this.
-18. **The renderer↔main surface is allowlisted in both directions.** `preload.ts` rejects any channel not in `IPC_CHANNELS` (invoke) or `MENU_CHANNELS` (push). `IPC_CHANNELS` is a runtime array in `shared/ipc-types.ts` kept in step with `IpcHandlerMap` by two type assertions — add a channel to one and forget the other and the build fails.
-19. **CI gates the release.** `.github/workflows/build.yml` runs lint + unit + E2E first; `build` and `release` only run for a `v*` tag and only after that job passes. Keep `npm run lint` at **zero errors** or nothing can ship (warnings are fine).
+16. **Every inline atom must be in `LEAF_NODES`** (`shared/prosemirror-text.ts`). Miss one and every highlight *after* it reads back one position short, so wiki excerpts silently show the wrong words — the same class of bug as the history-restore corruption. `doc-links.test.ts` guards it: remove `DOCUMENT_LINK_NODE` from the set and 3 tests fail.
+17. **Excerpts computed in main trail the debounced save by ≤1s.** Anything rendering an excerpt must go through `renderer/lib/excerpt-text.ts`, which falls back to the live editor. The timeline shipped without it and showed "(no text)" for anything just dated.
+18. **`window.confirm`/`alert` are banned in the renderer** — use `confirmDialog`/`alertDialog` (`components/common/ConfirmDialog.tsx`), mounted once as `ConfirmDialogHost` in `App.tsx`. E2E: the `page.once('dialog', …)` pattern no longer applies; use `acceptConfirm(page)` / `dismissConfirmIfShown(page)` from `e2e/fixtures.ts`, called *after* triggering the action.
+19. **Clickable `<div>`/`<span>` must spread `lib/clickable.ts`**, which adds `role="button"`, `tabIndex` and Enter/Space handling. A div with a bare `onClick` cannot be reached by keyboard at all.
+20. **Manual-save mode: saving a section needs the live editor, not just the store.** Annotation positions are mapped through edits and only the editor knows the current ones, so each `SectionEditor` registers a flusher in `lib/save-registry.ts`; `saveAllDirty()` calls those (content + positions). Warn-on-exit is a main↔renderer handshake: the renderer pushes `window:set-dirty`, the window `close` handler shows the dialog, and "Save" → `app:save-and-quit` → flush → `app:force-quit`.
+21. **Anything that unmounts the section editors must call `leaveDocument()` first.** A flusher only works while its editor is mounted, so tearing the editors down without flushing silently destroys unsaved work — that shipped once, via `closeDocument`. `leaveDocument()` (document-slice) flushes dirty sections *and* drops the session History for them; `closeDocument`, `openDocument` (when switching) and `setActiveWorkspace` all go through it. `deleteDocument` deliberately doesn't flush, but still clears the dirty ids and history so a deleted document can't leave the app marked unsaved. `document-slice.test.ts` guards all of this.
+22. **The renderer↔main surface is allowlisted in both directions.** `preload.ts` rejects any channel not in `IPC_CHANNELS` (invoke) or `MENU_CHANNELS` (push). `IPC_CHANNELS` is a runtime array in `shared/ipc-types.ts` kept in step with `IpcHandlerMap` by two type assertions — add a channel to one and forget the other and the build fails.
+23. **CI gates the release.** `.github/workflows/build.yml` runs lint + unit + E2E first; `build` and `release` only run for a `v*` tag and only after that job passes. Keep `npm run lint` at **zero errors** or nothing can ship (warnings are fine).
 
 ## Documentation
 

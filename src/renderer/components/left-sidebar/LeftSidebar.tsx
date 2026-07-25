@@ -7,6 +7,8 @@ import { renderSnippet } from './search-snippet';
 import type { SearchHit } from '../../../shared/domain-types';
 import { SidebarModeBar } from './SidebarModeBar';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import { confirmDialog } from '../common/ConfirmDialog';
+import { clickable } from '../../lib/clickable';
 
 /** True for anywhere the user could be typing — the editor, an input or a textarea. */
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -270,18 +272,18 @@ export function LeftSidebar() {
                   <div key={category.id} className="category-item">
                     <div
                       className="category-header"
-                      onClick={() => toggleCategory(category.id)}
+                      {...clickable(() => toggleCategory(category.id))}
                       style={{ paddingLeft: `calc(var(--space-3) + ${depth * 16}px)` }}
                     >
                       <span className={`category-expand-icon${expanded ? ' expanded' : ''}`}>▶</span>
                       <span
                         className="category-name category-name-link"
                         title="View this category's page"
-                        onClick={e => {
+                        {...clickable(e => {
                           // The row toggles expansion; the name opens the compiled page.
                           e.stopPropagation();
                           setFocusedCategory(category.id);
-                        }}
+                        })}
                       >
                         {category.name}
                       </span>
@@ -293,7 +295,7 @@ export function LeftSidebar() {
                           <div
                             key={t.id}
                             className={`tag-tree-item${searchQuery.trim() && !matchingTagIds.has(t.id) ? ' dimmed' : ''}${focusedTagId === t.id ? ' active' : ''}`}
-                            onClick={() => setFocusedTag(t.id)}
+                            {...clickable(() => setFocusedTag(t.id))}
                             onContextMenu={(e) => handleContextMenu(e, t.id)}
                             style={{ cursor: 'pointer' }}
                           >
@@ -435,7 +437,7 @@ export function LeftSidebar() {
                         title="Show this tag's highlights"
                       />
                       <span className="sidebar-filter-color" style={{ backgroundColor: t.color }} />
-                      <span style={{ cursor: 'pointer' }} onClick={() => setFocusedTag(t.id)}>{t.name}</span>
+                      <span style={{ cursor: 'pointer' }} {...clickable(() => setFocusedTag(t.id))}>{t.name}</span>
                       {renderUsageBadge(t.id)}
                     </div>
                   ))}
@@ -455,22 +457,28 @@ export function LeftSidebar() {
         >
           <div
             className="context-menu-item"
-            onClick={() => {
+            {...clickable(() => {
               setFocusedTag(contextMenu.tagId);
               setContextMenu(null);
-            }}
+            })}
           >
             View Details
           </div>
           <div className="context-menu-separator" />
           <div
             className="context-menu-item danger"
-            onClick={() => {
-              if (window.confirm('Delete this tag and all its annotations?')) {
-                deleteTag(contextMenu.tagId);
-              }
+            {...clickable(() => {
+              const tagId = contextMenu.tagId;
               setContextMenu(null);
-            }}
+              void confirmDialog({
+                title: 'Delete tag?',
+                message: 'Delete this tag and all of its highlights?',
+                confirmLabel: 'Delete',
+                destructive: true,
+              }).then(ok => {
+                if (ok) void deleteTag(tagId);
+              });
+            })}
           >
             Delete
           </div>

@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test';
-import { registerAppHooks } from './fixtures';
+import { registerAppHooks, acceptConfirm } from './fixtures';
 
 // Browse sidebar, toolbar and editing settings
 
@@ -311,7 +311,9 @@ test.describe('Toolbar', () => {
   test('sidebar toggle buttons are visible', async () => {
     // The toolbar has sidebar toggles, the graph button and settings
     const toolbarBtns = page.locator('.toolbar-group').last().locator('.toolbar-btn');
-    await expect(toolbarBtns).toHaveCount(4); // left sidebar, graph, right sidebar, settings
+    // left sidebar, graph, timeline, right sidebar, settings
+    await expect(toolbarBtns).toHaveCount(5);
+    await expect(page.locator('.toolbar-btn[aria-label="Timeline"]')).toBeVisible();
   });
 
   test('settings gear button opens settings modal', async () => {
@@ -323,12 +325,16 @@ test.describe('Toolbar', () => {
     await expect(page.locator('.modal')).toBeVisible();
     await expect(page.locator('.modal-title')).toHaveText('Settings');
 
-    // Should contain Appearance section with theme cards
+    // Appearance: four themes plus the option to follow the OS.
     await expect(page.locator('.settings-section-title').first()).toHaveText('Appearance');
-    await expect(page.locator('.theme-card')).toHaveCount(4);
+    await expect(page.locator('.theme-card')).toHaveCount(5);
+    await expect(page.locator('.theme-card', { hasText: 'System' })).toBeVisible();
 
     // Should contain Keyboard Shortcuts section
-    await expect(page.locator('.modal')).toContainText('Keyboard Shortcuts');
+    // The sections that hold the app's own behaviour, in the order they appear.
+    for (const section of ['Startup', 'Editing', 'History', 'Storage', 'Keyboard Shortcuts']) {
+      await expect(page.locator('.modal')).toContainText(section);
+    }
     await expect(page.locator('.shortcut-row')).toHaveCount(12); // 12 default shortcuts
   });
 
@@ -555,8 +561,8 @@ test.describe('Sort precedence and section deletion', () => {
     await expect(goldRow.locator('.tag-usage-badge')).toHaveText('1');
 
     // Delete S2 (accept the confirmation). Its annotation goes with it.
-    page.once('dialog', d => d.accept());
     await page.locator('.section-tab', { hasText: 'S2' }).locator('.tab-close').click();
+    await acceptConfirm(page);
 
     // The count must fall to zero — the badge disappears — rather than lingering stale.
     await expect(goldRow.locator('.tag-usage-badge')).toHaveCount(0);

@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test';
-import { registerAppHooks } from './fixtures';
+import { registerAppHooks, dismissConfirmIfShown } from './fixtures';
 
 // The drawing layer: inserting a surface, drawing on it, erasing, undo, and persistence.
 
@@ -297,5 +297,37 @@ test.describe('Drawings on wiki pages', () => {
     // Named rather than shown as an empty "…", and the strokes actually render.
     await expect(info.locator('.placement-excerpt')).toContainText('Drawing');
     await expect(info.locator('.placement-thumb--drawing canvas')).toBeVisible();
+  });
+});
+
+test.describe('Drawings and History', () => {
+  // Regression: strokes live in their own table, so a checkpoint of the section's text
+  // used to miss them — rolling back restored the words and left the drawing untouched.
+  test('rolling a section back also rolls back its drawing', async () => {
+    await docWithSection('Drawing History');
+    await insertDrawing();
+
+    await drawStroke([[0.1, 0.5], [0.5, 0.5]]);
+    await expect.poll(async () => (await storedStrokes()).length, { timeout: 10000 }).toBe(1);
+    await page.waitForTimeout(1400); // a checkpoint with exactly one stroke
+
+    await drawStroke([[0.1, 0.8], [0.5, 0.8]]);
+    await drawStroke([[0.1, 0.2], [0.5, 0.2]]);
+    await expect.poll(async () => (await storedStrokes()).length, { timeout: 10000 }).toBe(3);
+    await page.waitForTimeout(1400);
+
+    // Go back to the checkpoint that had one stroke.
+    await page.locator('.drawing-node .btn', { hasText: 'Done' }).click();
+    await page.locator('.sidebar-tab', { hasText: 'History' }).click();
+    const items = page.locator('.history-item');
+    const count = await items.count();
+    expect(count).toBeGreaterThan(1);
+
+    await items.nth(count - 1).click(); // the oldest checkpoint
+    await dismissConfirmIfShown(page);
+    await page.waitForTimeout(1500);
+
+    // The drawing came back with the text, rather than staying at its latest state.
+    await expect.poll(async () => (await storedStrokes()).length, { timeout: 10000 }).toBeLessThan(3);
   });
 });
