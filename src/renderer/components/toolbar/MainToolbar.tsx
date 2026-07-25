@@ -1,19 +1,18 @@
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import { useStore } from '../../stores';
 import { getActiveEditor } from '../../lib/editor-registry';
-import { SettingsModal } from '../common/SettingsModal';
 import { ToolbarIcon, type ToolbarIconName } from './toolbar-icons';
 import { invoke } from '../../lib/ipc-client';
 import { mediaIdFromUrl } from '../../../shared/media-refs';
 
 export function MainToolbar() {
-  const [showSettings, setShowSettings] = useState(false);
   const closeDocument = useStore(s => s.closeDocument);
   const activeDocument = useStore(s => s.activeDocument);
   const activeSectionId = useStore(s => s.activeSectionId);
   const toggleLeftSidebar = useStore(s => s.toggleLeftSidebar);
   const toggleRightSidebar = useStore(s => s.toggleRightSidebar);
   const setGraphOpen = useStore(s => s.setGraphOpen);
+  const setSettingsOpen = useStore(s => s.setSettingsOpen);
 
   const editor = getActiveEditor(activeSectionId);
 
@@ -130,12 +129,11 @@ export function MainToolbar() {
         <button className="toolbar-btn" onClick={toggleRightSidebar} data-tip="Toggle right sidebar" aria-label="Toggle right sidebar">
           &#9776;
         </button>
-        <button className="toolbar-btn" onClick={() => setShowSettings(true)} data-tip="Settings" aria-label="Settings">
+        <button className="toolbar-btn" onClick={() => setSettingsOpen(true)} data-tip="Settings" aria-label="Settings">
           &#9881;
         </button>
       </div>
 
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </div>
   );
 }

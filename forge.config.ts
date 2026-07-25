@@ -37,6 +37,9 @@ const config: ForgeConfig = {
   packagerConfig: {
     // Without this, packager falls back to com.electron.<name>.
     appBundleId: 'com.bernisnukic.totonote',
+    // Base path only — packager appends .icns on macOS and .ico on Windows. Generated
+    // from the splash animation by assets/generate-icon.py so the two can't drift.
+    icon: './assets/icon',
     asar: {
       // Native .node files can't be loaded from inside an asar — unpack them.
       unpack: '**/*.node',
@@ -123,10 +126,10 @@ const config: ForgeConfig = {
     },
   },
   makers: [
-    new MakerSquirrel({}),
+    new MakerSquirrel({ setupIcon: './assets/icon.ico' }),
     new MakerZIP({}, ['darwin']),
-    new MakerRpm({}),
-    new MakerDeb({}),
+    new MakerRpm({ options: { icon: './assets/icon.png' } }),
+    new MakerDeb({ options: { icon: './assets/icon.png' } }),
   ],
   plugins: [
     new AutoUnpackNativesPlugin({}),

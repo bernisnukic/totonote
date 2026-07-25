@@ -36,6 +36,14 @@ export function buildAppMenu(): void {
             submenu: [
               { role: 'about' },
               { type: 'separator' },
+              // macOS users look for preferences here first, under ⌘, — the toolbar gear
+              // is easy to miss and doesn't exist on the Documents screen at all.
+              {
+                label: 'Settings…',
+                accelerator: 'Cmd+,',
+                click: () => sendToFocused('menu:open-settings'),
+              },
+              { type: 'separator' },
               { role: 'services' },
               { type: 'separator' },
               { role: 'hide' },

@@ -1,5 +1,17 @@
 # What's New
 
+## 1.14.0
+
+**A real app icon.** TotoNote now has its own icon — the TOTO NOTE mark from the opening
+animation — instead of the generic Electron one, in the Dock, the app switcher and your
+Applications folder.
+
+**Settings in the menu bar.** On macOS: **TotoNote → Settings…**, or **⌘,**. It works from
+the Documents screen too, where there's no toolbar gear to click.
+
+> If the menu bar says "Electron" rather than "TotoNote", you're running a development
+> build — installed builds show the right name.
+
 ## 1.13.0
 
 **Fixed: rolling back History could put wrong text on your wiki pages.** Restoring a

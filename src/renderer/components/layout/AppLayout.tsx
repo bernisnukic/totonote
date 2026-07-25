@@ -23,6 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const resetSidebarWidths = useStore(s => s.resetSidebarWidths);
   const activeDocumentId = useStore(s => s.activeDocumentId);
   const saveAllDirty = useStore(s => s.saveAllDirty);
+  const setSettingsOpen = useStore(s => s.setSettingsOpen);
   const autoSaveEnabled = useStore(s => s.autoSaveEnabled);
   const dirtyCount = useStore(s => s.dirtySectionIds.length);
 
@@ -44,6 +45,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   useEffect(() => {
     return window.api.onMenu('menu:reset-layout', () => resetSidebarWidths());
   }, [resetSidebarWidths]);
+
+  // TotoNote > Settings… (⌘,). Handled here rather than in the toolbar so it works on the
+  // Documents screen too, where there is no toolbar at all.
+  useEffect(() => {
+    return window.api.onMenu('menu:open-settings', () => setSettingsOpen(true));
+  }, [setSettingsOpen]);
 
   // Edit > Undo/Redo (Cmd+Z / Shift+Cmd+Z). These come through the menu rather than the
   // OS-native undo, which the rich-text editor can't hear. Route to whatever has focus:

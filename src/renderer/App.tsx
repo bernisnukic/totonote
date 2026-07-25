@@ -6,6 +6,7 @@ import { EditorArea } from './components/editor/EditorArea';
 import { TagContextMenu } from './components/editor/TagContextMenu';
 import { GraphView } from './components/graph/GraphView';
 import { TooltipHost } from './components/common/TooltipHost';
+import { SettingsModal } from './components/common/SettingsModal';
 import { UndoToast } from './components/common/UndoToast';
 import { HelpViewer } from './components/help/HelpViewer';
 import { WikiView } from './components/right-sidebar/WikiView';
@@ -20,6 +21,8 @@ const LAST_SEEN_VERSION_KEY = 'last-seen-version';
 export function App() {
   const activeDocumentId = useStore(s => s.activeDocumentId);
   const graphOpen = useStore(s => s.graphOpen);
+  const settingsOpen = useStore(s => s.settingsOpen);
+  const setSettingsOpen = useStore(s => s.setSettingsOpen);
   const loadWorkspaces = useStore(s => s.loadWorkspaces);
   const loadDocuments = useStore(s => s.loadDocuments);
   const loadPreferences = useStore(s => s.loadPreferences);
@@ -92,6 +95,7 @@ export function App() {
       <UpdateBanner />
       <TooltipHost />
       <UndoToast />
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <HelpViewer />
       <WikiView />
     </>

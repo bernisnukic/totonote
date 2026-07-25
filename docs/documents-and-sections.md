@@ -189,8 +189,8 @@ The gear button in the toolbar — four themes, an **Auto-save** toggle (see
 
 ![The Settings box showing the four themes and the auto-save toggle](screenshots/23-settings.png)
 
-> Settings can only be reached from inside a document — there's no gear on the Documents
-> screen.
+On macOS it's also under **TotoNote → Settings…** (**⌘,**), which works anywhere — including
+the Documents screen, where there's no toolbar to click.
 
 See [Keyboard shortcuts](keyboard-shortcuts.md) for what actually works, and an important
 caveat about the rebinding list.

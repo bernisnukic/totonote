@@ -59,6 +59,7 @@ editor, where they previously did nothing.
 
 | Key | What it does |
 |-----|--------------|
+| `⌘,` (macOS) | Opens Settings, from anywhere in the app |
 | `Escape` | Closes the open dialog, or a right-click menu |
 | `↑` / `↓` | Moves through tags in the left sidebar, once you've clicked one |
 
