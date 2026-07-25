@@ -18,7 +18,13 @@ categories open up on their own and anything with no match is hidden.
 
 **Text inside pictures counts too.** A label on a map or a name on a character sheet is
 findable even though it only exists as pixels — TotoNote reads new images in the background
-shortly after you add them.
+shortly after you add them. A picture that's a few degrees off level is straightened first,
+so a crooked scan still reads.
+
+> It reads printed and lettered text well, including stylised and handwriting-style
+> lettering. Words it isn't confident about are left out rather than guessed at, so a
+> picture may contribute only some of its text — the clear labels rather than the fine
+> print.
 
 If a *category* name matches, all of its tags are shown, with the ones that didn't match
 themselves dimmed.

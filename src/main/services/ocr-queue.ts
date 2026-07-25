@@ -10,13 +10,19 @@ import { reindexSectionsUsingMedia } from '../db/repositories/search-repo';
  * recognition is CPU-bound: running several at once would make the app stutter for no gain.
  */
 
-const queue: string[] = [];
+interface QueuedImage {
+  mediaId: string;
+  /** A straightened copy to read instead of the stored bytes, when one was prepared. */
+  readable?: Buffer;
+}
+
+const queue: QueuedImage[] = [];
 let running = false;
 
 /** Queue one image. Safe to call for an id already queued or already done. */
-export function queueImageForOcr(mediaId: string): void {
-  if (queue.includes(mediaId)) return;
-  queue.push(mediaId);
+export function queueImageForOcr(mediaId: string, readable?: Buffer): void {
+  if (queue.some(item => item.mediaId === mediaId)) return;
+  queue.push({ mediaId, readable });
   void drain();
 }
 
@@ -37,11 +43,13 @@ async function drain(): Promise<void> {
   running = true;
   try {
     while (queue.length > 0) {
-      const id = queue.shift()!;
+      const { mediaId: id, readable } = queue.shift()!;
       try {
-        const found = getMediaBytes(id);
-        if (!found) continue;
-        const text = await readTextFromImage(found.data);
+        // Prefer the straightened copy; fall back to the stored image for the backlog,
+        // where no copy was ever prepared.
+        const bytes = readable ?? getMediaBytes(id)?.data;
+        if (!bytes) continue;
+        const text = await readTextFromImage(bytes);
         setMediaOcrText(id, text);
         // The sections holding this picture now have more to match on.
         if (text) reindexSectionsUsingMedia(id);

@@ -292,6 +292,11 @@ export interface CreateMediaInput {
   width: number;
   height: number;
   data: Uint8Array;
+  /**
+   * A straightened, greyscale copy used only to read the text out of the picture. Never
+   * stored — the user's image is kept exactly as they gave it.
+   */
+  readableData?: Uint8Array;
 }
 
 /** A stored drawing: the stroke JSON plus what it is drawn over. */

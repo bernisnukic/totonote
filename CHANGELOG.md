@@ -1,5 +1,18 @@
 # What's New
 
+## 1.15.1
+
+**Better reading of text in pictures.** Two fixes to what shipped in 1.15.0:
+
+- **Crooked pictures are straightened first.** A scan or photo that sits a few degrees off
+  level used to come out as nonsense — "Frozen Harbour" read as "grozel Haroou!". The copy
+  used for reading is now levelled first. Your picture itself is untouched.
+- **Guesses are thrown away instead of being indexed.** Where it couldn't really read
+  something, it was putting its best guess into the search index, where it could never
+  match anything and only got in the way. Now only words it's actually confident about are
+  kept — and a picture where it reads the big labels but not the small print still
+  contributes the labels.
+
 ## 1.15.0
 
 **Search everything you've written.** The search box now looks through your actual writing,

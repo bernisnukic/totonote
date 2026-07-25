@@ -115,7 +115,9 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('media:create', (_, args: CreateMediaInput) => {
     const meta = mediaRepo.createMedia(args);
     // Not awaited: the picture should appear instantly and become searchable a moment later.
-    queueImageForOcr(meta.id);
+    // The straightened copy, when there is one, is read instead of the stored original —
+    // it is never written to the database.
+    queueImageForOcr(meta.id, args.readableData ? Buffer.from(args.readableData) : undefined);
     return meta;
   });
   ipcMain.handle('media:get-meta', (_, args: { id: string }) => mediaRepo.getMediaMeta(args.id));

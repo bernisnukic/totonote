@@ -1,4 +1,5 @@
 import { invoke } from './ipc-client';
+import { estimateSkew, needsCorrection, toGray } from './deskew';
 import { mediaUrl } from '../../shared/media-refs';
 import type { MediaMeta } from '../../shared/domain-types';
 
@@ -50,6 +51,56 @@ export function shouldRecompress(byteSize: number, scaled: boolean): boolean {
   return scaled || byteSize > RECOMPRESS_OVER_BYTES;
 }
 
+/** Longest edge of the copy sent for reading — enough detail, far quicker than full size. */
+const OCR_MAX_DIMENSION = 1600;
+
+/**
+ * A copy of the picture prepared for reading its text: greyscale, and straightened if it
+ * is noticeably tilted.
+ *
+ * The *stored* picture is never touched — this is a throwaway variant. Tesseract assumes
+ * roughly horizontal lines, and a modest tilt is the difference between reading a map
+ * label and producing nonsense, so it is worth straightening before it is read.
+ *
+ * Returns null when nothing needed doing, so the caller can just use the original.
+ */
+export async function prepareForReading(bitmap: ImageBitmap): Promise<Uint8Array | null> {
+  const scale = Math.min(1, OCR_MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return null;
+  context.drawImage(bitmap, 0, 0, width, height);
+
+  const gray = toGray(context.getImageData(0, 0, width, height).data, width, height);
+  const angle = estimateSkew(gray);
+  if (!needsCorrection(angle)) return null;
+
+  // Rotate the other way to bring the text level, on a canvas big enough that the corners
+  // aren't clipped off — a clipped label is no more readable than a tilted one.
+  const radians = (-angle * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(radians));
+  const sin = Math.abs(Math.sin(radians));
+  const rotated = document.createElement('canvas');
+  rotated.width = Math.ceil(width * cos + height * sin);
+  rotated.height = Math.ceil(width * sin + height * cos);
+  const rotatedContext = rotated.getContext('2d');
+  if (!rotatedContext) return null;
+  // White, so the new corners read as paper rather than ink.
+  rotatedContext.fillStyle = '#ffffff';
+  rotatedContext.fillRect(0, 0, rotated.width, rotated.height);
+  rotatedContext.translate(rotated.width / 2, rotated.height / 2);
+  rotatedContext.rotate(radians);
+  rotatedContext.drawImage(canvas, -width / 2, -height / 2);
+
+  const blob = await new Promise<Blob | null>(resolve => rotated.toBlob(resolve, 'image/png'));
+  return blob ? new Uint8Array(await blob.arrayBuffer()) : null;
+}
+
 /**
  * Decode, downscale if needed, store, and return the metadata plus the url to put in the
  * document. Animated GIFs are stored untouched — drawing one to a canvas would flatten it
@@ -84,9 +135,24 @@ export async function importImageFile(file: File): Promise<{ meta: MediaMeta; ur
     height = target.height;
   }
 
+  // Prepared before the bitmap is released; failing here must not stop the import, since
+  // the picture is still perfectly usable without its text being read.
+  let readable: Uint8Array | null = null;
+  try {
+    readable = await prepareForReading(bitmap);
+  } catch (err) {
+    console.warn('[image import] could not prepare for reading:', err);
+  }
+
   bitmap.close();
 
-  const meta = await invoke('media:create', { mimeType, width, height, data: bytes });
+  const meta = await invoke('media:create', {
+    mimeType,
+    width,
+    height,
+    data: bytes,
+    readableData: readable ?? undefined,
+  });
   return { meta, url: mediaUrl(meta.id) };
 }
 
