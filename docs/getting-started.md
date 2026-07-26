@@ -39,7 +39,8 @@ eras, chapters, characters, whatever suits your world.
 Click the **`+`** at the right end of the tab bar and fill in:
 
 - **Title** — required, e.g. `Ancient Age`.
-- **Abbreviation** — optional, up to 5 characters. This is what shows on the section's tab
+- **Abbreviation** — optional, up to 5 characters. Used on the section's tab once there are
+  more than five sections; below that, tabs show their full title
   when it isn't the active one.
 
 ![The New Section box](screenshots/03-new-section.png)

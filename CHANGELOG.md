@@ -1,5 +1,50 @@
 # What's New
 
+## 1.17.0
+
+**Deleting highlighted text asks first, and cleans up after itself.** A highlight whose words
+you deleted used to stay in the database with nothing to point at, and turned up on every
+compiled page as a bare “…”. Now you're told how many highlights an edit would destroy
+before it happens, and empty leftovers are never drawn.
+
+**Tag pages are reachable from where you are.** Double-click a tag in the **Info** tab to
+open its page, or click the tag or category name on a highlight's popover. Previously you had
+to leave for the Search sidebar and find the tag again.
+
+**Filing offers the categories that make sense.** When you file an excerpt, the list starts
+with the tag's own category and whatever sits under it, with **Show all categories** if you
+need somewhere else. If narrowing would leave a single dead-end choice, you get the full list.
+
+**Choose your tag, then where it's filed.** Picking a tag used to create the highlight
+immediately, leaving no moment to also say where it belonged. There's now an **Add** button,
+so you can do both in one go.
+
+**Right-click menus stay on screen.** Near the bottom of the window they open upwards
+instead of being cut off.
+
+**Combining highlights is clearer.** Two neighbours with the same tag showed two identical
+menu entries; they now say which side they're on and quote their own words. Combining across
+two different tags warns you first, because the other tag is replaced and undo won't bring
+it back.
+
+**Line spacing.** **Settings → Editing** — Tight, Normal, Relaxed or Loose.
+
+**The user guide works properly.**
+
+- The area to the right of the text scrolls now, instead of ignoring the wheel.
+- A search result takes you to the words, not just the top of the page.
+- **⌘F** / **Ctrl+F** focuses the search box — in the guide, or the sidebar elsewhere.
+- Click a screenshot to see it full size.
+- A few lines that read like ad copy have been rewritten.
+
+**Smaller things**
+
+- Section tabs keep their titles until there are more than five, like browser tabs. Every
+  other tab used to shrink to a three-letter code, which put the × somewhere easy to misclick.
+- **Escape** in a note or date editor closes just that editor, rather than the whole page.
+- The drawing tools (pen, highlighter, eraser, undo/redo) are bigger.
+- New FAQ entry for exported `.md` files opening in the wrong application.
+
 ## 1.16.4
 
 **Rolling back History always asks first.** It only warned when highlights were about to be

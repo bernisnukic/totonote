@@ -35,8 +35,8 @@ Click the **`+`** at the right end of the tab bar.
 ![The New Section box, with Title and Abbreviation fields](screenshots/03-new-section.png)
 
 - **Title** — required, e.g. `Ancient Age`.
-- **Abbreviation** — optional, max 5 characters. This is what shows on the tab when that
-  section isn't the one you're looking at.
+- **Abbreviation** — optional, max 5 characters. Used on the tab once a document has more
+  than five sections and the full titles no longer fit.
 
 Leave the abbreviation blank and it gets made up from the title: `Ancient` → `ANC`,
 `Ancient Age` → `AA`.
@@ -49,10 +49,11 @@ Sections can be renamed the same way, in the **Arrange** tab.
 
 ## The tab bar
 
-![The tab bar, showing the active tab with its full title and the others abbreviated](screenshots/05-section-tabs.png)
+![The tab bar](screenshots/05-section-tabs.png)
 
-- The section you're currently in shows its **full title**.
-- All the others show their **abbreviation**.
+- Every tab shows its **full title**, so you can see at a glance what's in the document.
+- Past **five sections** the ones you aren't in shrink to their **abbreviation**, the way
+  browser tabs do, so they all still fit.
 - **`+`** adds a section.
 - Hover a tab and a small **`×`** appears to delete that section. It asks you to confirm
   first (a section can hold a lot of writing), takes that section's highlights with it, and

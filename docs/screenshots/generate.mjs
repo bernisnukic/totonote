@@ -311,8 +311,8 @@ await shot('05-section-tabs', {
   clip: '.tab-bar',
   pad: 10,
   marks: [
-    { selector: '.section-tab', nth: 0, label: 'Active tab — full title', place: 'below' },
-    { selector: '.section-tab', nth: 1, label: 'Others show the abbreviation', place: 'below' },
+    { selector: '.section-tab', nth: 0, label: 'The section you are in', place: 'below' },
+    { selector: '.section-tab', nth: 1, label: 'Click to jump to a section', place: 'below' },
     { selector: '.tab-add', label: 'Add a section', place: 'left' },
   ],
 });
@@ -571,7 +571,7 @@ await shot('31-images', {
 // same path a user takes, and the moment the toolbar offers "Draw on this image".
 // Make CHARACTERS the active section first: the toolbar reads the *active* section's
 // editor, so pasting into a different one leaves it offering a blank drawing instead.
-await page.locator('.section-tab', { hasText: 'CHR' }).click();
+await page.locator('.section-tab', { hasText: 'Characters' }).click();
 await page.waitForTimeout(800);
 await page.locator('.tiptap').nth(2).click();
 await page.waitForTimeout(300);
@@ -625,7 +625,7 @@ await page.evaluate(() => {
 // (The drawing stays in edit mode across the switch, so the tools are still showing.)
 await page.locator('.tiptap').nth(0).click();
 await page.waitForTimeout(400);
-await page.locator('.section-tab', { hasText: 'CHR' }).click();
+await page.locator('.section-tab', { hasText: 'Characters' }).click();
 await page.mouse.move(20, 20);
 await page.waitForTimeout(900);
 await shot('32-drawing', {
