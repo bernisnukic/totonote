@@ -6,6 +6,9 @@ import { Modal } from '../common/Modal';
 import { LabelAutocomplete } from '../right-sidebar/LabelAutocomplete';
 import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
 import { clickable } from '../../lib/clickable';
+import { useMenuPosition } from '../../hooks/useMenuPosition';
+import { getEditor } from '../../lib/editor-registry';
+import { confirmDialog } from '../common/ConfirmDialog';
 
 export function TagContextMenu() {
   const contextMenu = useStore(s => s.contextMenu);
@@ -21,6 +24,8 @@ export function TagContextMenu() {
   const loadAnnotations = useStore(s => s.loadAnnotations);
   const categories = useStore(s => s.categories);
   const ref = useClickOutside<HTMLDivElement>(() => setContextMenu(null));
+  // Anchored at the pointer, but flipped up or left when that would run off the window.
+  const placement = useMenuPosition(ref, contextMenu?.x ?? 0, contextMenu?.y ?? 0);
   const [showAddTagModal, setShowAddTagModal] = useState(false);
   const [showCombineMenu, setShowCombineMenu] = useState(false);
   // File-under modal state, captured when the menu item is clicked — the menu (and its
@@ -175,9 +180,38 @@ export function TagContextMenu() {
     closeMenu();
   };
 
-  const handleCombine = (adjacentId: string) => {
+  /** The words a neighbouring highlight covers, for telling two of them apart. */
+  const adjacentText = (adj: { sectionId: string; fromPos: number; toPos: number }): string => {
+    const editor = getEditor(adj.sectionId);
+    if (!editor) return '';
+    try {
+      const text = editor.state.doc.textBetween(adj.fromPos, adj.toPos, ' ').trim();
+      return text.length > 28 ? `${text.slice(0, 28)}…` : text;
+    } catch {
+      return '';
+    }
+  };
+
+  const handleCombine = async (adjacentId: string) => {
     const adjacent = annotations.find(a => a.id === adjacentId);
     if (!annotation || !adjacent) return;
+
+    // Combining across two different tags silently retags the neighbour's words. It is
+    // in the guide, but nobody reads the guide mid-edit — and undo does not put the tag
+    // back, because tagging is not part of the document's own history.
+    if (adjacent.tagId !== annotation.tagId) {
+      const mine = tags.find(t => t.id === annotation.tagId)?.name ?? 'this tag';
+      const theirs = tags.find(t => t.id === adjacent.tagId)?.name ?? 'the other tag';
+      const ok = await confirmDialog({
+        title: 'Combine highlights with different tags?',
+        message: `The text tagged ${theirs} becomes part of this ${mine} highlight.`,
+        detail: `It stops being tagged ${theirs}, and undo will not put that back.`,
+        confirmLabel: `Combine as ${mine}`,
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+
     // Merge: extend current annotation to cover adjacent, then delete adjacent
     const newFrom = Math.min(annotation.fromPos, adjacent.fromPos);
     const newTo = Math.max(annotation.toPos, adjacent.toPos);
@@ -200,7 +234,7 @@ export function TagContextMenu() {
         <div
           ref={ref}
           className="context-menu"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
+          style={placement}
         >
           <div className="context-menu-item" {...clickable(() => { setShowAddTagModal(true); setContextMenu(null); })}>
             Add tag to selection
@@ -217,7 +251,7 @@ export function TagContextMenu() {
       <div
         ref={ref}
         className="context-menu"
-        style={{ left: contextMenu.x, top: contextMenu.y }}
+        style={placement}
       >
         {tag && (
           <div className="context-menu-header">
@@ -256,13 +290,21 @@ export function TagContextMenu() {
             {showCombineMenu ? (
               adjacentAnnotations.map(adj => {
                 const adjTag = tags.find(t => t.id === adj.tagId);
+                // Two neighbours carrying the same tag produced two identical rows, with
+                // no way to tell which was which. Say which side, and show its words.
+                const side = annotation && adj.fromPos < annotation.fromPos ? 'before' : 'after';
                 return (
                   <div
                     key={adj.id}
-                    className="context-menu-item"
-                    {...clickable(() => handleCombine(adj.id))}
+                    className="context-menu-item context-menu-item--combine"
+                    {...clickable(() => void handleCombine(adj.id))}
                   >
-                    Combine with: {adjTag?.name || 'Unknown'}
+                    <span>
+                      Combine with {adjTag?.name || 'Unknown'} ({side})
+                    </span>
+                    {adjacentText(adj) && (
+                      <span className="context-menu-item__hint">“{adjacentText(adj)}”</span>
+                    )}
                   </div>
                 );
               })

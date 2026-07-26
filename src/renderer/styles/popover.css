@@ -113,3 +113,21 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
+
+/* A "Combine with" row carries the neighbour's own words, so two rows with the same tag
+   name can be told apart. */
+.context-menu-item--combine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.context-menu-item__hint {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

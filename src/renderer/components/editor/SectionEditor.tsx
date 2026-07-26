@@ -17,7 +17,7 @@ import { readDrawings } from '../../lib/drawing-registry';
 import { drawingsInRange } from '../../../shared/prosemirror-text';
 import type { Section, Annotation } from '../../../shared/domain-types';
 import { invoke } from '../../lib/ipc-client';
-import { alertDialog } from '../common/ConfirmDialog';
+import { alertDialog, confirmDialog } from '../common/ConfirmDialog';
 
 interface SectionEditorProps {
   section: Section;
@@ -37,6 +37,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const setHighlightsVisible = useStore(s => s.setHighlightsVisible);
   const setContextMenu = useStore(s => s.setContextMenu);
   const batchUpdatePositions = useStore(s => s.batchUpdatePositions);
+  const deleteAnnotation = useStore(s => s.deleteAnnotation);
   const markSectionDirty = useStore(s => s.markSectionDirty);
   const pushSnapshot = useStore(s => s.pushSnapshot);
   const historyIntervalMs = useStore(s => s.historyIntervalMs);
@@ -71,9 +72,37 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
           return u ? { ...a, fromPos: u.fromPos, toPos: u.toPos } : a;
         });
       }
+
+      // Deleting the text a highlight covered collapses its decoration, and ProseMirror
+      // drops it. Only *positions* were written back, so the row stayed in the database
+      // with nothing left to point at — showing up on every compiled page as "…". Clear
+      // those out here, which is the one place that knows a decoration has gone.
+      const surviving = new Set<string>();
+      for (const d of decos) {
+        const id = (d.spec as { annotationId?: string } | undefined)?.annotationId;
+        if (id) surviving.add(id);
+      }
+      const orphaned = annotationsRef.current.filter(a => !surviving.has(a.id));
+      if (orphaned.length > 0) {
+        annotationsRef.current = annotationsRef.current.filter(a => surviving.has(a.id));
+        for (const a of orphaned) void deleteAnnotation(a.id);
+      }
     }
     return promise;
-  }, [saveContent, batchUpdatePositions]);
+  }, [saveContent, batchUpdatePositions, deleteAnnotation]);
+
+  /** Ask before an edit throws away highlights, and say how many. */
+  const confirmHighlightLoss = (count: number) =>
+    confirmDialog({
+      title: count === 1 ? 'Delete this highlight too?' : `Delete ${count} highlights too?`,
+      message:
+        count === 1
+          ? 'The text you are deleting is highlighted. The highlight goes with it.'
+          : `The text you are deleting carries ${count} highlights. They go with it.`,
+      detail: 'Undo brings the words back, but not the tagging.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
 
   const debouncedSave = useDebounce((sectionId: string, content: string) => {
     persistSection(sectionId, content);
@@ -182,7 +211,24 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       onFocus(section.id);
     },
     editorProps: {
-      handleKeyDown: (_view, event) => {
+      handleKeyDown: (view, event) => {
+        // Deleting a selection that carries highlights destroys them for good — the
+        // decoration collapses, the row is cleaned up, and undo brings the words back but
+        // not the tagging. Worth one question first.
+        if ((event.key === 'Backspace' || event.key === 'Delete') && !view.state.selection.empty) {
+          const { from, to } = view.state.selection;
+          const decoSet = annotationPluginKey.getState(view.state);
+          const covered = (decoSet?.find(from, to) ?? []).filter(
+            (d: { spec?: { annotationId?: string } }) => d.spec?.annotationId,
+          );
+          if (covered.length > 0) {
+            event.preventDefault();
+            void confirmHighlightLoss(covered.length).then(ok => {
+              if (ok) editor?.chain().focus().deleteSelection().run();
+            });
+            return true;
+          }
+        }
         if (event.key === 'Escape') {
           setHighlightsVisible(false);
           setTimeout(() => setHighlightsVisible(true), 0);

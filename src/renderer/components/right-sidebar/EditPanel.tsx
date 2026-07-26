@@ -11,6 +11,7 @@ import { parseRuleTemplate, countRuleNodes } from '../../../shared/category-rule
 import { categoryImpact, describeCategoryDeletion } from '../../lib/category-impact';
 import { confirmDialog } from '../common/ConfirmDialog';
 import { clickable } from '../../lib/clickable';
+import { useMenuPosition } from '../../hooks/useMenuPosition';
 
 export function EditPanel() {
   const categories = useStore(s => s.categories);
@@ -52,6 +53,7 @@ export function EditPanel() {
   const [status, setStatus] = useState('');
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; categoryId: string } | null>(null);
   const contextMenuRef = useClickOutside<HTMLDivElement>(() => setContextMenu(null));
+  const categoryMenuPlacement = useMenuPosition(contextMenuRef, contextMenu?.x ?? 0, contextMenu?.y ?? 0);
 
   const flatCategories = useMemo(() => flattenCategoryTree(categories), [categories]);
 
@@ -367,7 +369,7 @@ export function EditPanel() {
       )}
 
       {contextMenu && contextCategory && (
-        <div ref={contextMenuRef} className="context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
+        <div ref={contextMenuRef} className="context-menu" style={categoryMenuPlacement}>
           <div className="context-menu-header">{contextCategory.name}</div>
           <div
             className="context-menu-item"

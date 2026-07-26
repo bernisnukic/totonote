@@ -9,6 +9,7 @@ import { SidebarModeBar } from './SidebarModeBar';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { confirmDialog } from '../common/ConfirmDialog';
 import { clickable } from '../../lib/clickable';
+import { useMenuPosition } from '../../hooks/useMenuPosition';
 
 /** True for anywhere the user could be typing — the editor, an input or a textarea. */
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -93,6 +94,7 @@ export function LeftSidebar() {
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tagId: string } | null>(null);
   const contextMenuRef = useClickOutside<HTMLDivElement>(() => setContextMenu(null));
+  const tagMenuPlacement = useMenuPosition(contextMenuRef, contextMenu?.x ?? 0, contextMenu?.y ?? 0);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, tagId: string) => {
     e.preventDefault();
@@ -453,7 +455,7 @@ export function LeftSidebar() {
         <div
           ref={contextMenuRef}
           className="context-menu"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
+          style={tagMenuPlacement}
         >
           <div
             className="context-menu-item"
