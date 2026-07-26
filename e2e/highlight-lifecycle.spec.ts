@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { registerAppHooks, acceptConfirm } from './fixtures';
+import { registerAppHooks, acceptConfirm, declineConfirm } from './fixtures';
 
 /**
  * What happens to a highlight when the text under it goes away.
@@ -33,7 +33,10 @@ async function tagAll(name: string) {
   await modal.locator('.autocomplete input.input').fill(name);
   await modal.locator('.autocomplete-item-create').click();
   await modal.locator('.btn-primary', { hasText: 'Create' }).click();
-  await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 20000 });
+  // The editor decides what a deletion would destroy from the annotations it holds, which
+  // arrive a beat after the decoration is drawn. Under full-suite load that gap is real.
+  await expect(page.locator('.right-sidebar')).toContainText(name, { timeout: 20000 });
 }
 
 test.describe('Deleting highlighted text', () => {
@@ -77,7 +80,7 @@ test.describe('Deleting highlighted text', () => {
     await editor.click();
     await page.keyboard.press('ControlOrMeta+A');
     await page.keyboard.press('Backspace');
-    await page.locator('.modal-footer .btn-secondary', { hasText: 'Cancel' }).click();
+    await declineConfirm(page);
 
     await expect(editor).toContainText('Atlantis');
     await expect(page.locator('.annotation-highlight')).toBeVisible();

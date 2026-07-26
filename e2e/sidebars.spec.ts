@@ -254,6 +254,9 @@ test.describe('Sidebar UX', () => {
     await editor2.click();
     await editor2.pressSequentially('A lair beneath the mountain', { delay: 15 });
     await expect(editor2).toContainText('A lair beneath the mountain');
+    // Select-all goes to whichever editor holds the caret, so make sure it is this one —
+    // under full-suite load the click and the keystroke could otherwise race.
+    await expect(editor2).toBeFocused();
     await page.keyboard.press('ControlOrMeta+A');
     // Wait for the floating toolbar rather than racing it — under full-suite load the
     // selection can take a moment to register.
@@ -263,7 +266,8 @@ test.describe('Sidebar UX', () => {
     await modal.locator('.autocomplete input.input').fill('Lair');
     await modal.locator('.autocomplete-item-create').click();
     await modal.locator('.btn-primary', { hasText: 'Create' }).click();
-    await expect(page.locator('.annotation-highlight')).toHaveCount(2);
+    // The annotation round-trips through the database before the decoration appears.
+    await expect(page.locator('.annotation-highlight')).toHaveCount(2, { timeout: 20000 });
 
     await page.locator('.sidebar-mode-btn', { hasText: 'Highlights' }).click();
     const dragonRow = page.locator('.sidebar-highlight-item', { hasText: 'Dragon' });

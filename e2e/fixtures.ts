@@ -84,3 +84,11 @@ export async function dismissConfirmIfShown(page: Page): Promise<boolean> {
   await acceptConfirm(page);
   return true;
 }
+
+/** Decline the app's confirm dialog, waiting for it rather than racing it. */
+export async function declineConfirm(page: Page): Promise<void> {
+  const modal = page.locator('.modal', { has: page.locator('.confirm-message') });
+  await modal.waitFor({ state: 'visible' });
+  await modal.locator('.modal-footer .btn-secondary').click();
+  await modal.waitFor({ state: 'detached' });
+}
