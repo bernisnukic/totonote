@@ -9,6 +9,7 @@ import { clickable } from '../../lib/clickable';
 import { useMenuPosition } from '../../hooks/useMenuPosition';
 import { getEditor } from '../../lib/editor-registry';
 import { confirmDialog } from '../common/ConfirmDialog';
+import { filingChoices, narrowingHidesSomething } from '../../lib/filing-options';
 
 export function TagContextMenu() {
   const contextMenu = useStore(s => s.contextMenu);
@@ -32,6 +33,11 @@ export function TagContextMenu() {
   // annotation id) are gone by the time the modal is interacted with.
   const [fileModalAnnotationId, setFileModalAnnotationId] = useState<string | null>(null);
   const [fileCategoryId, setFileCategoryId] = useState('');
+  const [fileShowAll, setFileShowAll] = useState(false);
+  // The tag chosen in the Add Tag modal, held until Add is pressed.
+  const [pendingTagId, setPendingTagId] = useState<string | null>(null);
+  const [pendingCategoryId, setPendingCategoryId] = useState('');
+  const [pendingShowAll, setPendingShowAll] = useState(false);
 
   useEffect(() => {
     const handler = () => setContextMenu(null);
@@ -39,7 +45,9 @@ export function TagContextMenu() {
     return () => window.removeEventListener('scroll', handler, true);
   }, [setContextMenu]);
 
-  const flatCategories = flattenCategoryTree(categories);
+  // Filing narrows to the tagged category's own branch — see lib/filing-options.
+  const filingAnnotation = annotations.find(a => a.id === fileModalAnnotationId) ?? null;
+  const filingTag = filingAnnotation ? tags.find(t => t.id === filingAnnotation.tagId) ?? null : null;
 
   const handleFileUnder = async (categoryId: string | null) => {
     if (fileModalAnnotationId) {
@@ -48,26 +56,91 @@ export function TagContextMenu() {
     setFileModalAnnotationId(null);
   };
 
-  const handleAddTagToSelection = async (tagId: string) => {
+  /**
+   * Picking a tag used to create the highlight there and then, which meant there was no
+   * moment at which you could also say where to file it — you had to right-click the
+   * highlight you had just made. The choice is staged now, and Add commits it.
+   */
+  const handleAddTagToSelection = async (tagId: string, categoryId: string | null) => {
     if (!activeSectionId || !selectedRange) return;
-    await createAnnotation(activeSectionId, tagId, selectedRange.from, selectedRange.to);
+    await createAnnotation(activeSectionId, tagId, selectedRange.from, selectedRange.to, undefined, categoryId);
     if (activeSectionId) loadAnnotations(activeSectionId);
+    closeAddTagModal();
+  };
+
+  const closeAddTagModal = () => {
     setShowAddTagModal(false);
+    setPendingTagId(null);
+    setPendingCategoryId('');
+    setPendingShowAll(false);
     setContextMenu(null);
     setShowCombineMenu(false);
   };
+
+  const pendingTag = tags.find(t => t.id === pendingTagId) ?? null;
+  const pendingChoices = filingChoices(categories, pendingTag?.categoryId, pendingShowAll);
 
   const addTagModal = (
     <Modal
       title={contextMenu?.type === 'annotation' ? 'Add Tag' : 'Add Tag to Selection'}
       isOpen={showAddTagModal}
-      onClose={() => setShowAddTagModal(false)}
+      onClose={closeAddTagModal}
+      footer={
+        <>
+          <button className="btn btn-secondary" onClick={closeAddTagModal}>
+            Cancel
+          </button>
+          <button
+            className="btn btn-primary"
+            disabled={!pendingTagId}
+            onClick={() => pendingTagId && void handleAddTagToSelection(pendingTagId, pendingCategoryId || null)}
+          >
+            Add
+          </button>
+        </>
+      }
     >
       <LabelAutocomplete
         tags={tags}
-        onSelect={handleAddTagToSelection}
+        onSelect={tagId => {
+          setPendingTagId(tagId);
+          // Default the filing to the tag's own category, which is where it belongs
+          // more often than not.
+          const picked = tags.find(t => t.id === tagId);
+          setPendingCategoryId(picked?.categoryId ?? '');
+        }}
         placeholder="Search tags..."
       />
+      {pendingTag && (
+        <>
+          <p className="rule-help">
+            Tagging as <strong>{pendingTag.name}</strong>. Press Enter to add it.
+          </p>
+          <div className="input-group">
+            <label className="input-label">File under (optional)</label>
+            <select
+              className="input"
+              value={pendingCategoryId}
+              onChange={e => setPendingCategoryId(e.target.value)}
+            >
+              <option value="">&mdash; not filed &mdash;</option>
+              {pendingChoices.map(({ category: cat, depth }) => (
+                <option key={cat.id} value={cat.id}>{optionIndent(depth)}{cat.name}</option>
+              ))}
+            </select>
+            {narrowingHidesSomething(categories, pendingTag.categoryId) && (
+              <label className="settings-toggle settings-toggle--inline">
+                <input
+                  type="checkbox"
+                  checked={pendingShowAll}
+                  onChange={e => setPendingShowAll(e.target.checked)}
+                />
+                <span className="settings-toggle-hint">Show all categories</span>
+              </label>
+            )}
+          </div>
+        </>
+      )}
     </Modal>
   );
 
@@ -86,10 +159,16 @@ export function TagContextMenu() {
           autoFocus
         >
           <option value="">&mdash; not filed &mdash;</option>
-          {flatCategories.map(({ category: cat, depth }) => (
+          {filingChoices(categories, filingTag?.categoryId, fileShowAll).map(({ category: cat, depth }) => (
             <option key={cat.id} value={cat.id}>{optionIndent(depth)}{cat.name}</option>
           ))}
         </select>
+        {narrowingHidesSomething(categories, filingTag?.categoryId) && (
+          <label className="settings-toggle settings-toggle--inline">
+            <input type="checkbox" checked={fileShowAll} onChange={e => setFileShowAll(e.target.checked)} />
+            <span className="settings-toggle-hint">Show all categories</span>
+          </label>
+        )}
       </div>
       <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
         <button className="btn btn-primary btn-sm" onClick={() => handleFileUnder(fileCategoryId || null)}>
@@ -322,17 +401,8 @@ export function TagContextMenu() {
         </div>
       </div>
 
-      <Modal
-        title="Add Tag"
-        isOpen={showAddTagModal}
-        onClose={() => setShowAddTagModal(false)}
-      >
-        <LabelAutocomplete
-          tags={tags}
-          onSelect={handleAddTagToSelection}
-          placeholder="Search tags..."
-        />
-      </Modal>
+      {addTagModal}
+      {fileModal}
     </>
   );
 }

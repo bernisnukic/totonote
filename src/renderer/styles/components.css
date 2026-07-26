@@ -1484,3 +1484,22 @@ textarea:focus-visible {
   padding: 2px var(--space-1);
   max-width: 100%;
 }
+
+/* Names inside the highlight popover are links to that tag's or category's page. */
+.tag-popover-name--link {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--transition-fast);
+}
+
+.tag-popover-name--link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* A checkbox sitting under a select, rather than as its own settings row. */
+.settings-toggle--inline {
+  margin-top: var(--space-1);
+  gap: var(--space-1);
+}

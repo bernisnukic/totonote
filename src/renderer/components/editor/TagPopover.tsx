@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStore } from '../../stores';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { getActiveEditor } from '../../lib/editor-registry';
+import { clickable } from '../../lib/clickable';
 
 export function TagPopover() {
   const activeAnnotationId = useStore(s => s.activeAnnotationId);
@@ -10,6 +11,8 @@ export function TagPopover() {
   const tags = useStore(s => s.tags);
   const categories = useStore(s => s.categories);
   const setActiveAnnotation = useStore(s => s.setActiveAnnotation);
+  const setFocusedTag = useStore(s => s.setFocusedTag);
+  const setFocusedCategory = useStore(s => s.setFocusedCategory);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const ref = useClickOutside<HTMLDivElement>(() => setActiveAnnotation(null));
 
@@ -51,8 +54,30 @@ export function TagPopover() {
     >
       <div className="tag-popover-header">
         <div className="tag-popover-color" style={{ backgroundColor: tag.color }} />
-        <span className="tag-popover-name">{tag.name}</span>
-        {category && <span className="tag-popover-category">{category.name}</span>}
+        {/* The name is the way into the tag's page. Clicking a highlight told you which
+            tag it carried, then left you to go and find that tag in the sidebar. */}
+        <span
+          className="tag-popover-name tag-popover-name--link"
+          {...clickable(() => {
+            setFocusedTag(tag.id);
+            setActiveAnnotation(null);
+          })}
+          title={`Open the ${tag.name} page`}
+        >
+          {tag.name}
+        </span>
+        {category && (
+          <span
+            className="tag-popover-category tag-popover-name--link"
+            {...clickable(() => {
+              setFocusedCategory(category.id);
+              setActiveAnnotation(null);
+            })}
+            title={`Open the ${category.name} page`}
+          >
+            {category.name}
+          </span>
+        )}
       </div>
       {(annotation.note || tag.description) && (
         <div className="tag-popover-note">{annotation.note || tag.description}</div>

@@ -73,20 +73,6 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
         });
       }
 
-      // Deleting the text a highlight covered collapses its decoration, and ProseMirror
-      // drops it. Only *positions* were written back, so the row stayed in the database
-      // with nothing left to point at — showing up on every compiled page as "…". Clear
-      // those out here, which is the one place that knows a decoration has gone.
-      const surviving = new Set<string>();
-      for (const d of decos) {
-        const id = (d.spec as { annotationId?: string } | undefined)?.annotationId;
-        if (id) surviving.add(id);
-      }
-      const orphaned = annotationsRef.current.filter(a => !surviving.has(a.id));
-      if (orphaned.length > 0) {
-        annotationsRef.current = annotationsRef.current.filter(a => surviving.has(a.id));
-        for (const a of orphaned) void deleteAnnotation(a.id);
-      }
     }
     return promise;
   }, [saveContent, batchUpdatePositions, deleteAnnotation]);
@@ -187,6 +173,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     content: '',
     onUpdate: ({ editor }) => {
       if (!contentLoadedRef.current) return;
+
       const content = JSON.stringify(editor.getJSON());
       // Auto-save debounces to disk; manual-save mode just flags the section dirty and
       // waits for Cmd+S. Read the flag live so toggling the setting takes effect at once.
@@ -223,8 +210,18 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
           );
           if (covered.length > 0) {
             event.preventDefault();
-            void confirmHighlightLoss(covered.length).then(ok => {
-              if (ok) editor?.chain().focus().deleteSelection().run();
+            const ids = covered
+              .map((d: { spec?: { annotationId?: string } }) => d.spec?.annotationId)
+              .filter((id: string | undefined): id is string => Boolean(id));
+            void confirmHighlightLoss(ids.length).then(async ok => {
+              if (!ok) return;
+              editor?.chain().focus().deleteSelection().run();
+              // Delete exactly the ones that were in the selection. Inferring it later
+              // from which decorations survived looked tidier and was wrong: the plugin
+              // reports an empty set at moments that have nothing to do with deletion,
+              // which cost every highlight in a section on the next rollback.
+              annotationsRef.current = annotationsRef.current.filter(a => !ids.includes(a.id));
+              for (const id of ids) await deleteAnnotation(id);
             });
             return true;
           }

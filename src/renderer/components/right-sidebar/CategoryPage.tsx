@@ -8,7 +8,8 @@ import type { AnnotationPlacement, Category } from '../../../shared/domain-types
 import { clickable } from '../../lib/clickable';
 import { excerptTextFor } from '../../lib/excerpt-text';
 import { ToolbarIcon } from '../toolbar/toolbar-icons';
-import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
+import { optionIndent } from '../../lib/category-tree';
+import { filingChoices, narrowingHidesSomething } from '../../lib/filing-options';
 
 export type PlacementSort = 'custom' | 'newest' | 'oldest' | 'document';
 
@@ -85,7 +86,12 @@ export function PlacementRow({
   const updateAnnotation = useStore(s => s.updateAnnotation);
   const categories = useStore(s => s.categories);
   const [refiling, setRefiling] = useState(false);
-  const filedCategories = useMemo(() => flattenCategoryTree(categories), [categories]);
+  const [showAllFilings, setShowAllFilings] = useState(false);
+  const rowTag = useStore(st => st.tags).find(t => t.id === placement.tagId);
+  const filedCategories = useMemo(
+    () => filingChoices(categories, rowTag?.categoryId, showAllFilings),
+    [categories, rowTag?.categoryId, showAllFilings],
+  );
   const filedUnder = categories.find(c => c.id === placement.categoryId);
   const [editingNote, setEditingNote] = useState(false);
   const [note, setNote] = useState(placement.note);
@@ -103,7 +109,10 @@ export function PlacementRow({
     if (drawingCount) parts.push(drawingCount === 1 ? 'Drawing' : `${drawingCount} drawings`);
     excerpt = parts.join(' + ');
   }
-  excerpt = excerpt || '…';
+  // Nothing left to show: the words this covered were deleted by an edit that did not
+  // come through the delete confirmation — typing over a selection, or a cut. Drawing it
+  // as "…" is what the tester saw, and it says nothing useful.
+  if (!excerpt && imageCount + drawingCount === 0) return null;
   const display = excerpt.length > 110 ? `${excerpt.slice(0, 110)}…` : excerpt;
 
   const saveNote = () => {
@@ -180,6 +189,12 @@ export function PlacementRow({
           value={placement.categoryId ?? ''}
           autoFocus
           onChange={e => {
+            // Widening the list is a choice in the list itself: a checkbox here would
+            // need somewhere to live in a row that is already dense.
+            if (e.target.value === '__all__') {
+              setShowAllFilings(true);
+              return;
+            }
             void updateAnnotation(placement.id, { categoryId: e.target.value || null });
             setRefiling(false);
           }}
@@ -192,6 +207,9 @@ export function PlacementRow({
               {category.name}
             </option>
           ))}
+          {narrowingHidesSomething(categories, rowTag?.categoryId) && !showAllFilings && (
+            <option value="__all__">— show all categories —</option>
+          )}
         </select>
       ) : (
         <button

@@ -237,6 +237,12 @@ export function InfoPanel() {
                 name={tag.name}
                 color={tag.color}
                 onClick={() => setSelectedTag(tag)}
+                // Reaching a tag's excerpts used to mean leaving for the Search or
+                // Highlights sidebar and finding it again there.
+                onDoubleClick={() => {
+                  setSelectedTag(null);
+                  setFocusedTag(tag.id);
+                }}
                 isActive={selectedTag?.id === tag.id}
               />
             ))}
