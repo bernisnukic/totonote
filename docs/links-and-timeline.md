@@ -42,8 +42,8 @@ usually *what mentions her* — and that's what this answers.
 
 ## The timeline
 
-World-building accumulates dates scattered across whichever document you happened to be
-writing in. The timeline is where they line up.
+Dates end up scattered across whichever document you were writing in at the time. The
+timeline collects them in one ordered list.
 
 ### Dating something
 
@@ -55,9 +55,10 @@ Any filed excerpt can be given a **when**:
 
 ![Typing a date under a filed excerpt](screenshots/37-when-field.png)
 
-### It's your calendar, not ours
+### Dates in your world's own words
 
-The field is free text on purpose. All of these work:
+The field is plain text, so you can write dates however your world writes them. All of
+these work:
 
 | What you type | Where it lands |
 |---|---|
@@ -68,9 +69,9 @@ The field is free text on purpose. All of these work:
 | `Age of Ash, 12` | year 12 |
 | `long ago` | **Undated**, at the end |
 
-TotoNote reads the first number it finds and sorts by that, and always shows back exactly
-what you typed. Anything with no number in it isn't guessed at — it gathers under
-**Undated** at the bottom, where you can still see it.
+TotoNote sorts by the first number it finds and displays whatever you typed. Entries with
+no number in them are grouped under **Undated** at the bottom rather than being placed at a
+guessed position.
 
 ### Reading the timeline
 

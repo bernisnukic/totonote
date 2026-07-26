@@ -30,7 +30,7 @@ every new character you add under `CHARACTERS` arrives with those three already 
 You type `GURA`, you get `GURA` plus its three sub-categories. You type `PEKORA`, same
 again.
 
-That's the whole idea. The rest of this page is where the buttons are.
+The rest of this page covers how to set that up.
 
 ---
 

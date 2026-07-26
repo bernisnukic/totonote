@@ -33,6 +33,7 @@ export function App() {
   const writePreference = useStore(s => s.writePreference);
   const openHelp = useStore(s => s.openHelp);
   const theme = useStore(s => s.theme);
+  const lineSpacing = useStore(s => s.lineSpacing);
 
 
   useEffect(() => {
@@ -60,6 +61,10 @@ export function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = resolveTheme(theme, prefersDark);
   }, [theme, prefersDark]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--editor-line-height', String(lineSpacing));
+  }, [lineSpacing]);
 
   // What's New opens when the running version differs from the last one recorded — kept
   // in the database, so it survives the re-download that used to wipe localStorage. The

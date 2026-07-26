@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { invoke } from '../../lib/ipc-client';
 import { useStore } from '../../stores';
+import { clickable } from '../../lib/clickable';
 
 /** Search hit: a page plus a short snippet of the line the query matched. */
 interface SearchHit {
@@ -102,6 +103,10 @@ export function HelpViewer() {
   const openHelp = useStore(s => s.openHelp);
   const closeHelp = useStore(s => s.closeHelp);
   const [query, setQuery] = useState('');
+  const [pendingFind, setPendingFind] = useState('');
+  const [zoomed, setZoomed] = useState<{ src: string; alt: string } | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // The native Help menu (main process) asks to open a page.
   useEffect(() => {
@@ -114,18 +119,62 @@ export function HelpViewer() {
   const results = useMemo(() => searchGuide(query, titleOf), [query]);
 
   const goTo = (id: string) => {
+    // Keep the term so the page can be scrolled to it — landing at the top of a long
+    // page and hunting for the phrase again is barely better than not searching.
+    setPendingFind(query.trim());
     setQuery('');
     openHelp(id);
   };
 
+  // After the page renders, find the term and bring it into view.
+  useEffect(() => {
+    if (!page || !pendingFind) return;
+    const root = scrollRef.current;
+    if (!root) return;
+    const needle = pendingFind.toLowerCase();
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      const text = node.textContent ?? '';
+      const at = text.toLowerCase().indexOf(needle);
+      if (at === -1) continue;
+      const range = document.createRange();
+      range.setStart(node, at);
+      range.setEnd(node, at + needle.length);
+      const mark = document.createElement('mark');
+      mark.className = 'help-found';
+      try {
+        range.surroundContents(mark);
+      } catch {
+        // A match straddling elements can't be wrapped; scrolling to it is still useful.
+      }
+      (mark.isConnected ? mark : (node.parentElement as HTMLElement))?.scrollIntoView({
+        block: 'center',
+      });
+      break;
+    }
+    setPendingFind('');
+  }, [page, pendingFind]);
+
   useEffect(() => {
     if (!page) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeHelp();
+      if (e.key === 'Escape') {
+        if (zoomed) {
+          setZoomed(null);
+          return;
+        }
+        closeHelp();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [page, closeHelp]);
+  }, [page, closeHelp, zoomed]);
 
   const pages = useMemo(() => {
     const ids = Object.keys(CONTENT);
@@ -140,6 +189,7 @@ export function HelpViewer() {
       <div className="help-header">
         <span className="help-title">Help</span>
         <input
+          ref={searchRef}
           className="help-search"
           type="search"
           value={query}
@@ -178,6 +228,7 @@ export function HelpViewer() {
             ))
           )}
         </nav>
+        <div className="help-scroll" ref={scrollRef}>
         <article className="help-content" key={page}>
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -221,14 +272,36 @@ export function HelpViewer() {
               img: ({ src, alt }) => {
                 const name = typeof src === 'string' ? src.split('/').pop() : undefined;
                 const url = name ? imageByName.get(name) : undefined;
-                return url ? <img src={url} alt={alt ?? ''} /> : null;
+                if (!url) return null;
+                // Screenshots are shrunk to the column width, which makes the small print
+                // in them unreadable. Click to see one full size.
+                return (
+                  <img
+                    src={url}
+                    alt={alt ?? ''}
+                    className="help-image"
+                    {...clickable(() => setZoomed({ src: url, alt: alt ?? '' }), {
+                      label: alt ? `Enlarge: ${alt}` : 'Enlarge this picture',
+                    })}
+                  />
+                );
               },
             }}
           >
             {CONTENT[page]}
           </ReactMarkdown>
         </article>
+        </div>
       </div>
+
+      {zoomed && (
+        <div
+          className="help-zoom"
+          {...clickable(() => setZoomed(null), { label: 'Close the enlarged picture' })}
+        >
+          <img src={zoomed.src} alt={zoomed.alt} />
+        </div>
+      )}
     </div>
   );
 }

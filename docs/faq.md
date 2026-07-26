@@ -33,6 +33,16 @@ A backup is a complete export: one file with everything in it, readable by any S
 if TotoNote ever stops existing. Individual category pages can also be exported to Markdown
 from the page itself.
 
+## An exported .md file opens in the wrong app
+
+Markdown files use the `.md` extension, and another application on your computer may have
+claimed it — MuseScore does this on macOS, for example, because it also uses `.md`.
+
+That is a file-association setting, not something TotoNote controls. To change it on macOS:
+right-click the file → **Get Info** → **Open with** → choose your text editor → **Change
+All…**. On Windows: right-click → **Open with** → **Choose another app** → tick **Always use
+this app**.
+
 ## Why does my computer warn me when I open it?
 
 The builds aren't code-signed, so macOS and Windows treat them as coming from an unknown

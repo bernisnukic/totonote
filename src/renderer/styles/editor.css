@@ -17,7 +17,8 @@
   min-height: 300px;
   color: var(--text-primary);
   font-size: var(--font-size-md);
-  line-height: var(--line-height-relaxed);
+  /* Set from Settings → Editing; falls back to the theme's own relaxed line height. */
+  line-height: var(--editor-line-height, var(--line-height-relaxed));
 }
 
 .tiptap p {
@@ -409,11 +410,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  /* The pen, highlighter, eraser and undo/redo were 26px boxes holding 12px glyphs, which
+     is smaller than the editor toolbar beside them and hard to hit while drawing. */
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-lg);
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 

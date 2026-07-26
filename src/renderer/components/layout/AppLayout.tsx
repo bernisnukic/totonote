@@ -98,6 +98,25 @@ export function AppLayout({ children }: AppLayoutProps) {
     };
   }, [saveAllDirty]);
 
+  // Cmd/Ctrl+F is what everyone reaches for to search. Send it to the sidebar's search
+  // box, switching to Search mode first so there is something to type into. The guide has
+  // its own handler for when it is open.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'f') return;
+      if (useStore.getState().helpPage) return; // the guide handles its own
+      e.preventDefault();
+      useStore.getState().setLeftSidebarMode('search');
+      requestAnimationFrame(() => {
+        const input = document.querySelector<HTMLInputElement>('.sidebar-search-input');
+        input?.focus();
+        input?.select();
+      });
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
   // Tell main whether there's unsaved work, so it can warn before the window closes. Only
   // manual-save mode can have unsaved work; auto-save keeps this false. Turning auto-save
   // back on also flushes anything left pending.

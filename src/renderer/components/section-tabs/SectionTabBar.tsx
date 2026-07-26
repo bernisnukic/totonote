@@ -9,6 +9,9 @@ interface SectionTabBarProps {
   onTabClick: (sectionId: string) => void;
 }
 
+/** Above this many sections, inactive tabs shrink to their abbreviation to fit. */
+const CROWDED_AT = 5;
+
 export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
   const sections = useStore(s => s.sections);
   const activeSectionId = useStore(s => s.activeSectionId);
@@ -44,6 +47,11 @@ export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
     onTabClick(section.id);
   };
 
+  // Browser tabs keep their titles until there are too many to fit; these collapsed to an
+  // abbreviation the moment they weren't the active one, which made every other tab a
+  // three-letter code and the × next to it easy to hit by mistake.
+  const crowded = sections.length > CROWDED_AT;
+
   return (
     <>
       <div className="tab-bar">
@@ -51,7 +59,7 @@ export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
           <SectionTab
             key={section.id}
             id={section.id}
-            label={section.id === activeSectionId ? section.title : section.abbreviation}
+            label={crowded && section.id !== activeSectionId ? section.abbreviation : section.title}
             isActive={section.id === activeSectionId}
             onClick={() => onTabClick(section.id)}
             onClose={() => void handleDelete(section.id, section.title)}

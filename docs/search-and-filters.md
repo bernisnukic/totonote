@@ -90,7 +90,7 @@ in whatever order you pick:
 
 ![Sort mode showing every excerpt in the chosen order](screenshots/29-sort-view.png)
 
-It's the whole-document counterpart to Filter: Filter narrows the page down to the tags you
+It is the whole-document counterpart to Filter: Filter narrows the page down to the tags you
 tick, Sort shows *all* of them, ordered. Like Filter it's a reading view — your writing is
 untouched underneath, and **double-clicking an excerpt jumps to it** in the editor.
 

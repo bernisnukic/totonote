@@ -100,11 +100,14 @@ export function InfoPanel() {
   useEffect(() => {
     if (!focusedTagId && !focusedCategoryId) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setFocusedTag(null);
-        setFocusedCategory(null);
-      }
+      if (e.key !== 'Escape') return;
+      // Backing out of a note or a date should close that little editor, not the whole
+      // page behind it — pressing Escape there used to throw you out of the tag entirely.
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      e.preventDefault();
+      setFocusedTag(null);
+      setFocusedCategory(null);
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);

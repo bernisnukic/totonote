@@ -166,6 +166,9 @@ export function PlacementRow({
           onBlur={saveNote}
           onKeyDown={e => {
             if (e.key === 'Escape') {
+              // Stop here: the panel behind also listens for Escape, and closing the whole
+              // tag page because someone backed out of a note is not what they meant.
+              e.stopPropagation();
               setNote(placement.note);
               setEditingNote(false);
             }
@@ -233,6 +236,7 @@ export function PlacementRow({
           onKeyDown={e => {
             if (e.key === 'Enter') saveWhen();
             if (e.key === 'Escape') {
+              e.stopPropagation();
               setWhenText(placement.whenText);
               setEditingWhen(false);
             }

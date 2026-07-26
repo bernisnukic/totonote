@@ -1503,3 +1503,58 @@ textarea:focus-visible {
   margin-top: var(--space-1);
   gap: var(--space-1);
 }
+
+/* The guide's article is narrower than the window; the scroller has to be the full-width
+   container or the wheel does nothing over the space beside it. */
+.help-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.help-scroll > .help-content {
+  overflow-y: visible;
+}
+
+/* The words a search landed on. */
+.help-found {
+  background: color-mix(in srgb, var(--accent-primary) 35%, transparent);
+  color: inherit;
+  border-radius: 2px;
+}
+
+.help-image {
+  cursor: zoom-in;
+}
+
+.help-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: rgb(0 0 0 / 82%);
+  cursor: zoom-out;
+}
+
+.help-zoom img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 60%);
+}
+
+/* A settings row whose control sits under its label rather than beside it. */
+.settings-toggle--stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.settings-toggle--stacked .input {
+  min-width: 180px;
+}

@@ -36,6 +36,13 @@ const THEMES = [
 
 /** Offered checkpoint intervals. The pause after a keystroke is ~100-300ms when typing. */
 // Phrased as the wait itself, because "every pause" left people asking what a pause was.
+const LINE_SPACINGS = [
+  { value: 1.2, label: 'Tight' },
+  { value: 1.7, label: 'Normal (default)' },
+  { value: 2, label: 'Relaxed' },
+  { value: 2.4, label: 'Loose' },
+];
+
 const HISTORY_INTERVALS = [
   { ms: 50, label: 'The moment you stop (0.05s)' },
   { ms: 250, label: 'A quarter of a second' },
@@ -58,6 +65,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const historyIntervalMs = useStore(s => s.historyIntervalMs);
   const setHistoryIntervalMs = useStore(s => s.setHistoryIntervalMs);
   const introEnabled = useStore(s => s.introEnabled);
+  const lineSpacing = useStore(s => s.lineSpacing);
+  const setLineSpacing = useStore(s => s.setLineSpacing);
   const setIntroEnabled = useStore(s => s.setIntroEnabled);
   const isMac = /Mac/i.test(navigator.platform);
 
@@ -132,6 +141,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </span>
           </span>
         </label>
+      </div>
+
+      <div className="settings-section">
+        <label className="settings-toggle settings-toggle--stacked">
+          <span className="settings-toggle-label">Line spacing</span>
+          <select
+            className="input"
+            value={lineSpacing}
+            onChange={e => setLineSpacing(Number(e.target.value))}
+          >
+            {LINE_SPACINGS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </label>
+        <p className="settings-toggle-hint">
+          How much room each line of writing gets. Applies everywhere.
+        </p>
       </div>
 
       <div className="settings-section">
