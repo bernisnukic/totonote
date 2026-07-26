@@ -204,15 +204,14 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
         // not the tagging. Worth one question first.
         if ((event.key === 'Backspace' || event.key === 'Delete') && !view.state.selection.empty) {
           const { from, to } = view.state.selection;
-          const decoSet = annotationPluginKey.getState(view.state);
-          const covered = (decoSet?.find(from, to) ?? []).filter(
-            (d: { spec?: { annotationId?: string } }) => d.spec?.annotationId,
-          );
-          if (covered.length > 0) {
+          // Overlap is worked out from the annotations themselves rather than from the
+          // decoration plugin: its set reads as empty at moments that have nothing to do
+          // with what is on screen, which made this miss entirely on CI.
+          const ids = annotationsRef.current
+            .filter(a => a.fromPos < to && a.toPos > from)
+            .map(a => a.id);
+          if (ids.length > 0) {
             event.preventDefault();
-            const ids = covered
-              .map((d: { spec?: { annotationId?: string } }) => d.spec?.annotationId)
-              .filter((id: string | undefined): id is string => Boolean(id));
             void confirmHighlightLoss(ids.length).then(async ok => {
               if (!ok) return;
               editor?.chain().focus().deleteSelection().run();

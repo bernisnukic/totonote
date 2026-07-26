@@ -1,5 +1,9 @@
 # What's New
 
+## 1.17.1
+
+Fixes the warning before deleting highlighted text, which did not appear on Linux in 1.17.0.
+
 ## 1.17.0
 
 **Deleting highlighted text asks first, and cleans up after itself.** A highlight whose words
