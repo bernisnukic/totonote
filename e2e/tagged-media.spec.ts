@@ -80,6 +80,8 @@ test.describe('Which section a tag lands in', () => {
     await second.pressSequentially('A considerably longer line of writing', { delay: 15 });
     await page.keyboard.press('Home');
     await page.keyboard.press('Shift+End');
+    // The floating toolbar follows the selection; wait for it rather than racing it.
+    await expect(page.locator('.selection-toolbar')).toBeVisible({ timeout: 15000 });
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
     await modal.locator('.autocomplete input.input').fill('Lair');
