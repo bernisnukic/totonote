@@ -415,6 +415,19 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     }
   }, [editor, isActive, globalAnnotations]);
 
+  // A section that is not the active one still has to draw its own highlights. The effect
+  // above only runs for the active section, so tagging text in any other one stored the
+  // annotation and drew nothing — which looked exactly like the tag having failed, and is
+  // why "the image tagging doesn't register" turned up in more than one guise.
+  const documentAnnotations = useStore(s => s.documentAnnotations);
+  useEffect(() => {
+    if (!editor || isActive) return;
+    const mine = documentAnnotations.filter(a => a.sectionId === section.id);
+    annotationsRef.current = mine;
+    syncDecorations(mine);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, isActive, documentAnnotations, section.id]);
+
   const syncDecorations = useCallback(
     (annotations: Annotation[]) => {
       if (!editor) return;

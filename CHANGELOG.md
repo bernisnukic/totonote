@@ -1,5 +1,11 @@
 # What's New
 
+## 1.20.1
+
+**Highlights appear in every section, not just the one you're in.** Tagging text in a
+section that wasn't the current one stored the highlight and drew nothing — so the tag
+looked as though it had failed, and tagging again made a second one.
+
 ## 1.20.0
 
 **A highlight goes on the section you selected the text in.** Tagging just after moving
