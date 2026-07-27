@@ -254,10 +254,11 @@ test.describe('Sidebar UX', () => {
     await editor2.click();
     await editor2.pressSequentially('A lair beneath the mountain', { delay: 15 });
     await expect(editor2).toContainText('A lair beneath the mountain');
-    // Select-all goes to whichever editor holds the caret, so make sure it is this one —
-    // under full-suite load the click and the keystroke could otherwise race.
+    // Home then Shift+End rather than select-all: what Ctrl/Cmd+A selects differs between
+    // platforms, and it is the step this test cannot afford to be vague about.
     await expect(editor2).toBeFocused();
-    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
     // Wait for the floating toolbar rather than racing it — under full-suite load the
     // selection can take a moment to register.
     await expect(page.locator('.selection-toolbar')).toBeVisible();
