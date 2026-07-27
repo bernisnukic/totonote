@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useStore } from '../../stores';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { findAdjacentAnnotations } from '../../lib/annotation-utils';
@@ -42,6 +42,8 @@ export function TagContextMenu() {
   const [pendingTagId, setPendingTagId] = useState<string | null>(null);
   const [pendingCategoryId, setPendingCategoryId] = useState('');
   const [pendingShowAll, setPendingShowAll] = useState(false);
+  const stagedSectionId = useRef<string | null>(null);
+  const stagedRange = useRef<{ from: number; to: number } | null>(null);
 
   useEffect(() => {
     const handler = () => setContextMenu(null);
@@ -80,13 +82,20 @@ export function TagContextMenu() {
    * highlight you had just made. The choice is staged now, and Add commits it.
    */
   const handleAddTagToSelection = async (tagId: string, categoryId: string | null) => {
-    if (!targetSectionId || !selectedRange) return;
-    await createAnnotation(targetSectionId, tagId, selectedRange.from, selectedRange.to, undefined, categoryId);
-    loadAnnotations(targetSectionId);
+    // Captured when the menu opened: the modal takes focus, which collapses the selection
+    // and clears which section it was in, so reading it here would fall back to whichever
+    // section is merely active.
+    const sectionId = stagedSectionId.current ?? targetSectionId;
+    const range = stagedRange.current ?? selectedRange;
+    if (!sectionId || !range) return;
+    await createAnnotation(sectionId, tagId, range.from, range.to, undefined, categoryId);
+    loadAnnotations(sectionId);
     closeAddTagModal();
   };
 
   const closeAddTagModal = () => {
+    stagedSectionId.current = null;
+    stagedRange.current = null;
     setShowAddTagModal(false);
     setPendingTagId(null);
     setPendingCategoryId('');
@@ -333,7 +342,12 @@ export function TagContextMenu() {
           className="context-menu"
           style={placement}
         >
-          <div className="context-menu-item" {...clickable(() => { setShowAddTagModal(true); setContextMenu(null); })}>
+          <div className="context-menu-item" {...clickable(() => {
+              stagedSectionId.current = targetSectionId;
+              stagedRange.current = selectedRange;
+              setShowAddTagModal(true);
+              setContextMenu(null);
+            })}>
             Add tag to selection
           </div>
         </div>
@@ -414,7 +428,12 @@ export function TagContextMenu() {
         )}
 
         <div className="context-menu-separator" />
-        <div className="context-menu-item" {...clickable(() => { setShowAddTagModal(true); setContextMenu(null); })}>
+        <div className="context-menu-item" {...clickable(() => {
+              stagedSectionId.current = targetSectionId;
+              stagedRange.current = selectedRange;
+              setShowAddTagModal(true);
+              setContextMenu(null);
+            })}>
           Add another tag to selection
         </div>
       </div>

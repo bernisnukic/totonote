@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useStore } from '../../stores';
-import { getActiveEditor } from '../../lib/editor-registry';
+import { getEditor, getActiveEditor } from '../../lib/editor-registry';
 import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
 import { clampRangeToText } from '../../lib/annotation-utils';
 import { Modal } from '../common/Modal';
@@ -32,10 +32,20 @@ export function SelectionToolbar() {
 
   const savedRange = useRef<{ from: number; to: number } | null>(null);
   const savedPos = useRef<{ x: number; y: number } | null>(null);
+  /**
+   * The section the range belongs to, captured with it.
+   *
+   * Opening the modal takes focus off the editor, which collapses the selection and
+   * clears it — including which section it was in. Reading that at the moment a tag is
+   * picked therefore fell back to whichever section was merely *active*, and the
+   * highlight was written against the wrong one.
+   */
+  const savedSectionId = useRef<string | null>(null);
 
   const handleAnnotate = () => {
     savedRange.current = selectedRange;
     savedPos.current = selectionToolbarPos;
+    savedSectionId.current = targetSectionId;
     // The search box deliberately starts empty. Pre-filling it with the selected
     // text hid the tag list behind a "Create <the whole sentence>" row, which is
     // almost never the tag anyone wants.
@@ -46,15 +56,17 @@ export function SelectionToolbar() {
 
   const handleSelectTag = async (tagId: string) => {
     const range = savedRange.current;
-    if (!targetSectionId || !range) return;
+    const sectionId = savedSectionId.current;
+    if (!sectionId || !range) return;
     // Trim the range to the text it actually covers — see clampRangeToText.
-    const editor = getActiveEditor(targetSectionId);
+    const editor = getEditor(sectionId);
     const text = editor ? clampRangeToText(editor.state.doc, range.from, range.to) : null;
     const { from, to } = text ?? range;
-    await createAnnotation(targetSectionId, tagId, from, to, undefined, fileUnderCategoryId || null);
+    await createAnnotation(sectionId, tagId, from, to, undefined, fileUnderCategoryId || null);
     setShowTagModal(false);
     savedRange.current = null;
-    loadAnnotations(targetSectionId);
+    savedSectionId.current = null;
+    loadAnnotations(sectionId);
   };
 
   const handleCreateNew = (name: string) => {
