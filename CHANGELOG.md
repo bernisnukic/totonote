@@ -1,5 +1,29 @@
 # What's New
 
+## 1.19.0
+
+**Tagging a picture or a drawing now shows.** It always created the highlight, but drew
+nothing — so it looked like it hadn't worked, there was nothing to right-click, and you
+could tag the same image over and over without noticing. The picture itself is outlined
+now, and can be right-clicked like any other highlight. Tagging the same thing twice with
+the same tag no longer makes a duplicate.
+
+**Delete a picture or drawing by right-clicking it.** Backspace still works; this is for
+when you're looking for a way to do it.
+
+**A section can start with a picture.** There's always a line above it to write on — before,
+a section beginning with an image or drawing left nowhere to put an opening line.
+
+**Copying a drawing copies the drawing.** Pasting one used to produce a blank surface: the
+drawing's identity didn't survive the clipboard, so the pasted copy pointed at nothing. It
+now comes across with its strokes, as its own drawing — editing the copy doesn't change the
+original.
+
+**Drawings can be resized.** Drag the corner, the same as a picture. A quick arrow no longer
+has to take the full width of the column.
+
+**Double-click a drawing to start drawing on it.** The Draw button is still there.
+
 ## 1.18.0
 
 **Undo treats tagging as its own step.** Typing something and then tagging it, one **⌘Z**

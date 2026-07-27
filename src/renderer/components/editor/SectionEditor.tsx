@@ -20,6 +20,7 @@ import { invoke } from '../../lib/ipc-client';
 import { alertDialog, confirmDialog } from '../common/ConfirmDialog';
 import { undoDepth } from '@tiptap/pm/history';
 import { noteDocumentSteps, clearEditHistory } from '../../lib/edit-history';
+import { LeadingParagraph } from '../../extensions/leading-paragraph';
 
 interface SectionEditorProps {
   section: Section;
@@ -167,6 +168,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       SizedImage,
       DrawingNode,
       AnnotationDecoration,
+      LeadingParagraph,
       DocumentLink.configure({
         // Read live rather than captured, so a rename shows up in existing links, and
         // opening a link goes through the same path as clicking a document card.
@@ -415,6 +417,30 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
 
   const handleContextMenu = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
+
+    // A picture or a drawing could only be removed with Backspace, which meant selecting
+    // it first and knowing that was the way. Offer it where people look for it.
+    const mediaEl = target.closest('.resizable-image, .drawing-node');
+    if (mediaEl && !target.closest('[data-annotation-id]')) {
+      e.preventDefault();
+      const isDrawing = mediaEl.classList.contains('drawing-node');
+      void confirmDialog({
+        title: isDrawing ? 'Delete this drawing?' : 'Delete this picture?',
+        message: isDrawing
+          ? 'The drawing and its strokes are removed from this section.'
+          : 'The picture is removed from this section.',
+        detail: 'You can undo this straight afterwards.',
+        confirmLabel: 'Delete',
+        destructive: true,
+      }).then(ok => {
+        if (!ok || !editor) return;
+        const pos = editor.view.posAtDOM(mediaEl, 0);
+        if (pos < 0) return;
+        editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
+      });
+      return;
+    }
+
     const annotationEl = target.closest('[data-annotation-id]');
     if (annotationEl) {
       e.preventDefault();

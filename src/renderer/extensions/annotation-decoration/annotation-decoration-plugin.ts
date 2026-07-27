@@ -47,6 +47,25 @@ export function createAnnotationPlugin() {
                   'data-tag-id': ann.tagId,
                 }, { inclusiveEnd: false, annotationId: ann.id })
               );
+
+              // An inline decoration draws nothing over a picture or a drawing: they are
+              // atom nodes with no text inside to wrap. Tagging one therefore looked like
+              // it had failed — no colour, nothing to right-click, and no way to tell you
+              // had already done it, so people tagged the same image again and again. A
+              // node decoration puts the class and the id on the element itself.
+              tr.doc.nodesBetween(ann.fromPos, ann.toPos, (node, pos) => {
+                if (!node.isAtom || node.isText) return true;
+                if (pos < ann.fromPos || pos + node.nodeSize > ann.toPos) return true;
+                decorations.push(
+                  Decoration.node(pos, pos + node.nodeSize, {
+                    class: 'annotation-highlight annotation-highlight--node',
+                    style: `outline: 2px solid ${ann.color}; background-color: rgba(${r}, ${g}, ${b}, ${alpha});`,
+                    'data-annotation-id': ann.id,
+                    'data-tag-id': ann.tagId,
+                  }, { annotationId: ann.id })
+                );
+                return false;
+              });
             }
           }
 

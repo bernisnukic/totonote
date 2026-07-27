@@ -534,3 +534,36 @@
 .resizable-image.is-resizing .resizable-image__handle {
   opacity: 1;
 }
+
+/* A tagged picture or drawing. An inline highlight has text to tint; these do not, so the
+   node itself is outlined instead. */
+.annotation-highlight--node {
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Drawings size the same way pictures do — a sketch was always the full column width,
+   whether it was a map or a single arrow. */
+.drawing-node__surface {
+  position: relative;
+}
+
+.drawing-node__handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--accent-primary);
+  border-radius: 3px;
+  background: var(--bg-primary);
+  cursor: nwse-resize;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.drawing-node:hover .drawing-node__handle,
+.drawing-node.is-selected .drawing-node__handle,
+.drawing-node.is-resizing .drawing-node__handle {
+  opacity: 1;
+}

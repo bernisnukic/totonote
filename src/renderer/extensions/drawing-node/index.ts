@@ -30,12 +30,32 @@ export const DrawingNode = Node.create({
   draggable: true,
   selectable: true,
 
+  // Every attribute states how it is read back out of HTML. Without that, the copy that
+  // goes through the clipboard comes back with no drawingId at all — which is why a
+  // pasted drawing was blank: it was not the same drawing, it was nothing.
   addAttributes() {
     return {
-      drawingId: { default: null as string | null },
-      backgroundMediaId: { default: null as string | null },
+      drawingId: {
+        default: null as string | null,
+        parseHTML: element => element.getAttribute('data-drawing-id'),
+      },
+      backgroundMediaId: {
+        default: null as string | null,
+        parseHTML: element => element.getAttribute('data-background-media-id'),
+      },
       /** width / height of the surface, so it reserves the right space before loading. */
-      aspectRatio: { default: 1.5 },
+      aspectRatio: {
+        default: 1.5,
+        parseHTML: element => Number(element.getAttribute('data-aspect-ratio')) || 1.5,
+      },
+      /** Display width in pixels, as dragged. Null means "fill the column", as before. */
+      width: {
+        default: null as number | null,
+        parseHTML: element => {
+          const raw = element.getAttribute('data-width');
+          return raw ? Number(raw) : null;
+        },
+      },
     };
   },
 
@@ -51,6 +71,7 @@ export const DrawingNode = Node.create({
         'data-drawing-id': attrs.drawingId as string,
         'data-background-media-id': (attrs.backgroundMediaId as string) ?? undefined,
         'data-aspect-ratio': String(attrs.aspectRatio ?? 1.5),
+        'data-width': attrs.width ? String(attrs.width) : undefined,
       }),
     ];
   },

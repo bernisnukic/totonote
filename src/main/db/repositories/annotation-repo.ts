@@ -54,6 +54,23 @@ function nextPlacementOrder(categoryId: string): number {
 }
 
 export function createAnnotation(input: CreateAnnotationInput): Annotation {
+  // Tagging the same range with the same tag twice is never meant. It was easy to do by
+  // accident on a picture, where nothing used to be drawn to show it had worked, so
+  // people tagged the same image repeatedly and collected duplicates.
+  const duplicate = getDb()
+    .select()
+    .from(annotations)
+    .where(
+      and(
+        eq(annotations.sectionId, input.sectionId),
+        eq(annotations.tagId, input.tagId),
+        eq(annotations.fromPos, input.fromPos),
+        eq(annotations.toPos, input.toPos),
+      ),
+    )
+    .get();
+  if (duplicate) return duplicate;
+
   const categoryId = input.categoryId ?? null;
   const annotation: Annotation = {
     id: uuid(),
