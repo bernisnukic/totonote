@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 // v3: StarterKit now bundles Underline (and Link); Placeholder moved to @tiptap/extensions.
@@ -437,11 +437,9 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     [editor, highlightsVisible, tags, hiddenTagIds]
   );
 
-  // A section that is not the active one still has to draw its own highlights. The effect
-  // that syncs from the store only runs for the active section, so tagging text in any
-  // other one stored the annotation and drew nothing — which looked exactly like the tag
-  // having failed, and is why "image tagging doesn't register" turned up in more than one
-  // guise. Placed after syncDecorations so it can depend on it properly.
+  // A section that is not the active one still has to draw its own highlights: the effect
+  // above only runs for the active one, so tagging text elsewhere stored the annotation
+  // and drew nothing, which looked exactly like the tag having failed.
   const documentAnnotations = useStore(s => s.documentAnnotations);
   useEffect(() => {
     if (!editor || isActive) return;

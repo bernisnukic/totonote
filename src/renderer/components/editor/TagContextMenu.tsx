@@ -27,6 +27,7 @@ export function TagContextMenu() {
   const tags = useStore(s => s.tags);
   const selectedRange = useStore(s => s.selectedRange);
   const loadAnnotations = useStore(s => s.loadAnnotations);
+  const loadDocumentAnnotations = useStore(s => s.loadDocumentAnnotations);
   const categories = useStore(s => s.categories);
   const ref = useClickOutside<HTMLDivElement>(() => setContextMenu(null));
   // Anchored at the pointer, but flipped up or left when that would run off the window.
@@ -89,7 +90,9 @@ export function TagContextMenu() {
     const range = stagedRange.current ?? selectedRange;
     if (!sectionId || !range) return;
     await createAnnotation(sectionId, tagId, range.from, range.to, undefined, categoryId);
-    loadAnnotations(sectionId);
+    const documentId = useStore.getState().activeDocumentId;
+    if (documentId) await loadDocumentAnnotations(documentId);
+    if (useStore.getState().activeSectionId === sectionId) await loadAnnotations(sectionId);
     closeAddTagModal();
   };
 

@@ -20,6 +20,7 @@ export function SelectionToolbar() {
   const flatCategories = useMemo(() => flattenCategoryTree(categories), [categories]);
   const createTag = useStore(s => s.createTag);
   const loadAnnotations = useStore(s => s.loadAnnotations);
+  const loadDocumentAnnotations = useStore(s => s.loadDocumentAnnotations);
   const [showTagModal, setShowTagModal] = useState(false);
 
   // Inline tag creation state
@@ -66,7 +67,12 @@ export function SelectionToolbar() {
     setShowTagModal(false);
     savedRange.current = null;
     savedSectionId.current = null;
-    loadAnnotations(sectionId);
+    // Refresh the whole document: reloading just this section replaces the store's
+    // section-scoped list, and the *active* editor reads that — so tagging elsewhere used
+    // to wipe the active section's highlights off the screen.
+    const documentId = useStore.getState().activeDocumentId;
+    if (documentId) await loadDocumentAnnotations(documentId);
+    if (useStore.getState().activeSectionId === sectionId) await loadAnnotations(sectionId);
   };
 
   const handleCreateNew = (name: string) => {
