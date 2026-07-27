@@ -25,18 +25,32 @@ async function setup(text: string) {
   return editor;
 }
 
-/** Tag the whole line. */
+/** Tag the whole line — selected the same deterministic way it is deleted later. */
 async function tagAll(name: string) {
-  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Shift+End');
   await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
   const modal = page.locator('.modal');
   await modal.locator('.autocomplete input.input').fill(name);
   await modal.locator('.autocomplete-item-create').click();
   await modal.locator('.btn-primary', { hasText: 'Create' }).click();
-  await expect(page.locator('.annotation-highlight')).toBeVisible({ timeout: 20000 });
-  // The editor decides what a deletion would destroy from the annotations it holds, which
-  // arrive a beat after the decoration is drawn. Under full-suite load that gap is real.
+  // Wait for the decoration to carry an id: that only happens once the annotation itself
+  // exists, which is what the delete warning consults.
+  await expect(page.locator('.annotation-highlight[data-annotation-id]')).toBeVisible({ timeout: 20000 });
   await expect(page.locator('.right-sidebar')).toContainText(name, { timeout: 20000 });
+}
+
+/**
+ * Select the whole line the caret is on.
+ *
+ * Deliberately not Ctrl/Cmd+A: what that selects differs between platforms — on macOS it
+ * gave the paragraph's text, and it is the one step these tests cannot afford to be vague
+ * about, since the warning depends on the selection actually covering the highlight.
+ */
+async function selectTheLine() {
+  await page.locator('.tiptap').first().click();
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Shift+End');
 }
 
 test.describe('Deleting highlighted text', () => {
@@ -44,9 +58,7 @@ test.describe('Deleting highlighted text', () => {
     const editor = await setup('Gura was born in Atlantis.');
     await tagAll('Gura');
 
-    // The tag modal took focus on its way out; select-all only means anything in the editor.
-    await editor.click();
-    await page.keyboard.press('ControlOrMeta+A');
+    await selectTheLine();
     await page.keyboard.press('Backspace');
 
     const warning = await acceptConfirm(page);
@@ -58,8 +70,7 @@ test.describe('Deleting highlighted text', () => {
     const editor = await setup('Gura was born in Atlantis.');
     await tagAll('Gura');
 
-    await editor.click();
-    await page.keyboard.press('ControlOrMeta+A');
+    await selectTheLine();
     await page.keyboard.press('Backspace');
     await acceptConfirm(page);
     // Let the debounced save run, which is where the cleanup happens.
@@ -77,8 +88,7 @@ test.describe('Deleting highlighted text', () => {
     const editor = await setup('Gura was born in Atlantis.');
     await tagAll('Gura');
 
-    await editor.click();
-    await page.keyboard.press('ControlOrMeta+A');
+    await selectTheLine();
     await page.keyboard.press('Backspace');
     await declineConfirm(page);
 
@@ -88,7 +98,7 @@ test.describe('Deleting highlighted text', () => {
 
   test('deleting text with no highlight in it just deletes', async () => {
     const editor = await setup('Nothing tagged here.');
-    await page.keyboard.press('ControlOrMeta+A');
+    await selectTheLine();
     await page.keyboard.press('Backspace');
     // No dialog at all — this must not become a prompt on every deletion.
     await expect(page.locator('.confirm-message')).toHaveCount(0);
