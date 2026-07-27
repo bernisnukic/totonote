@@ -165,7 +165,8 @@ test.describe('Sidebar UX', () => {
     const editor = page.locator('.tiptap').first();
     await editor.click();
     await editor.pressSequentially('The dragon sleeps here', { delay: 15 });
-    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
     await modal.locator('.autocomplete input.input').fill('Dragon');
@@ -212,7 +213,8 @@ test.describe('Sidebar UX', () => {
       await page.locator('.section-tab', { hasText: title }).click();
       await page.waitForTimeout(750);
       await page.locator('.tiptap').nth(idx).click();
-      await page.keyboard.press('ControlOrMeta+A');
+      await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
       await expect(page.locator('.selection-toolbar')).toBeVisible();
       await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
       const modal = page.locator('.modal');
@@ -440,7 +442,8 @@ test.describe('Sort view and pop-out wiki', () => {
     await editor.click();
     await editor.pressSequentially(text, { delay: 15 });
 
-    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
     await expect(page.locator('.selection-toolbar')).toBeVisible();
     await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
     const modal = page.locator('.modal');
@@ -528,7 +531,8 @@ test.describe('Sort precedence and section deletion', () => {
       await page.locator('.section-tab', { hasText: title }).click();
       await page.waitForTimeout(750);
       await page.locator('.tiptap').nth(idx).click();
-      await page.keyboard.press('ControlOrMeta+A');
+      await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
       await expect(page.locator('.selection-toolbar')).toBeVisible();
       await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
       const modal = page.locator('.modal');
