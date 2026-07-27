@@ -216,11 +216,22 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
         // not the tagging. Worth one question first.
         if ((event.key === 'Backspace' || event.key === 'Delete') && !view.state.selection.empty) {
           const { from, to } = view.state.selection;
-          // Overlap is worked out from the annotations themselves rather than from the
-          // decoration plugin: its set reads as empty at moments that have nothing to do
-          // with what is on screen, which made this miss entirely on CI.
-          const ids = annotationsRef.current
-            .filter(a => a.fromPos < to && a.toPos > from)
+          // Overlap comes from the annotations themselves, not the decoration plugin —
+          // its set reads as empty at moments unrelated to what is on screen. Read the
+          // store rather than this editor's copy: tagging updates the store first, and
+          // the copy arrives an effect later, which was long enough on a loaded CI
+          // machine to delete a freshly tagged line without asking.
+          // Both store lists, plus this editor's own copy: they are populated by
+          // different paths and can genuinely disagree for a moment after tagging, which
+          // on a loaded machine was long enough to delete a fresh highlight without
+          // asking. Any of them knowing about it is enough to stop and ask.
+          const state = useStore.getState();
+          const seen = new Map<string, { id: string; sectionId: string; fromPos: number; toPos: number }>();
+          for (const a of [...state.annotations, ...state.documentAnnotations, ...annotationsRef.current]) {
+            seen.set(a.id, a);
+          }
+          const ids = [...seen.values()]
+            .filter(a => a.sectionId === section.id && a.fromPos < to && a.toPos > from)
             .map(a => a.id);
           if (ids.length > 0) {
             event.preventDefault();
