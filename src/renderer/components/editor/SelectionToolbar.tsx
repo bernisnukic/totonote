@@ -10,7 +10,10 @@ import { ColorPicker } from '../common/ColorPicker';
 export function SelectionToolbar() {
   const selectedRange = useStore(s => s.selectedRange);
   const selectionToolbarPos = useStore(s => s.selectionToolbarPos);
+  // The section the selection is in, not whichever one the scroll has made active.
+  const selectedSectionId = useStore(s => s.selectedSectionId);
   const activeSectionId = useStore(s => s.activeSectionId);
+  const targetSectionId = selectedSectionId ?? activeSectionId;
   const createAnnotation = useStore(s => s.createAnnotation);
   const tags = useStore(s => s.tags);
   const categories = useStore(s => s.categories);
@@ -43,15 +46,15 @@ export function SelectionToolbar() {
 
   const handleSelectTag = async (tagId: string) => {
     const range = savedRange.current;
-    if (!activeSectionId || !range) return;
+    if (!targetSectionId || !range) return;
     // Trim the range to the text it actually covers — see clampRangeToText.
-    const editor = getActiveEditor(activeSectionId);
+    const editor = getActiveEditor(targetSectionId);
     const text = editor ? clampRangeToText(editor.state.doc, range.from, range.to) : null;
     const { from, to } = text ?? range;
-    await createAnnotation(activeSectionId, tagId, from, to, undefined, fileUnderCategoryId || null);
+    await createAnnotation(targetSectionId, tagId, from, to, undefined, fileUnderCategoryId || null);
     setShowTagModal(false);
     savedRange.current = null;
-    loadAnnotations(activeSectionId);
+    loadAnnotations(targetSectionId);
   };
 
   const handleCreateNew = (name: string) => {
@@ -72,7 +75,7 @@ export function SelectionToolbar() {
     setCreatingTag(false);
   };
 
-  const editor = getActiveEditor(activeSectionId);
+  const editor = getActiveEditor(targetSectionId);
   const showToolbar = editor && selectedRange && selectionToolbarPos && !showTagModal;
 
   return (

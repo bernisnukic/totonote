@@ -208,10 +208,7 @@ test.describe('Sidebar UX', () => {
     await page.locator('.tiptap').nth(1).pressSequentially('A hoard of gold', { delay: 15 });
 
     const tagSection = async (idx: number, title: string, tag: string) => {
-      // Switch via the tab and wait out the scroll guard so activeSection is this one
-      // before we tag — otherwise the annotation can land in the previous section.
       await page.locator('.section-tab', { hasText: title }).click();
-      await page.waitForTimeout(750);
       await page.locator('.tiptap').nth(idx).click();
       await page.keyboard.press('Home');
     await page.keyboard.press('Shift+End');
@@ -252,6 +249,8 @@ test.describe('Sidebar UX', () => {
     await setup();
     // A second tag on different text (the other section), so one highlight remains
     // visible while the first is hidden.
+    // No tab switch needed: a tag now attaches to the section its selection is in, not to
+    // whichever one the scroll has made active.
     const editor2 = page.locator('.tiptap').nth(1);
     await editor2.click();
     await editor2.pressSequentially('A lair beneath the mountain', { delay: 15 });

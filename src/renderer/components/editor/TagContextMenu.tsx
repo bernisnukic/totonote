@@ -18,7 +18,11 @@ export function TagContextMenu() {
   const updateAnnotation = useStore(s => s.updateAnnotation);
   const createAnnotation = useStore(s => s.createAnnotation);
   const activeAnnotationId = useStore(s => s.activeAnnotationId);
+  // The section the selection is in — see selection-slice; the active one follows the
+  // scroll and can point elsewhere by the time a tag is applied.
+  const selectedSectionId = useStore(s => s.selectedSectionId);
   const activeSectionId = useStore(s => s.activeSectionId);
+  const targetSectionId = selectedSectionId ?? activeSectionId;
   const annotations = useStore(s => s.annotations);
   const tags = useStore(s => s.tags);
   const selectedRange = useStore(s => s.selectedRange);
@@ -76,9 +80,9 @@ export function TagContextMenu() {
    * highlight you had just made. The choice is staged now, and Add commits it.
    */
   const handleAddTagToSelection = async (tagId: string, categoryId: string | null) => {
-    if (!activeSectionId || !selectedRange) return;
-    await createAnnotation(activeSectionId, tagId, selectedRange.from, selectedRange.to, undefined, categoryId);
-    if (activeSectionId) loadAnnotations(activeSectionId);
+    if (!targetSectionId || !selectedRange) return;
+    await createAnnotation(targetSectionId, tagId, selectedRange.from, selectedRange.to, undefined, categoryId);
+    loadAnnotations(targetSectionId);
     closeAddTagModal();
   };
 

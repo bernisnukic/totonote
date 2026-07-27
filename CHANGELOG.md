@@ -2,6 +2,10 @@
 
 ## 1.20.0
 
+**A highlight goes on the section you selected the text in.** Tagging just after moving
+between sections could attach it to the previous one instead, at positions that meant
+nothing there — so no highlight appeared at all and the tag looked like it had failed.
+
 **Drag section tabs to reorder them**, the way browser tabs work. The Arrange tab still
 does it too.
 

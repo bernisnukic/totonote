@@ -203,7 +203,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     onSelectionUpdate: ({ editor }) => {
       const { from, to } = editor.state.selection;
       if (from !== to) {
-        setSelection(from, to);
+        setSelection(from, to, section.id);
         const coords = editor.view.coordsAtPos(from);
         setSelectionToolbarPos({ x: coords.left, y: coords.top - 40 });
       } else {

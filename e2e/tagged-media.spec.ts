@@ -55,6 +55,44 @@ async function tagTheImage(name: string) {
   await expect(page.locator('.right-sidebar')).toContainText(name, { timeout: 20000 });
 }
 
+test.describe('Which section a tag lands in', () => {
+  test('a highlight goes to the section its text is in, not the active one', async () => {
+    // All sections are on one page, each with its own editor, and which counts as
+    // "active" follows the scroll. Tagging just after moving between sections could
+    // attach the highlight to the previous one, at positions meaning nothing there — so
+    // it silently drew no highlight at all.
+    await page.locator('.document-card-new').click();
+    await page.locator('.modal input.input').first().fill('Two Sections');
+    await page.locator('.modal .btn-primary').click();
+    for (const title of ['One', 'Two']) {
+      await page.locator('.tab-add').click();
+      await page.locator('.modal input.input').first().fill(title);
+      await page.locator('.modal .btn-primary').click();
+    }
+    await page.waitForTimeout(700); // the scroll guard armed by creating a section
+
+    const first = page.locator('.tiptap').nth(0);
+    const second = page.locator('.tiptap').nth(1);
+    await first.click();
+    await first.pressSequentially('Short line', { delay: 15 });
+    // Straight into the other editor without switching tabs — the case that failed.
+    await second.click();
+    await second.pressSequentially('A considerably longer line of writing', { delay: 15 });
+    await page.keyboard.press('Home');
+    await page.keyboard.press('Shift+End');
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('Lair');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+
+    // The highlight is drawn, and it is on the words that were selected.
+    const highlight = page.locator('.annotation-highlight');
+    await expect(highlight).toHaveCount(1, { timeout: 20000 });
+    await expect(highlight).toContainText('A considerably longer line of writing');
+  });
+});
+
 test.describe('Working with a picture', () => {
   test('can be deleted from its right-click menu, after asking', async () => {
     await setup();
