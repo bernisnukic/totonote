@@ -1,5 +1,19 @@
 # What's New
 
+## 1.18.0
+
+**Undo treats tagging as its own step.** Typing something and then tagging it, one **⌘Z**
+used to remove the tag *and* the writing together — undoing the typing took the words the
+highlight sat on with it. Now each is its own step, in the order you did them:
+
+> type → tag → **⌘Z** removes the tag → **⌘Z** removes the text → **⌘Y** puts the text back
+> → **⌘Y** puts the tag back
+
+**Right-clicking a highlight no longer opens two things.** It was showing the tag popover as
+well as the menu, with the popover landing somewhere unrelated.
+
+**Escape closes what a click on a highlight opened** — either the popover or the menu.
+
 ## 1.17.1
 
 Fixes the warning before deleting highlighted text, which did not appear on Linux in 1.17.0.

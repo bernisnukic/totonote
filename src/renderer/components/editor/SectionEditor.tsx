@@ -18,6 +18,8 @@ import { drawingsInRange } from '../../../shared/prosemirror-text';
 import type { Section, Annotation } from '../../../shared/domain-types';
 import { invoke } from '../../lib/ipc-client';
 import { alertDialog, confirmDialog } from '../common/ConfirmDialog';
+import { undoDepth } from '@tiptap/pm/history';
+import { noteDocumentSteps, clearEditHistory } from '../../lib/edit-history';
 
 interface SectionEditorProps {
   section: Section;
@@ -43,6 +45,8 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const historyIntervalMs = useStore(s => s.historyIntervalMs);
 
   const annotationsRef = useRef<Annotation[]>([]);
+  /** ProseMirror's undo depth as of the last transaction, for spotting new steps. */
+  const undoDepthRef = useRef(0);
   const contentLoadedRef = useRef(false);
   /** The first annotation load is the starting state, not an edit worth checkpointing. */
   const annotationsSeededRef = useRef(false);
@@ -174,6 +178,14 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     onUpdate: ({ editor }) => {
       if (!contentLoadedRef.current) return;
 
+      // Keep the shared undo order in step with the editor's own history. Counting its
+      // depth rather than transactions matters: it groups a run of typing into one step,
+      // and the two must agree about how many steps there are.
+      const depth = undoDepth(editor.state);
+      noteDocumentSteps(section.id, depth - undoDepthRef.current);
+      undoDepthRef.current = depth;
+
+
       const content = JSON.stringify(editor.getJSON());
       // Auto-save debounces to disk; manual-save mode just flags the section dirty and
       // waits for Cmd+S. Read the flag live so toggling the setting takes effect at once.
@@ -226,6 +238,11 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
           }
         }
         if (event.key === 'Escape') {
+          // Close whatever a click on a highlight opened, which is what Escape means
+          // everywhere else in the app.
+          setActiveAnnotation(null);
+          setContextMenu(null);
+          // Nudge the decorations so a stale hover state can't linger.
           setHighlightsVisible(false);
           setTimeout(() => setHighlightsVisible(true), 0);
           return true;
@@ -286,7 +303,10 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   useEffect(() => {
     if (!editor) return;
     registerEditor(section.id, editor);
-    return () => unregisterEditor(section.id);
+    return () => {
+      unregisterEditor(section.id);
+      clearEditHistory(section.id);
+    };
   }, [editor, section.id]);
 
   // Load content
@@ -389,7 +409,10 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       e.preventDefault();
       const annotationId = annotationEl.getAttribute('data-annotation-id');
       if (annotationId) {
-        setActiveAnnotation(annotationId);
+        // Deliberately *not* setActiveAnnotation: that is the left-click popover, and
+        // showing it alongside the menu meant a right-click produced two things at once,
+        // the second of them somewhere unrelated. The menu carries the id it needs.
+        setActiveAnnotation(null);
         setContextMenu({ x: e.clientX, y: e.clientY, type: 'annotation', annotationId });
       }
     } else if (editor) {

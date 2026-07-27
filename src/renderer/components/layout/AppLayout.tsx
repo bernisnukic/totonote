@@ -6,6 +6,7 @@ import { LeftSidebar } from '../left-sidebar/LeftSidebar';
 import { RightSidebar } from '../right-sidebar/RightSidebar';
 import { getActiveEditor } from '../../lib/editor-registry';
 import { invoke } from '../../lib/ipc-client';
+import { undoOne, redoOne, setReplaying } from '../../lib/edit-history';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -56,17 +57,37 @@ export function AppLayout({ children }: AppLayoutProps) {
   // OS-native undo, which the rich-text editor can't hear. Route to whatever has focus:
   // a plain input undoes its own text; otherwise the active section editor does.
   useEffect(() => {
-    const run = (redo: boolean) => {
+    const run = async (redo: boolean) => {
       const el = document.activeElement as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
         document.execCommand(redo ? 'redo' : 'undo');
         return;
       }
-      const editor = getActiveEditor(useStore.getState().activeSectionId);
-      editor?.chain().focus()[redo ? 'redo' : 'undo']().run();
+      const sectionId = useStore.getState().activeSectionId;
+      const editor = getActiveEditor(sectionId);
+      if (!editor || !sectionId) return;
+
+      // Writing and tagging share one order, so a step may belong to either. The shared
+      // history says which; only a document step goes to the editor.
+      const step = redo ? await redoOne(sectionId) : await undoOne(sectionId);
+      if (step === 'doc' || step === 'none') {
+        // 'none' means nothing was recorded for this section; the editor may still hold
+        // history from content loaded before ours started, so let it try.
+        setReplaying(true);
+        try {
+          editor.chain().focus()[redo ? 'redo' : 'undo']().run();
+        } finally {
+          setReplaying(false);
+        }
+      } else {
+        // A tagging step: already applied, but the decorations must be redrawn.
+        await useStore.getState().loadAnnotations(sectionId);
+        const documentId = useStore.getState().activeDocumentId;
+        if (documentId) await useStore.getState().loadDocumentAnnotations(documentId);
+      }
     };
-    const offUndo = window.api.onMenu('menu:undo', () => run(false));
-    const offRedo = window.api.onMenu('menu:redo', () => run(true));
+    const offUndo = window.api.onMenu('menu:undo', () => void run(false));
+    const offRedo = window.api.onMenu('menu:redo', () => void run(true));
     return () => {
       offUndo();
       offRedo();

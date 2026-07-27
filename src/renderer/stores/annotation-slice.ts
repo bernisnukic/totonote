@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { Annotation, AnnotationPlacement, PositionUpdate } from '../../shared/domain-types';
 import { invoke } from '../lib/ipc-client';
+import { recordAnnotationEdit } from '../lib/edit-history';
 
 export interface AnnotationSlice {
   annotations: Annotation[];
@@ -39,7 +40,22 @@ export interface AnnotationSlice {
   clearAnnotations: () => void;
 }
 
-export const createAnnotationSlice: StateCreator<AnnotationSlice, [], [], AnnotationSlice> = (set) => ({
+/**
+ * Undo and redo recreate a highlight rather than resurrecting the same database row, so
+ * each pass gives it a new id. This maps the id an undo entry was written against to
+ * whatever id that highlight has now, so repeated undo/redo keeps working on the right one.
+ */
+const replacements = new Map<string, string>();
+
+function rememberReplacement(originalId: string, newId: string): void {
+  replacements.set(originalId, newId);
+}
+
+function latestIdFor(originalId: string): string {
+  return replacements.get(originalId) ?? originalId;
+}
+
+export const createAnnotationSlice: StateCreator<AnnotationSlice, [], [], AnnotationSlice> = (set, get) => ({
   annotations: [],
   documentAnnotations: [],
   highlightsVisible: true,
@@ -61,6 +77,29 @@ export const createAnnotationSlice: StateCreator<AnnotationSlice, [], [], Annota
       annotations: [...s.annotations, annotation],
       documentAnnotations: [...s.documentAnnotations, annotation],
     }));
+
+    // Tagging is a step of its own in the undo order, so Ctrl+Z takes the tag off rather
+    // than taking the words it was applied to as well. Recreating it keeps the same
+    // range, tag and filing; only the id differs, which nothing outside here relies on.
+    recordAnnotationEdit(sectionId, {
+      label: 'tag',
+      undo: async () => {
+        const current = latestIdFor(annotation.id);
+        await invoke('annotation:delete', { id: current });
+        set(s => ({
+          annotations: s.annotations.filter(a => a.id !== current),
+          documentAnnotations: s.documentAnnotations.filter(a => a.id !== current),
+        }));
+      },
+      redo: async () => {
+        const remade = await invoke('annotation:create', { sectionId, tagId, fromPos, toPos, note, categoryId });
+        rememberReplacement(annotation.id, remade.id);
+        set(s => ({
+          annotations: [...s.annotations, remade],
+          documentAnnotations: [...s.documentAnnotations, remade],
+        }));
+      },
+    });
     return annotation;
   },
 
@@ -73,11 +112,42 @@ export const createAnnotationSlice: StateCreator<AnnotationSlice, [], [], Annota
   },
 
   deleteAnnotation: async (id) => {
+    // Captured before it goes, so undo can put an identical one back.
+    const gone =
+      get().annotations.find(a => a.id === id) ?? get().documentAnnotations.find(a => a.id === id);
     await invoke('annotation:delete', { id });
     set(s => ({
       annotations: s.annotations.filter(a => a.id !== id),
       documentAnnotations: s.documentAnnotations.filter(a => a.id !== id),
     }));
+    if (!gone) return;
+
+    recordAnnotationEdit(gone.sectionId, {
+      label: 'untag',
+      undo: async () => {
+        const remade = await invoke('annotation:create', {
+          sectionId: gone.sectionId,
+          tagId: gone.tagId,
+          fromPos: gone.fromPos,
+          toPos: gone.toPos,
+          note: gone.note,
+          categoryId: gone.categoryId,
+        });
+        rememberReplacement(id, remade.id);
+        set(s => ({
+          annotations: [...s.annotations, remade],
+          documentAnnotations: [...s.documentAnnotations, remade],
+        }));
+      },
+      redo: async () => {
+        const current = latestIdFor(id);
+        await invoke('annotation:delete', { id: current });
+        set(s => ({
+          annotations: s.annotations.filter(a => a.id !== current),
+          documentAnnotations: s.documentAnnotations.filter(a => a.id !== current),
+        }));
+      },
+    });
   },
 
   batchUpdatePositions: async (updates) => {

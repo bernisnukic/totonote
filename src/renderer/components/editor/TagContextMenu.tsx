@@ -45,6 +45,20 @@ export function TagContextMenu() {
     return () => window.removeEventListener('scroll', handler, true);
   }, [setContextMenu]);
 
+  // Escape closes the menu, the same as clicking away from it.
+  useEffect(() => {
+    if (!contextMenu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      // A modal opened *from* the menu owns Escape while it is up.
+      if (showAddTagModal || fileModalAnnotationId) return;
+      setContextMenu(null);
+      setShowCombineMenu(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [contextMenu, showAddTagModal, fileModalAnnotationId, setContextMenu]);
+
   // Filing narrows to the tagged category's own branch — see lib/filing-options.
   const filingAnnotation = annotations.find(a => a.id === fileModalAnnotationId) ?? null;
   const filingTag = filingAnnotation ? tags.find(t => t.id === filingAnnotation.tagId) ?? null : null;

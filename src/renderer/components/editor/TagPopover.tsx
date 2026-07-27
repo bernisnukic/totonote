@@ -20,6 +20,17 @@ export function TagPopover() {
   const tag = annotation ? tags.find(t => t.id === annotation.tagId) : null;
   const category = tag ? categories.find(c => c.id === tag.categoryId) : null;
 
+  // Escape closes it wherever the focus happens to be — the editor's own handler only
+  // fires while the editor has focus, and clicking a highlight often takes it elsewhere.
+  useEffect(() => {
+    if (!annotation) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveAnnotation(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [annotation, setActiveAnnotation]);
+
   useEffect(() => {
     if (!annotation) {
       setPosition(null);
