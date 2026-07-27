@@ -435,6 +435,12 @@ export function CategoryPage({ categoryId }: CategoryPageProps) {
     }
   };
 
+  // File → Export Page… reaches the open page here, which is the only place that knows
+  // what is on it. Registered while a page is open; AppLayout explains when none is.
+  useEffect(() => {
+    return window.api.onMenu('menu:export-page', () => void exportPage());
+  });
+
   if (!category) return null;
   const directRows = grouped.get(categoryId) ?? [];
   const hasAnything = placements.length > 0;

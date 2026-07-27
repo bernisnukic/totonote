@@ -1,5 +1,18 @@
 # What's New
 
+## 1.20.0
+
+**Drag section tabs to reorder them**, the way browser tabs work. The Arrange tab still
+does it too.
+
+**Selecting a line stops at the end of that line.** Holding Shift and pressing End ran past
+the end of the paragraph and into whatever was below it — so a picture underneath ended up
+selected along with the words. Selecting text and a picture together still works by
+dragging.
+
+**Export Page… is in the File menu**, next to the backup items — which is where people
+looked for it. The button at the top of the page is unchanged.
+
 ## 1.19.0
 
 **Tagging a picture or a drawing now shows.** It always created the highlight, but drew
@@ -229,7 +242,7 @@ sticks.
 **Rename documents and sections.** In the **Arrange** tab, click the title. Titles stopped
 being permanent.
 
-**Export a page.** The **⭳** button on a category page saves it as Markdown — every filed
+**Export a page.** The **Export** button at the top of a category page saves it as Markdown — every filed
 excerpt with its note and source — so lore can go into a wiki or a design doc.
 
 **Mentioned in.** A tag's page now lists which documents mention it, most-used first.

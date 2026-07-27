@@ -21,6 +21,8 @@ import { alertDialog, confirmDialog } from '../common/ConfirmDialog';
 import { undoDepth } from '@tiptap/pm/history';
 import { noteDocumentSteps, clearEditHistory } from '../../lib/edit-history';
 import { LeadingParagraph } from '../../extensions/leading-paragraph';
+import { TextSelection } from '@tiptap/pm/state';
+import { shiftEndRange } from '../../lib/line-selection';
 
 interface SectionEditorProps {
   section: Section;
@@ -247,6 +249,26 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
               annotationsRef.current = annotationsRef.current.filter(a => !ids.includes(a.id));
               for (const id of ids) await deleteAnnotation(id);
             });
+            return true;
+          }
+        }
+        // Shift+End ran past the end of the paragraph and into the block below, so a
+        // picture underneath ended up inside the selection — "I select only the text and
+        // the image keeps getting selected too". Selecting both together is still
+        // possible by dragging; it just isn't what Shift+End does by accident.
+        if (event.key === 'End' && event.shiftKey) {
+          const { state } = view;
+          const range = shiftEndRange(
+            state.selection.anchor,
+            state.selection.head,
+            state.selection.$head.end(),
+          );
+          if (range) {
+            view.dispatch(
+              state.tr
+                .setSelection(TextSelection.create(state.doc, range.from, range.to))
+                .scrollIntoView(),
+            );
             return true;
           }
         }

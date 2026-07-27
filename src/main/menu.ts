@@ -72,6 +72,11 @@ export function buildAppMenu(): void {
           click: () => sendToFocused('menu:save-all'),
         },
         { type: 'separator' },
+        {
+          label: 'Export Page…',
+          click: () => sendToFocused('menu:export-page'),
+        },
+        { type: 'separator' },
         // Backing up is the kind of thing people look for in a menu before they think to
         // open Settings, so it lives in both places.
         {

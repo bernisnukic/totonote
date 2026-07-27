@@ -47,6 +47,24 @@ export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
     onTabClick(section.id);
   };
 
+  // Dragging a tab moves the section, the same as dragging its row in the Arrange tab —
+  // the tab bar is where people expect to reorder them, the way browser tabs work.
+  const reorderSections = useStore(s => s.reorderSections);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
+  const dropOnto = (targetId: string) => {
+    const from = sections.findIndex(s => s.id === dragId);
+    const to = sections.findIndex(s => s.id === targetId);
+    setDragId(null);
+    setDropTargetId(null);
+    if (from === -1 || to === -1 || from === to) return;
+    const orderedIds = sections.map(s => s.id);
+    const [moved] = orderedIds.splice(from, 1);
+    orderedIds.splice(to, 0, moved);
+    void reorderSections(orderedIds);
+  };
+
   // Browser tabs keep their titles until there are too many to fit; these collapsed to an
   // abbreviation the moment they weren't the active one, which made every other tab a
   // three-letter code and the × next to it easy to hit by mistake.
@@ -63,6 +81,24 @@ export function SectionTabBar({ onTabClick }: SectionTabBarProps) {
             isActive={section.id === activeSectionId}
             onClick={() => onTabClick(section.id)}
             onClose={() => void handleDelete(section.id, section.title)}
+            draggable={sections.length > 1}
+            isDragging={dragId === section.id}
+            isDropTarget={dropTargetId === section.id}
+            onDragStart={() => setDragId(section.id)}
+            onDragEnd={() => {
+              setDragId(null);
+              setDropTargetId(null);
+            }}
+            onDragOver={e => {
+              if (!dragId || dragId === section.id) return;
+              e.preventDefault();
+              setDropTargetId(section.id);
+            }}
+            onDragLeave={() => setDropTargetId(t => (t === section.id ? null : t))}
+            onDrop={e => {
+              e.preventDefault();
+              dropOnto(section.id);
+            }}
           />
         ))}
         <button className="tab-add" onClick={() => setShowCreate(true)} title="Add section">

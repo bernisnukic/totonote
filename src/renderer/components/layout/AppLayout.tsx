@@ -7,6 +7,7 @@ import { RightSidebar } from '../right-sidebar/RightSidebar';
 import { getActiveEditor } from '../../lib/editor-registry';
 import { invoke } from '../../lib/ipc-client';
 import { undoOne, redoOne, setReplaying } from '../../lib/edit-history';
+import { alertDialog } from '../common/ConfirmDialog';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -103,6 +104,18 @@ export function AppLayout({ children }: AppLayoutProps) {
     const offSaveQuit = window.api.onMenu('app:save-and-quit', () => {
       saveAllDirty().finally(() => invoke('app:force-quit'));
     });
+    // File > Export Page… when nothing is open to export. The open page handles it
+    // itself; this only covers the case where there isn't one, which otherwise looked
+    // like the menu item doing nothing.
+    const offExport = window.api.onMenu('menu:export-page', () => {
+      const state = useStore.getState();
+      if (state.focusedCategoryId) return;
+      void alertDialog(
+        'Open a page first.',
+        'Click a category in the Search sidebar to open its page, then export it from the File menu or the Export button at the top of the page.',
+      );
+    });
+
     // File > Back Up Everything / Restore. Both open a native file dialog in main, so
     // there is nothing to do here but ask; the panel in Settings does the same.
     const offBackup = window.api.onMenu('menu:backup', () => {
@@ -116,6 +129,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       offSaveQuit();
       offBackup();
       offRestore();
+      offExport();
     };
   }, [saveAllDirty]);
 

@@ -12,6 +12,7 @@ const MENU_CHANNELS = [
   'menu:open-settings',
   'menu:backup',
   'menu:restore',
+  'menu:export-page',
   'app:save-and-quit',
 ] as const;
 
