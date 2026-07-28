@@ -164,6 +164,16 @@ export function HelpViewer() {
           setZoomed(null);
           return;
         }
+        // Escape in the search box means "never mind that search", not "close the guide" —
+        // which threw people out of the page they were reading.
+        if (document.activeElement === searchRef.current) {
+          if (query) {
+            setQuery('');
+            return;
+          }
+          searchRef.current?.blur();
+          return;
+        }
         closeHelp();
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
@@ -174,7 +184,7 @@ export function HelpViewer() {
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [page, closeHelp, zoomed]);
+  }, [page, closeHelp, zoomed, query]);
 
   const pages = useMemo(() => {
     const ids = Object.keys(CONTENT);

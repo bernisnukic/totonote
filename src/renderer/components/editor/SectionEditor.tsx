@@ -452,28 +452,19 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   const handleContextMenu = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
 
-    // A picture or a drawing could only be removed with Backspace, which meant selecting
-    // it first and knowing that was the way. Offer it where people look for it.
+    // A picture or a drawing could only be removed with Backspace. Deleting one is now an
+    // item in the ordinary right-click menu — in red, at the bottom — rather than a
+    // dialog that replaces the menu, which took away everything else the menu offers.
     const mediaEl = target.closest('.resizable-image, .drawing-node');
-    if (mediaEl && !target.closest('[data-annotation-id]')) {
-      e.preventDefault();
-      const isDrawing = mediaEl.classList.contains('drawing-node');
-      void confirmDialog({
-        title: isDrawing ? 'Delete this drawing?' : 'Delete this picture?',
-        message: isDrawing
-          ? 'The drawing and its strokes are removed from this section.'
-          : 'The picture is removed from this section.',
-        detail: 'You can undo this straight afterwards.',
-        confirmLabel: 'Delete',
-        destructive: true,
-      }).then(ok => {
-        if (!ok || !editor) return;
-        const pos = editor.view.posAtDOM(mediaEl, 0);
-        if (pos < 0) return;
-        editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
-      });
-      return;
-    }
+    const mediaKey = mediaEl?.classList.contains('drawing-node')
+      ? mediaEl.getAttribute('data-drawing-id')
+      : mediaEl?.querySelector('img')?.getAttribute('src');
+    const media = mediaEl && mediaKey
+      ? {
+          kind: (mediaEl.classList.contains('drawing-node') ? 'drawing' : 'image') as 'drawing' | 'image',
+          key: mediaKey,
+        }
+      : undefined;
 
     const annotationEl = target.closest('[data-annotation-id]');
     if (annotationEl) {
@@ -484,8 +475,14 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
         // showing it alongside the menu meant a right-click produced two things at once,
         // the second of them somewhere unrelated. The menu carries the id it needs.
         setActiveAnnotation(null);
-        setContextMenu({ x: e.clientX, y: e.clientY, type: 'annotation', annotationId });
+        setContextMenu({ x: e.clientX, y: e.clientY, type: 'annotation', annotationId, media });
       }
+    } else if (media) {
+      // An untagged picture or drawing: a menu of its own, so there is somewhere for
+      // Delete to live.
+      e.preventDefault();
+      setActiveAnnotation(null);
+      setContextMenu({ x: e.clientX, y: e.clientY, type: 'media', media });
     } else if (editor) {
       const { from, to } = editor.state.selection;
       if (from !== to) {

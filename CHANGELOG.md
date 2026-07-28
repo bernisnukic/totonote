@@ -1,5 +1,17 @@
 # What's New
 
+## 1.21.1
+
+**Deleting a picture or drawing is an item in the right-click menu**, in red at the bottom,
+rather than a dialog that replaced the menu. It works on tagged ones too — before, right-
+clicking a tagged drawing only offered the tag options, with no way to delete it.
+
+**Resizing a tagged drawing resizes its highlight with it.** The outline was following the
+full column width and appeared to change height only.
+
+**Escape in the guide's search box clears the search**, instead of closing the guide and
+losing the page you were reading.
+
 ## 1.21.0
 
 **Tag sets — apply a combination of tags in one go.** Where the same two or three tags keep

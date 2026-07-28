@@ -231,6 +231,68 @@ export function TagContextMenu() {
 
   // Both modals are opened *by* a menu item, which also closes the menu — so they must
   // live outside the branch returns below. Rendering them only inside a branch meant
+  /** Remove the picture or drawing the menu was opened on. */
+  const deleteMedia = async () => {
+    const media = contextMenu?.media;
+    const sectionId = activeSectionId;
+    // The state setters directly, not closeMenu(): this runs above where that is
+    // declared, and reaching for it threw before the menu ever closed.
+    setContextMenu(null);
+    setShowCombineMenu(false);
+    if (!media || !sectionId) return;
+    const editor = getEditor(sectionId);
+    if (!editor) return;
+
+    // Find the node by its identity rather than a remembered position.
+    let pos = -1;
+    editor.state.doc.descendants((node, at) => {
+      if (pos >= 0) return false;
+      const matches =
+        media.kind === 'drawing'
+          ? node.type.name === 'drawing' && node.attrs.drawingId === media.key
+          : node.type.name === 'image' && node.attrs.src === media.key;
+      if (matches) pos = at;
+      return pos < 0;
+    });
+    if (pos < 0) return;
+    const ok = await confirmDialog({
+      title: media.kind === 'drawing' ? 'Delete this drawing?' : 'Delete this picture?',
+      message:
+        media.kind === 'drawing'
+          ? 'The drawing and its strokes are removed from this section.'
+          : 'The picture is removed from this section.',
+      detail: 'You can undo this straight afterwards.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+    editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
+  };
+
+  const deleteMediaItem = contextMenu?.media ? (
+    <>
+      <div className="context-menu-separator" />
+      <div className="context-menu-item danger" {...clickable(() => void deleteMedia())}>
+        Delete {contextMenu.media.kind === 'drawing' ? 'drawing' : 'picture'}
+      </div>
+    </>
+  ) : null;
+
+  // A picture or drawing with no tag on it: just the one thing you can do to it.
+  if (contextMenu?.type === 'media') {
+    return (
+      <>
+        <div ref={ref} className="context-menu" style={placement}>
+          <div className="context-menu-item danger" {...clickable(() => void deleteMedia())}>
+            Delete {contextMenu.media?.kind === 'drawing' ? 'drawing' : 'picture'}
+          </div>
+        </div>
+        {addTagModal}
+        {fileModal}
+      </>
+    );
+  }
+
   // "Add tag to selection" appeared to do nothing: the click closed the menu and
   // unmounted the modal in the same tick. It reappeared only on the next right-click.
   if (!contextMenu || contextMenu.type !== 'annotation') {
@@ -457,6 +519,7 @@ export function TagContextMenu() {
             })}>
           Add another tag to selection
         </div>
+        {deleteMediaItem}
       </div>
 
       {addTagModal}

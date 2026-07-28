@@ -96,9 +96,13 @@ test.describe('Which section a tag lands in', () => {
 });
 
 test.describe('Working with a picture', () => {
-  test('can be deleted from its right-click menu, after asking', async () => {
+  test('Delete is an item in the right-click menu, not a dialog instead of it', async () => {
     await setup();
     await page.locator('.tiptap img').click({ button: 'right' });
+    // The menu appears, with Delete at the bottom in red — the menu is not replaced.
+    const item = page.locator('.context-menu-item.danger', { hasText: 'Delete picture' });
+    await expect(item).toBeVisible();
+    await item.click();
     const warning = await acceptConfirm(page);
     expect(warning).toContain('picture');
     await expect(page.locator('.tiptap img')).toHaveCount(0, { timeout: 10000 });
@@ -107,8 +111,20 @@ test.describe('Working with a picture', () => {
   test('changing your mind leaves it alone', async () => {
     await setup();
     await page.locator('.tiptap img').click({ button: 'right' });
+    await page.locator('.context-menu-item.danger', { hasText: 'Delete picture' }).click();
     await declineConfirm(page);
     await expect(page.locator('.tiptap img')).toHaveCount(1);
+  });
+
+  test('a tagged picture keeps its tag options and gains Delete at the bottom', async () => {
+    // Reported: right-click delete "only works for untagged drawings" — a tagged one fell
+    // through to the annotation menu, which had no way to delete the picture.
+    await setup();
+    await tagTheImage('Portrait');
+    await page.locator('.tiptap .annotation-highlight--node').click({ button: 'right' });
+    await expect(page.locator('.context-menu-item', { hasText: 'Remove annotation' })).toBeVisible();
+    await expect(page.locator('.context-menu-item.danger', { hasText: 'Delete picture' })).toBeVisible();
+    await page.keyboard.press('Escape');
   });
 
   test('a section starting with a picture still has a line to write on above it', async () => {

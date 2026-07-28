@@ -49,9 +49,13 @@ const createWindow = (): void => {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#0a0a0a',
-    // Hidden only while a splash is up, so the first thing on screen is the splash and
-    // the second is a fully-drawn app — never a half-painted window behind a logo.
-    show: !splashWanted,
+    // Hidden while a splash is up, so the first thing on screen is the splash and the
+    // second is a fully-drawn app — never a half-painted window behind a logo.
+    //
+    // Also hidden under automation, where it is shown *without* focus below: a test run
+    // launches a window every few seconds, and each one stealing focus makes the machine
+    // unusable for as long as the suite takes.
+    show: !splashWanted && process.env.NODE_ENV !== 'test',
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 12, y: 12 },
     webPreferences: {
@@ -81,6 +85,12 @@ const createWindow = (): void => {
   }
 
   if (splashWanted) void runSplash(mainWindow);
+  else if (process.env.NODE_ENV === 'test') {
+    // showInactive, not show: visible enough to click, without taking the foreground.
+    mainWindow.once('ready-to-show', () => mainWindow?.showInactive());
+    // Belt and braces — ready-to-show may already have passed on a fast machine.
+    mainWindow.showInactive();
+  }
 
   // Warn before closing with unsaved work (manual-save mode only). Under automation we
   // never prompt, so tests can close the window freely.
@@ -106,6 +116,10 @@ const createWindow = (): void => {
 };
 
 app.whenReady().then(() => {
+  // A test run opens a window every few seconds; without this each one activates the app
+  // and takes over the machine.
+  if (process.env.NODE_ENV === 'test') app.dock?.hide();
+
   // Initialize database
   initDb();
 

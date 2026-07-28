@@ -6,6 +6,22 @@ export type RightTab = 'info' | 'arrange' | 'edit' | 'history';
 export const DEFAULT_LEFT_SIDEBAR_WIDTH = 260;
 export const DEFAULT_RIGHT_SIDEBAR_WIDTH = 260;
 
+/** Where a right-click landed, and what the menu should therefore offer. */
+export interface ContextMenuState {
+  x: number;
+  y: number;
+  type: string;
+  annotationId?: string;
+  /**
+   * Set when the click was on a picture or a drawing, so the menu can offer to delete it.
+   *
+   * Identified by what it *is* — a drawing's id, an image's source — rather than by a
+   * document position: `posAtDOM` on a node view's wrapper does not reliably give the
+   * position of the node itself, and a wrong one deletes nothing at all.
+   */
+  media?: { kind: 'image' | 'drawing'; key: string };
+}
+
 export interface UiSlice {
   leftSidebarWidth: number;
   rightSidebarWidth: number;
@@ -19,7 +35,7 @@ export interface UiSlice {
    * runs on the *mousedown* of the click that picks a menu item and clears
    * `activeAnnotationId` before the click handler ever fires.
    */
-  contextMenu: { x: number; y: number; type: string; annotationId?: string } | null;
+  contextMenu: ContextMenuState | null;
   focusedTagId: string | null;
   /** Category whose compiled wiki page is showing in the Info tab. Mutually exclusive with focusedTagId. */
   focusedCategoryId: string | null;
@@ -42,7 +58,7 @@ export interface UiSlice {
   setActiveRightTab: (tab: RightTab) => void;
   openModal: (id: string) => void;
   closeModal: (id: string) => void;
-  setContextMenu: (menu: { x: number; y: number; type: string; annotationId?: string } | null) => void;
+  setContextMenu: (menu: ContextMenuState | null) => void;
   setFocusedTag: (id: string | null) => void;
   setFocusedCategory: (id: string | null) => void;
   setGraphOpen: (open: boolean) => void;

@@ -113,8 +113,10 @@ test.describe('A drawing through its life', () => {
     await page.locator('.drawing-node .btn', { hasText: 'Done' }).click();
     expect(await strokesFor(0)).toBeGreaterThan(0);
 
-    // Delete it from the right-click menu, then undo.
+    // Delete it from the right-click menu, then undo. Delete is an item in the menu now,
+    // not a dialog that replaces it.
     await page.locator('.drawing-node').click({ button: 'right' });
+    await page.locator('.context-menu-item.danger', { hasText: 'Delete drawing' }).click();
     await acceptConfirm(page);
     await expect(page.locator('.drawing-node')).toHaveCount(0, { timeout: 10000 });
 
