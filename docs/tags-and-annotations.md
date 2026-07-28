@@ -44,7 +44,31 @@ Either way, the text is now coloured in:
 **Right-click** it for the full menu:
 
 | Option | What it does |
-|--------|--------------|
+|## Tag sets
+
+Where the same two or three tags keep landing on the same passages, save the combination.
+In the **Edit** tab, **+ New tag set**, name it and tick the tags. It then appears in the
+tag box, and one click applies all of them.
+
+A set is a **shortcut, not a tag**. Tagging with it puts its member tags on the text — so a
+passage tagged with a four-tag set still counts towards every smaller combination inside it.
+Filter by two of those tags and the passage is there, without you having to have created a
+set for that pair.
+
+> If sets were tags in their own right, the opposite would be true: text tagged with the
+> four-tag set would not appear under the two-tag one, and every combination you ever wanted
+> to look at would have to be made in advance.
+
+Deleting a set removes the shortcut only. The tags, and everything tagged with them, stay
+exactly as they are.
+
+## Ordering the tag list
+
+Above the tag tree in the **Search** sidebar is a small ordering control: **A → Z**, newest
+or oldest first, most or least used, or **As arranged**. It applies to the tags inside every
+category.
+
+--------|--------------|
 | **Remove annotation** | Removes the highlight. Immediate, no confirmation. Your text is untouched. |
 | **File under…** | Places the excerpt on a category page — see [Filing and the graph](filing-and-graph.md) |
 | **Expand to selection** | Stretches the highlight to cover your current selection too |

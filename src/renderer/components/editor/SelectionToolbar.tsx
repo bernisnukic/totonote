@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useStore } from '../../stores';
 import { getEditor, getActiveEditor } from '../../lib/editor-registry';
 import { flattenCategoryTree, optionIndent } from '../../lib/category-tree';
@@ -6,6 +6,7 @@ import { clampRangeToText } from '../../lib/annotation-utils';
 import { Modal } from '../common/Modal';
 import { LabelAutocomplete } from '../right-sidebar/LabelAutocomplete';
 import { ColorPicker } from '../common/ColorPicker';
+import type { TagSet } from '../../../shared/domain-types';
 
 export function SelectionToolbar() {
   const selectedRange = useStore(s => s.selectedRange);
@@ -21,6 +22,7 @@ export function SelectionToolbar() {
   const createTag = useStore(s => s.createTag);
   const loadAnnotations = useStore(s => s.loadAnnotations);
   const loadDocumentAnnotations = useStore(s => s.loadDocumentAnnotations);
+  const tagSets = useStore(s => s.tagSets);
   const [showTagModal, setShowTagModal] = useState(false);
 
   // Inline tag creation state
@@ -55,7 +57,7 @@ export function SelectionToolbar() {
     setShowTagModal(true);
   };
 
-  const handleSelectTag = async (tagId: string) => {
+  const handleSelectTag = async (tagId: string, options?: { keepOpen?: boolean }) => {
     const range = savedRange.current;
     const sectionId = savedSectionId.current;
     if (!sectionId || !range) return;
@@ -64,6 +66,7 @@ export function SelectionToolbar() {
     const text = editor ? clampRangeToText(editor.state.doc, range.from, range.to) : null;
     const { from, to } = text ?? range;
     await createAnnotation(sectionId, tagId, from, to, undefined, fileUnderCategoryId || null);
+    if (options?.keepOpen) return; // a set applies several in a row
     setShowTagModal(false);
     savedRange.current = null;
     savedSectionId.current = null;
@@ -74,6 +77,39 @@ export function SelectionToolbar() {
     if (documentId) await loadDocumentAnnotations(documentId);
     if (useStore.getState().activeSectionId === sectionId) await loadAnnotations(sectionId);
   };
+
+  /**
+   * Apply every tag in a set.
+   *
+   * The set is a shortcut: what lands on the text is its member tags, so a passage tagged
+   * with a large set still turns up under every smaller combination inside it.
+   */
+  const handleSelectSet = async (set: TagSet) => {
+    for (const tagId of set.tagIds) await handleSelectTag(tagId, { keepOpen: true });
+    setShowTagModal(false);
+    savedRange.current = null;
+    savedSectionId.current = null;
+  };
+
+  const setDescription = (set: TagSet) =>
+    `Applies ${set.tagIds
+      .map(id => tags.find(t => t.id === id)?.name)
+      .filter(Boolean)
+      .join(', ')}`;
+
+  // Tag what is selected without reaching for the floating toolbar. Asked for as
+  // "optional hotkeys for tagging and filing shortcuts"; this is the tagging half.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return;
+      if (e.key.toLowerCase() !== 't') return;
+      if (!selectedRange || showTagModal) return;
+      e.preventDefault();
+      handleAnnotate();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  });
 
   const handleCreateNew = (name: string) => {
     setNewTagName(name);
@@ -210,6 +246,26 @@ export function SelectionToolbar() {
                 ))}
               </select>
             </div>
+            {tagSets.length > 0 && (
+              <div className="input-group">
+                <label className="input-label">
+                  Tag sets <span className="rule-help-count">(applies several at once)</span>
+                </label>
+                <div className="tag-set-row">
+                  {tagSets.map(set => (
+                    <button
+                      key={set.id}
+                      className="tag-set-chip"
+                      onClick={() => void handleSelectSet(set)}
+                      title={setDescription(set)}
+                    >
+                      {set.name}
+                      <span className="tag-set-chip__count">{set.tagIds.length}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <LabelAutocomplete
               tags={tags}
               onSelect={handleSelectTag}

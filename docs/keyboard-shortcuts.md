@@ -65,6 +65,21 @@ editor, where they previously did nothing.
 | `Tab` | Moves to the next control — rows, tabs, cards and menu items are all reachable |
 | `Enter` / `Space` | Activates whatever is focused, with a ring showing where you are |
 
+## Tagging
+
+| Action | macOS | Windows & Linux |
+|--------|-------|-----------------|
+| Tag the selected text | `⌘T` | `Ctrl+T` |
+| File the highlight you're on | `⌘⇧F` | `Ctrl+Shift+F` |
+
+Both open the same boxes the toolbar and right-click menu do.
+
+## Drawing
+
+| Key | What it does |
+|-----|--------------|
+| `Escape` | Leaves drawing mode. If you've drawn something since starting, it asks whether to keep it |
+
 ## Linking to another document
 
 Type `[[` while writing and a list of your documents appears.

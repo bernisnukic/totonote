@@ -1,5 +1,25 @@
 # What's New
 
+## 1.21.0
+
+**Tag sets — apply a combination of tags in one go.** Where the same two or three tags keep
+landing on the same passages, save the combination: **Edit** tab → **+ Create tag set**, name
+it, tick the tags. It then appears in the tag box, and one click applies all of them.
+
+A set is a **shortcut, not a tag**. Tagging with it puts its member tags on the text, so a
+passage tagged with a four-tag set still counts towards every smaller combination inside it —
+filter by two of those tags and it's there, with no set needed for that pair. Deleting a set
+removes the shortcut only; the tags and everything tagged with them are untouched.
+
+**Order the tag list.** Above the tag tree: A → Z, newest or oldest first, most or least
+used, or as arranged.
+
+**Shortcuts for tagging and filing.** **⌘T** tags what's selected. **⌘⇧F** files the
+highlight you're on. Both open the same boxes as before.
+
+**Escape leaves drawing mode.** If you haven't drawn anything it just leaves. If you have, it
+asks whether to keep it — **Done** still keeps without asking, because that's what Done means.
+
 ## 1.20.1
 
 **Highlights appear in every section, not just the one you're in.** Tagging text in a

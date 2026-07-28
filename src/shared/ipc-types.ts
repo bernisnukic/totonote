@@ -1,5 +1,6 @@
 import type {
   Backlink,
+  TagSet,
   Document,
   Section,
   Tag,
@@ -118,6 +119,11 @@ export interface IpcHandlerMap {
   /** Distinct tag→category filings, for the graph. */
   'annotation:filing-edges': { args: void; result: FilingEdge[] };
   /** Every dated excerpt, for the timeline. Ordering happens in the renderer. */
+  'tag-set:list': { args: { workspaceId: string }; result: TagSet[] };
+  'tag-set:create': { args: { workspaceId: string; name: string; tagIds: string[] }; result: TagSet };
+  'tag-set:update': { args: { id: string; name: string; tagIds: string[] }; result: TagSet };
+  'tag-set:delete': { args: { id: string }; result: void };
+
   'annotation:timeline': { args: { workspaceId?: string }; result: AnnotationPlacement[] };
 
   // Section Tags
@@ -230,6 +236,10 @@ export const IPC_CHANNELS = [
   'annotation:reorder-placements',
   'annotation:filing-edges',
   'annotation:timeline',
+  'tag-set:list',
+  'tag-set:create',
+  'tag-set:update',
+  'tag-set:delete',
   'section-tag:list',
   'section-tag:add',
   'section-tag:remove',

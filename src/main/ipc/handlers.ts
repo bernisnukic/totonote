@@ -13,6 +13,7 @@ import * as preferenceRepo from '../db/repositories/preference-repo';
 import * as mediaRepo from '../db/repositories/media-repo';
 import * as drawingRepo from '../db/repositories/drawing-repo';
 import * as searchRepo from '../db/repositories/search-repo';
+import * as tagSetRepo from '../db/repositories/tag-set-repo';
 import { queueImageForOcr } from '../services/ocr-queue';
 import { mediaIdsInContent, drawingIdsInContent } from '../../shared/media-refs';
 import { checkForUpdates } from '../services/update-checker';
@@ -168,6 +169,18 @@ export function registerIpcHandlers(): void {
     await fs.promises.writeFile(filePath, args.contents, 'utf8');
     return filePath;
   });
+
+  // Tag sets — named groups of tags applied together.
+  ipcMain.handle('tag-set:list', (_, args: { workspaceId: string }) =>
+    tagSetRepo.listTagSets(args.workspaceId)
+  );
+  ipcMain.handle('tag-set:create', (_, args: { workspaceId: string; name: string; tagIds: string[] }) =>
+    tagSetRepo.createTagSet(args.workspaceId, args.name, args.tagIds)
+  );
+  ipcMain.handle('tag-set:update', (_, args: { id: string; name: string; tagIds: string[] }) =>
+    tagSetRepo.updateTagSet(args.id, args.name, args.tagIds)
+  );
+  ipcMain.handle('tag-set:delete', (_, args: { id: string }) => tagSetRepo.deleteTagSet(args.id));
 
   ipcMain.handle('annotation:timeline', (_, args: { workspaceId?: string }) =>
     annotationRepo.listTimeline(args.workspaceId)

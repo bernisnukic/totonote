@@ -10,6 +10,7 @@ import { useClickOutside } from '../../hooks/useClickOutside';
 import { confirmDialog } from '../common/ConfirmDialog';
 import { clickable } from '../../lib/clickable';
 import { useMenuPosition } from '../../hooks/useMenuPosition';
+import { sortTags, TAG_SORTS } from '../../lib/tag-sort';
 
 /** True for anywhere the user could be typing — the editor, an input or a textarea. */
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -40,6 +41,8 @@ export function LeftSidebar() {
   const documentAnnotations = useStore(s => s.documentAnnotations);
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const tagSort = useStore(s => s.tagSort);
+  const setTagSort = useStore(s => s.setTagSort);
   const [exactMatch, setExactMatch] = useState(false);
 
   // Matches from the writing itself, which live in the database rather than in the store —
@@ -157,11 +160,11 @@ export function LeftSidebar() {
       const visible = !q || catNameMatch || matchingTags.length > 0;
       const expanded = q ? (catNameMatch || matchingTags.length > 0) : expandedCategories.has(cat.id);
       // When category name matches, show all its tags
-      const displayTags = (q && catNameMatch) ? catTags : matchingTags;
+      const displayTags = sortTags((q && catNameMatch) ? catTags : matchingTags, tagSort, tagUsageCounts);
 
       return { category: cat, depth, tags: catTags, displayTags, visible, expanded, matchingTagIds: new Set(matchingTags.map(t => t.id)) };
     }).filter(item => item.visible);
-  }, [flatCategoryList, tags, searchQuery, expandedCategories, exactMatch]);
+  }, [flatCategoryList, tags, searchQuery, expandedCategories, exactMatch, tagSort, tagUsageCounts]);
 
   // Get active filter count
   const activeFilterCount = Object.values(activeFilters).flat().length;
@@ -238,6 +241,19 @@ export function LeftSidebar() {
               <button className="sidebar-tree-action" onClick={toggleExpandAll}>
                 {allExpanded ? '▾ Collapse all' : '▸ Expand all'}
               </button>
+              {/* Ordering the tags within each category. Alphabetical by default — the
+                  only order you can predict without looking at the list first. */}
+              <select
+                className="sidebar-tree-sort"
+                value={tagSort}
+                onChange={e => setTagSort(e.target.value as typeof tagSort)}
+                aria-label="Sort tags"
+                title="How the tags in each category are ordered"
+              >
+                {TAG_SORTS.map(({ key, label }) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
             </div>
           )}
           {searchQuery.trim().length >= 2 && (

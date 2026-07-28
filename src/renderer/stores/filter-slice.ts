@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import type { TagSort } from '../lib/tag-sort';
 
 export type LeftSidebarMode = 'search' | 'sort' | 'filter' | 'highlight';
 
@@ -16,6 +17,9 @@ export interface FilterSlice {
   clearFilters: () => void;
   setDocumentSort: (order: ExcerptSort) => void;
   setLeftSidebarMode: (mode: LeftSidebarMode) => void;
+  /** How the tag lists are ordered. Kept here with the other browsing preferences. */
+  tagSort: TagSort;
+  setTagSort: (sort: TagSort) => void;
 }
 
 export const createFilterSlice: StateCreator<FilterSlice, [], [], FilterSlice> = (set) => ({
@@ -44,4 +48,6 @@ export const createFilterSlice: StateCreator<FilterSlice, [], [], FilterSlice> =
 
   setDocumentSort: (order) => set({ documentSort: order }),
   setLeftSidebarMode: (mode) => set({ leftSidebarMode: mode }),
+  tagSort: 'name',
+  setTagSort: (sort) => set({ tagSort: sort }),
 });

@@ -6,6 +6,7 @@ import type {
   SectionTagWithDetails,
   ApplyRuleResult,
   BulkAddSubcategoryResult,
+  TagSet,
 } from '../../shared/domain-types';
 import { invoke } from '../lib/ipc-client';
 // Typed against the whole store so deletions can offer an undo; type-only, so no
@@ -19,8 +20,14 @@ export interface TagSlice {
   categoryRules: Record<string, string>;
   documentTags: DocumentTagWithDetails[];
   sectionTags: SectionTagWithDetails[];
+  /** Named groups of tags applied together — a shortcut, not a tag of their own. */
+  tagSets: TagSet[];
 
   loadTags: (categoryId?: string) => Promise<void>;
+  loadTagSets: () => Promise<void>;
+  createTagSet: (name: string, tagIds: string[]) => Promise<void>;
+  updateTagSet: (id: string, name: string, tagIds: string[]) => Promise<void>;
+  deleteTagSet: (id: string) => Promise<void>;
   loadCategories: () => Promise<void>;
   loadCategoryRules: () => Promise<void>;
   createTag: (categoryId: string, name: string, color?: string) => Promise<Tag>;
@@ -54,10 +61,34 @@ export const createTagSlice: StateCreator<AppStore, [], [], TagSlice> = (set, ge
   categoryRules: {},
   documentTags: [],
   sectionTags: [],
+  tagSets: [],
 
   loadTags: async (categoryId) => {
     const tags = await invoke('tag:list', { categoryId });
     set({ tags });
+  },
+
+  loadTagSets: async () => {
+    const workspaceId = get().activeWorkspaceId;
+    if (!workspaceId) return;
+    set({ tagSets: await invoke('tag-set:list', { workspaceId }) });
+  },
+
+  createTagSet: async (name, tagIds) => {
+    const workspaceId = get().activeWorkspaceId;
+    if (!workspaceId) return;
+    await invoke('tag-set:create', { workspaceId, name, tagIds });
+    set({ tagSets: await invoke('tag-set:list', { workspaceId }) });
+  },
+
+  updateTagSet: async (id, name, tagIds) => {
+    await invoke('tag-set:update', { id, name, tagIds });
+    await get().loadTagSets();
+  },
+
+  deleteTagSet: async (id) => {
+    await invoke('tag-set:delete', { id });
+    await get().loadTagSets();
   },
 
   loadCategories: async () => {

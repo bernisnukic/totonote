@@ -15,6 +15,7 @@ import {
 import { registerDrawing, unregisterDrawing } from '../../lib/drawing-registry';
 import { DrawingCanvas } from './DrawingCanvas';
 import { DrawingToolbar, PEN_COLORS, PEN_SIZES } from './DrawingToolbar';
+import { confirmDialog } from '../common/ConfirmDialog';
 
 /**
  * A drawing inside the document.
@@ -195,6 +196,57 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
     return () => unregisterDrawing(drawingId);
   }, [drawingId]);
 
+  /** What the drawing looked like when this edit began, for discarding back to it. */
+  const editStartRef = useRef<string | null>(null);
+
+  const beginEditing = useCallback(() => {
+    editStartRef.current = serializeDrawing(drawingRef.current);
+    setEditing(true);
+  }, []);
+
+  /**
+   * Leave drawing mode.
+   *
+   * Escape means "I'm done here", so it should not interrogate someone who has drawn
+   * nothing. When there *are* changes it asks, because the alternative is silently
+   * throwing away a sketch or silently keeping one that was a mistake.
+   */
+  const stopEditing = useCallback(async () => {
+    const before = editStartRef.current;
+    const now = serializeDrawing(drawingRef.current);
+    editStartRef.current = null;
+    if (before === null || before === now) {
+      setEditing(false);
+      return;
+    }
+    const keep = await confirmDialog({
+      title: 'Keep this drawing?',
+      message: 'You have drawn something since you started.',
+      confirmLabel: 'Keep',
+      cancelLabel: 'Discard',
+    });
+    if (!keep) {
+      const restored = parseDrawing(before);
+      drawingRef.current = restored;
+      setDrawing(restored);
+      if (drawingId) invoke('drawing:save', { id: drawingId, strokes: before }).catch(() => undefined);
+    }
+    setEditing(false);
+  }, [drawingId]);
+
+  // Escape leaves drawing mode rather than falling through to the editor behind it.
+  useEffect(() => {
+    if (!editing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      void stopEditing();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [editing, stopEditing]);
+
   const applyChange = useCallback(
     (next: Drawing) => {
       undoStack.current.push(drawingRef.current);
@@ -260,7 +312,7 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
         className="drawing-node__surface"
         ref={hostRef}
         style={{ aspectRatio: String(aspectRatio), width: storedWidth ? `${storedWidth}px` : undefined }}
-        onDoubleClick={() => setEditing(true)}
+        onDoubleClick={beginEditing}
       >
         {backgroundMediaId && (
           <img className="drawing-node__background" src={mediaUrl(backgroundMediaId)} alt="" draggable={false} />
@@ -302,10 +354,14 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
               onUndo={undo}
               onRedo={redo}
               onClear={clear}
-              onDone={() => setEditing(false)}
+              // Done already means "keep this" — only Escape is ambiguous enough to ask.
+              onDone={() => {
+                editStartRef.current = null;
+                setEditing(false);
+              }}
             />
           ) : (
-            <button className="btn btn-secondary btn-sm" onClick={() => setEditing(true)}>
+            <button className="btn btn-secondary btn-sm" onClick={beginEditing}>
               &#9998; Draw
             </button>
           )}

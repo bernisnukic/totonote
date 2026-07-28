@@ -1169,3 +1169,21 @@
   color: var(--text-muted);
   flex-shrink: 0;
 }
+
+/* Tag ordering, beside the expand/collapse control. */
+.sidebar-tree-sort {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-1);
+  cursor: pointer;
+}
+
+.sidebar-tree-sort:hover {
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}

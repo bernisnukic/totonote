@@ -52,6 +52,24 @@ export function TagContextMenu() {
     return () => window.removeEventListener('scroll', handler, true);
   }, [setContextMenu]);
 
+  // File the highlight you are on, without going through the right-click menu — the
+  // filing half of "optional hotkeys for tagging and filing shortcuts".
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || !e.shiftKey || e.altKey) return;
+      if (e.key.toLowerCase() !== 'f') return;
+      const id = contextMenu?.annotationId ?? activeAnnotationId;
+      if (!id || fileModalAnnotationId) return;
+      e.preventDefault();
+      const target = annotations.find(a => a.id === id);
+      setFileModalAnnotationId(id);
+      setFileCategoryId(target?.categoryId ?? '');
+      setContextMenu(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  });
+
   // Escape closes the menu, the same as clicking away from it.
   useEffect(() => {
     if (!contextMenu) return;

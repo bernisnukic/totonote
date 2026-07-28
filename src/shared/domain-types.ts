@@ -335,3 +335,17 @@ export interface Backlink {
   count: number;
   sections: Array<{ sectionId: string; sectionTitle: string }>;
 }
+
+/**
+ * A named group of tags applied together — see main/db/schema.ts.
+ *
+ * A set is a shortcut, not a tag: applying one puts `tagIds` on the text, so a passage
+ * tagged with a large set still satisfies every smaller combination inside it.
+ */
+export interface TagSet {
+  id: string;
+  workspaceId: string;
+  name: string;
+  createdAt: string;
+  tagIds: string[];
+}

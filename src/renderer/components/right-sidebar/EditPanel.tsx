@@ -12,6 +12,7 @@ import { categoryImpact, describeCategoryDeletion } from '../../lib/category-imp
 import { confirmDialog } from '../common/ConfirmDialog';
 import { clickable } from '../../lib/clickable';
 import { useMenuPosition } from '../../hooks/useMenuPosition';
+import { TagSetsSection } from './TagSetsSection';
 
 export function EditPanel() {
   const categories = useStore(s => s.categories);
@@ -488,6 +489,8 @@ export function EditPanel() {
           <ColorPicker selectedColor={newColor} onSelect={setNewColor} />
         </div>
       </Modal>
+
+      <TagSetsSection />
     </div>
   );
 }

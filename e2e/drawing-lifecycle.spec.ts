@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from '@playwright/test';
-import { registerAppHooks, acceptConfirm } from './fixtures';
+import { registerAppHooks, acceptConfirm, declineConfirm } from './fixtures';
 
 /**
  * A drawing that is copied, or deleted and brought back.
@@ -67,6 +67,44 @@ async function strokesFor(index: number): Promise<number> {
     return (JSON.parse(record.strokes) as { strokes: unknown[] }).strokes.length;
   }, index);
 }
+
+test.describe('Leaving drawing mode', () => {
+  test('Escape just leaves when nothing has been drawn', async () => {
+    await setup();
+    await page.keyboard.press('Escape');
+    // No question asked — there is nothing to decide about.
+    await expect(page.locator('.confirm-message')).toHaveCount(0);
+    await expect(page.locator('.drawing-toolbar')).toHaveCount(0);
+  });
+
+  test('Escape after drawing offers to keep it', async () => {
+    await setup();
+    await drawStroke();
+    await page.keyboard.press('Escape');
+    const message = await acceptConfirm(page); // "Keep"
+    expect(message).toContain('drawn something');
+    await expect(page.locator('.drawing-toolbar')).toHaveCount(0);
+    expect(await strokesFor(0)).toBeGreaterThan(0);
+  });
+
+  test('discarding puts the drawing back as it was', async () => {
+    await setup();
+    await drawStroke();
+    await page.locator('.drawing-node .btn', { hasText: 'Done' }).click();
+    const before = await strokesFor(0);
+    expect(before).toBeGreaterThan(0);
+
+    // Draw more, then back out of it.
+    await page.locator('.drawing-node .btn', { hasText: 'Draw' }).click();
+    await expect(page.locator('.drawing-toolbar')).toBeVisible();
+    await drawStroke();
+    await page.keyboard.press('Escape');
+    await declineConfirm(page); // "Discard"
+    await page.waitForTimeout(600);
+
+    expect(await strokesFor(0)).toBe(before);
+  });
+});
 
 test.describe('A drawing through its life', () => {
   test('keeps its strokes when it is deleted and brought back', async () => {

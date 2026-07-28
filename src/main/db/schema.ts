@@ -107,6 +107,49 @@ export const tags = sqliteTable(
   }),
 );
 
+/**
+ * A named group of tags applied together.
+ *
+ * Where two or more tags keep landing on the same passages, this saves the combination so
+ * it can be applied in one go. Deliberately *not* a tag of its own: tagging with a set puts
+ * the real tags on the text, so a passage tagged with a four-tag set still turns up under
+ * every two-tag set it satisfies. Making the combination its own tag would mean the
+ * opposite — a passage tagged A∩B∩C∩D would appear under none of A∩B, A∩C or A∩D, and
+ * every combination anyone wanted to browse would have to be enumerated in advance.
+ */
+export const tagSets = sqliteTable(
+  'tag_sets',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    createdAt: text('created_at').notNull().default(isoNow),
+  },
+  t => ({
+    workspaceIdx: index('idx_tag_sets_workspace').on(t.workspaceId),
+    nameUnique: uniqueIndex('idx_tag_sets_name').on(t.workspaceId, t.name),
+  }),
+);
+
+/** Which tags belong to a set. Deleting a tag removes it from every set it was in. */
+export const tagSetMembers = sqliteTable(
+  'tag_set_members',
+  {
+    tagSetId: text('tag_set_id')
+      .notNull()
+      .references(() => tagSets.id, { onDelete: 'cascade' }),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+  },
+  t => ({
+    pk: primaryKey({ columns: [t.tagSetId, t.tagId] }),
+    tagIdx: index('idx_tag_set_members_tag').on(t.tagId),
+  }),
+);
+
 export const annotations = sqliteTable(
   'annotations',
   {
