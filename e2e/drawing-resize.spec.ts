@@ -37,44 +37,107 @@ async function tagTheDrawing(name: string) {
   await expect(page.locator('.annotation-highlight--node')).toBeVisible({ timeout: 20000 });
 }
 
-/** Drag the corner handle left by `by` pixels. */
-async function shrinkBy(by: number) {
-  const handle = page.locator('.drawing-node__handle');
+/** Drag the corner handle sideways. Negative narrows, positive widens. */
+async function dragHandle(by: number, index = 0) {
+  const handle = page.locator('.drawing-node__handle').nth(index);
   const box = await handle.boundingBox();
   if (!box) throw new Error('no resize handle');
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 - by, box.y + box.height / 2, { steps: 10 });
+  await page.mouse.move(box.x + box.width / 2 + by, box.y + box.height / 2, { steps: 10 });
   await page.mouse.up();
   await page.waitForTimeout(400);
 }
+
+const shrinkBy = (by: number) => dragHandle(-by);
 
 test.describe('Resizing a tagged drawing', () => {
   test('the highlight stays, and follows the new width', async () => {
     await setup();
     await tagTheDrawing('Sketch');
 
-    const node = page.locator('.annotation-highlight--node');
-    const before = await node.boundingBox();
+    const surface = page.locator('.drawing-node__surface');
+    const before = (await surface.boundingBox())!.width;
     await shrinkBy(150);
 
     // Still highlighted — it used to disappear until something re-synced.
-    await expect(page.locator('.annotation-highlight--node')).toBeVisible();
+    await expect(page.locator('.annotation-highlight--node')).toHaveCount(1);
 
-    // And narrower: the highlight is drawn around the node, so the node must have shrunk.
-    const after = await node.boundingBox();
-    expect(after!.width).toBeLessThan(before!.width - 50);
+    const after = (await surface.boundingBox())!.width;
+    expect(after).toBeLessThan(before - 50);
   });
 
-  test('the highlight box matches the drawing, not the column', async () => {
+  test('the outline is drawn on the drawing, not across the column', async () => {
     await setup();
     await tagTheDrawing('Sketch');
     await shrinkBy(150);
 
-    const node = await page.locator('.annotation-highlight--node').boundingBox();
-    const surface = await page.locator('.drawing-node__surface').boundingBox();
-    // The outline hugs the drawing rather than running the width of the page.
-    expect(Math.abs(node!.width - surface!.width)).toBeLessThan(12);
+    // The decoration lands on TipTap's wrapper, which is always column-width; the visible
+    // outline belongs on the drawing inside it, so that is where it must be.
+    const outline = await page.locator('.drawing-node__surface').evaluate(el => {
+      const s = getComputedStyle(el);
+      return { width: s.outlineWidth, style: s.outlineStyle };
+    });
+    expect(outline.style).toBe('solid');
+    expect(parseFloat(outline.width)).toBeGreaterThan(0);
+  });
+});
+
+test.describe('Resizing a drawing more than once', () => {
+  test('a drawing that has been narrowed can be widened again', async () => {
+    await setup();
+    const surface = page.locator('.drawing-node__surface');
+
+    // Drag by a share of the column rather than a fixed number of pixels: growing is
+    // legitimately capped at the column width, so a fixed 150px would hit that ceiling
+    // and look like the bug whenever the window happened to be narrow.
+    const full = (await surface.boundingBox())!.width;
+    await dragHandle(-Math.round(full * 0.5));
+    const narrowed = (await surface.boundingBox())!.width;
+
+    // Reported: "no matter what, it goes to smallest size and i can no longer resize
+    // again". The width it could be dragged to was measured from the node's own wrapper,
+    // which had been made to shrink to fit — so the ceiling was whatever it currently was
+    // (in fact the width of the Draw button), and no drag could ever give width back.
+    await dragHandle(Math.round(full * 0.25));
+    const widened = (await surface.boundingBox())!.width;
+
+    expect(widened).toBeGreaterThan(narrowed + full * 0.15);
+  });
+});
+
+test.describe('Two tagged drawings', () => {
+  test('their highlights do not overlap each other', async () => {
+    await setup();
+    await tagTheDrawing('First');
+
+    // A second drawing directly below the first. Put the caret at the very end of the
+    // document first — after tagging, the selection is still on the first drawing, and
+    // inserting there would replace it rather than add one.
+    await page.locator('.tiptap').first().click();
+    await page.keyboard.press('ControlOrMeta+End');
+    await page.keyboard.press('Enter');
+    await page.locator('.toolbar-btn[aria-label="Insert a drawing"]').click();
+    await expect(page.locator('.drawing-node')).toHaveCount(2, { timeout: 10000 });
+
+    await page.locator('.drawing-node__surface').nth(1).click();
+    await expect(page.locator('.selection-toolbar')).toBeVisible({ timeout: 15000 });
+    await page.locator('.selection-toolbar-btn', { hasText: 'Tag' }).click();
+    const modal = page.locator('.modal');
+    await modal.locator('.autocomplete input.input').fill('Second');
+    await modal.locator('.autocomplete-item-create').click();
+    await modal.locator('.btn-primary', { hasText: 'Create' }).click();
+    await expect(page.locator('.annotation-highlight--node')).toHaveCount(2, { timeout: 20000 });
+
+    // Measure the drawings themselves: they are what carries the visible outline. The
+    // wrapper the decoration lands on is column-width and the two wrappers sit flush, so
+    // outlining those put the second highlight's top edge inside the first — which is what
+    // the tester photographed.
+    const surfaces = page.locator('.drawing-node__surface');
+    const first = (await surfaces.nth(0).boundingBox())!;
+    const second = (await surfaces.nth(1).boundingBox())!;
+    // 2px of outline sitting 2px clear of each edge, so 8px is the point where they touch.
+    expect(second.y - (first.y + first.height)).toBeGreaterThan(8);
   });
 });
 

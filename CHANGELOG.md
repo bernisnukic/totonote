@@ -1,5 +1,18 @@
 # What's New
 
+## 1.21.3
+
+**Resizing a drawing works again.** 1.21.2 broke it badly: a drawing could be made smaller
+but never larger again, it dropped to its smallest size, and it became hard to click at
+all. Making a tagged drawing's outline hug the drawing had shrunk the invisible box around
+it down to the width of the Draw button — and that box was what limited how wide the
+drawing could be dragged.
+
+**Two tagged drawings no longer have overlapping outlines.**
+
+The outline is now drawn on the drawing itself rather than on the box around it, so it
+cannot affect the drawing's size or position again.
+
 ## 1.21.2
 
 **Resizing a tagged drawing no longer makes its highlight disappear.** It came back only

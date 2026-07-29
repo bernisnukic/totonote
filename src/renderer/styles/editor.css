@@ -335,20 +335,6 @@
   margin: var(--space-4) 0;
 }
 
-/* A tag's highlight is drawn on the node's *outermost* element — the wrapper TipTap puts
-   around a React node view, not the one the component renders. Left at full column width,
-   a resized drawing kept a full-width outline and looked as though only its height had
-   changed.
-   
-   Only once a width has actually been chosen, though: `fit-content` around a child that is
-   `width: 100%` has nothing to measure, and an untouched drawing would collapse to nothing. */
-.drawing-node.is-sized,
-.react-renderer.node-drawing:has(> .drawing-node.is-sized),
-.react-renderer.node-image:has(> .resizable-image.is-sized) {
-  width: fit-content;
-  max-width: 100%;
-}
-
 .drawing-node__surface {
   position: relative;
   width: 100%;
@@ -562,10 +548,35 @@
 }
 
 /* A tagged picture or drawing. An inline highlight has text to tint; these do not, so the
-   node itself is outlined instead. */
+   thing itself is outlined instead.
+
+   The decoration lands on TipTap's wrapper around the node view, which is always as wide as
+   the column — so it carries the colour down as custom properties and the outline is drawn
+   on the drawing or picture inside it. Sizing the wrapper to match instead was the obvious
+   move and a bad one: `fit-content` cannot measure a child that is `width: 100%`, so the
+   wrapper collapsed to the width of the Draw button beside it, and the resize code — which
+   reads its ceiling from that wrapper — then refused to widen the drawing past 54px. */
+/* Defaults, so a highlight whose colour never arrived is still visible rather than
+   silently absent — and so the token check has something to resolve against. */
 .annotation-highlight--node {
+  --annotation-color: var(--accent-primary);
+  --annotation-tint: transparent;
+}
+
+.annotation-highlight--node > .drawing-node > .drawing-node__surface,
+.annotation-highlight--node > .resizable-image > img {
+  outline: 2px solid var(--annotation-color);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+  background-color: var(--annotation-tint);
+}
+
+/* Any other atom that gets tagged has nothing inside worth singling out. */
+.annotation-highlight--node:not(.node-drawing):not(.node-image) {
+  outline: 2px solid var(--annotation-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+  background-color: var(--annotation-tint);
 }
 
 /* Drawings size the same way pictures do — a sketch was always the full column width,

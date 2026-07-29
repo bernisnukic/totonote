@@ -71,6 +71,12 @@ function inlineDecorationFor(ann: AnnotationData): Decoration {
  * wrap. Tagging one therefore looked like it had failed — no colour, nothing to
  * right-click, and no way to tell you had already done it, so people tagged the same image
  * again and again. A node decoration puts the class and the id on the element itself.
+ *
+ * The colour is passed down as custom properties rather than painted here, because the
+ * element this lands on is TipTap's wrapper around the node view, which is as wide as the
+ * column whatever size the drawing inside it is. Outlining *that* drew a full-width box
+ * around a narrow drawing. The stylesheet takes these two values and outlines the drawing
+ * itself, which needs no layout change and so cannot disturb resizing.
  */
 function nodeDecorationsFor(ann: AnnotationData, doc: ProseMirrorNode): Decoration[] {
   const [r, g, b] = rgbParts(ann.color);
@@ -84,7 +90,7 @@ function nodeDecorationsFor(ann: AnnotationData, doc: ProseMirrorNode): Decorati
         pos + node.nodeSize,
         {
           class: 'annotation-highlight annotation-highlight--node',
-          style: `outline: 2px solid ${ann.color}; background-color: rgba(${r}, ${g}, ${b}, ${ALPHA});`,
+          style: `--annotation-color: ${ann.color}; --annotation-tint: rgba(${r}, ${g}, ${b}, ${ALPHA});`,
           'data-annotation-id': ann.id,
           'data-tag-id': ann.tagId,
         },

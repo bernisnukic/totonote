@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
+import { columnWidth } from '../../lib/column-width';
 
 /**
  * An embedded image with a drag handle to size it.
@@ -53,8 +54,7 @@ export function ResizableImage({ node, updateAttributes, selected, editor }: Nod
       if (!image) return;
       const startX = event.clientX;
       const startWidth = image.getBoundingClientRect().width;
-      // The column the image sits in — an image wider than its column just overflows.
-      const maxWidth = wrapperRef.current?.parentElement?.clientWidth ?? startWidth * 2;
+      const maxWidth = columnWidth(editor.view.dom as HTMLElement, startWidth * 2);
       setDragging(true);
 
       const onMove = (move: PointerEvent) => {
@@ -81,8 +81,8 @@ export function ResizableImage({ node, updateAttributes, selected, editor }: Nod
   return (
     <NodeViewWrapper
       className={`resizable-image${selected ? ' is-selected' : ''}${dragging ? ' is-resizing' : ''}${
-        width ? ' is-sized' : ''
-      }${small ? ' is-small' : ''}`}
+        small ? ' is-small' : ''
+      }`}
       ref={wrapperRef}
       data-drag-handle
     >

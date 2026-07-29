@@ -16,6 +16,7 @@ import { registerDrawing, unregisterDrawing } from '../../lib/drawing-registry';
 import { DrawingCanvas } from './DrawingCanvas';
 import { DrawingToolbar, PEN_COLORS, PEN_SIZES } from './DrawingToolbar';
 import { confirmDialog } from '../common/ConfirmDialog';
+import { columnWidth } from '../../lib/column-width';
 
 /**
  * A drawing inside the document.
@@ -59,7 +60,7 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
     if (!host) return;
     const startX = event.clientX;
     const startWidth = host.getBoundingClientRect().width;
-    const maxWidth = host.parentElement?.parentElement?.clientWidth ?? startWidth * 2;
+    const maxWidth = columnWidth(editor.view.dom as HTMLElement, startWidth);
     setResizing(true);
 
     const onMove = (move: PointerEvent) => {
@@ -305,7 +306,7 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
     <NodeViewWrapper
       className={`drawing-node${selected ? ' is-selected' : ''}${editing ? ' is-editing' : ''}${
         resizing ? ' is-resizing' : ''
-      }${storedWidth ? ' is-sized' : ''}`}
+      }`}
       data-drawing-id={drawingId ?? undefined}
     >
       {/* Double-click to start drawing, the way double-click opens anything else. The
