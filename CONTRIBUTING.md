@@ -106,6 +106,20 @@ Annotations are **ProseMirror decorations**, NOT marks in the document JSON. The
 
 The `editor-registry.ts` maintains a Map of active TipTap editor instances by section ID, enabling cross-component annotation operations.
 
+**Map the decoration set; don't rebuild it from positions.** The two kinds of decoration
+survive a change differently, and the plugin has to do both. An *inline* decoration is
+carried by `DecorationSet.map`, which is also what enforces `inclusiveEnd: false` — the rule
+that typing after a highlight starts a fresh, untagged run. A *node* decoration (pictures
+and drawings, which have no text to wrap) is **dropped as soon as its node is replaced**, and
+`updateAttributes` replaces the node — so resizing a tagged drawing lost its highlight until
+something re-synced. The plugin therefore keeps the annotations, maps the set, and rebuilds
+only the node decorations, which are tagged `spec.isNodeHighlight` so they can be picked out.
+
+Re-deriving inline decorations from mapped positions instead looks equivalent and is not:
+`tr.mapping.map(pos)` defaults to associating **right**, so an insertion at a highlight's end
+pushes the end along and the highlight swallows what you just typed. The end needs
+`map(pos, -1)`. `tags.spec.ts` ("typing after a highlight does not extend it") catches it.
+
 ### Filing & the Graph
 Annotations optionally carry a **filing** (`annotations.category_id` + `placement_order`): the
 category page the excerpt belongs to, independent of its tag. Compiled "wiki pages"
@@ -236,6 +250,8 @@ Dark theme. CSS custom properties in `tokens.css`. Key tokens:
 22. **Anything that unmounts the section editors must call `leaveDocument()` first.** A flusher only works while its editor is mounted, so tearing the editors down without flushing silently destroys unsaved work — that shipped once, via `closeDocument`. `leaveDocument()` (document-slice) flushes dirty sections *and* drops the session History for them; `closeDocument`, `openDocument` (when switching) and `setActiveWorkspace` all go through it. `deleteDocument` deliberately doesn't flush, but still clears the dirty ids and history so a deleted document can't leave the app marked unsaved. `document-slice.test.ts` guards all of this.
 23. **The renderer↔main surface is allowlisted in both directions.** `preload.ts` rejects any channel not in `IPC_CHANNELS` (invoke) or `MENU_CHANNELS` (push). `IPC_CHANNELS` is a runtime array in `shared/ipc-types.ts` kept in step with `IpcHandlerMap` by two type assertions — add a channel to one and forget the other and the build fails.
 24. **CI gates the release.** `.github/workflows/build.yml` runs lint + unit + E2E first; `build` and `release` only run for a `v*` tag and only after that job passes. Keep `npm run lint` at **zero errors** or nothing can ship (warnings are fine).
+25. **An invisible control still catches clicks.** `opacity: 0` hides a thing without excusing it from hit-testing, so a hover-revealed control silently eats every click aimed at what is underneath. The resize handles shipped this way: 14px, straddling the bottom-right corner and overlapping by ~9px, which on an icon-sized picture covered the lot — clicking it did nothing whatsoever. Hidden must also mean `pointer-events: none`. Note that gating on `:hover` alone cannot fix an overlap, because hovering is exactly what reveals the control (and Playwright hovers in order to click); when a control can cover its own target, it has to *move* — `.is-small` puts the handle clear of the corner. `MIN_WIDTH` only constrains dragging, so an image that arrives small was never covered by it.
+26. **A slow E2E suite is usually a failing one.** Nine tests each burning a 30s timeout, twice with retries, is nine minutes — enough to look exactly like a global slowdown and send you hunting Chromium throttling flags. Check the failure count and read one actual error before theorising about performance; the totals not reconciling (159 passed of 168 defined) is the tell.
 
 ## Documentation
 

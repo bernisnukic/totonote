@@ -25,6 +25,16 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
+// A test run shows its window without focus so it does not take over the machine, and
+// Chromium slows down or stops painting a window it believes nobody is looking at. Timing
+// out is then indistinguishable from a real failure, so switch the behaviour off outright.
+// Must be set before the app is ready.
+if (process.env.NODE_ENV === 'test') {
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+}
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -62,6 +72,10 @@ const createWindow = (): void => {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Writing saves on a debounce, and Chromium throttles timers in a window that is
+      // not in the foreground — so without this, work can sit unsaved for as long as the
+      // app is in the background.
+      backgroundThrottling: false,
     },
   });
 

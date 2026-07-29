@@ -61,7 +61,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     const promise = saveContent(sectionId, content);
     const ed = editorRef.current;
     if (ed) {
-      const decoSet = annotationPluginKey.getState(ed.state);
+      const decoSet = annotationPluginKey.getState(ed.state)?.decorations;
       const decos = decoSet?.find() ?? [];
       const updates: Array<{ id: string; fromPos: number; toPos: number }> = [];
       for (const d of decos) {
@@ -131,7 +131,7 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
   function currentAnnotationPositions() {
     const ed = editorRef.current;
     if (!ed) return [];
-    const decos = annotationPluginKey.getState(ed.state)?.find() ?? [];
+    const decos = annotationPluginKey.getState(ed.state)?.decorations.find() ?? [];
     const positions: { id: string; fromPos: number; toPos: number }[] = [];
     for (const d of decos) {
       const id = d.spec?.annotationId;

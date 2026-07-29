@@ -1,5 +1,19 @@
 # What's New
 
+## 1.21.2
+
+**Resizing a tagged drawing no longer makes its highlight disappear.** It came back only
+after clicking around, which made resizing feel as though it had half-broken something.
+
+**A small picture can be clicked again.** The resize handle sits on the bottom-right corner
+and is invisible until you hover — but it was still catching clicks, and on anything
+smaller than the handle it covered the picture completely. Clicking such a picture did
+nothing at all: there was no way to select it, tag it, or resize it. The handle now moves
+clear of the corner when the picture is small.
+
+**Typing at the end of a highlight no longer extends it.** This briefly regressed while
+fixing the resize above.
+
 ## 1.21.1
 
 **Deleting a picture or drawing is an item in the right-click menu**, in red at the bottom,

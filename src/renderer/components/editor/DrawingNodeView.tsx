@@ -303,11 +303,9 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
 
   return (
     <NodeViewWrapper
-      className={`drawing-node${selected ? ' is-selected' : ''}${editing ? ' is-editing' : ''}${resizing ? ' is-resizing' : ''}`}
-      // On the wrapper, not just the surface: a highlight is drawn around the *node*, so
-      // with the width only on the inside the outline kept the full column width and
-      // appeared to change height alone when the drawing was resized.
-      style={storedWidth ? { width: `${storedWidth}px` } : undefined}
+      className={`drawing-node${selected ? ' is-selected' : ''}${editing ? ' is-editing' : ''}${
+        resizing ? ' is-resizing' : ''
+      }${storedWidth ? ' is-sized' : ''}`}
       data-drawing-id={drawingId ?? undefined}
     >
       {/* Double-click to start drawing, the way double-click opens anything else. The

@@ -335,6 +335,20 @@
   margin: var(--space-4) 0;
 }
 
+/* A tag's highlight is drawn on the node's *outermost* element — the wrapper TipTap puts
+   around a React node view, not the one the component renders. Left at full column width,
+   a resized drawing kept a full-width outline and looked as though only its height had
+   changed.
+   
+   Only once a width has actually been chosen, though: `fit-content` around a child that is
+   `width: 100%` has nothing to measure, and an untouched drawing would collapse to nothing. */
+.drawing-node.is-sized,
+.react-renderer.node-drawing:has(> .drawing-node.is-sized),
+.react-renderer.node-image:has(> .resizable-image.is-sized) {
+  width: fit-content;
+  max-width: 100%;
+}
+
 .drawing-node__surface {
   position: relative;
   width: 100%;
@@ -526,6 +540,10 @@
   border: 2px solid var(--bg-primary);
   cursor: nwse-resize;
   opacity: 0;
+  /* An invisible handle still catches clicks. It hangs over the bottom-right corner, so on
+     a small picture it covered the whole thing and clicking to select it did nothing at
+     all — the click landed on a control nobody could see. */
+  pointer-events: none;
   transition: opacity var(--transition-fast);
 }
 
@@ -533,6 +551,14 @@
 .resizable-image.is-selected .resizable-image__handle,
 .resizable-image.is-resizing .resizable-image__handle {
   opacity: 1;
+  pointer-events: auto;
+}
+
+/* A picture smaller than the handle: sit it clear of the corner instead of on top of it,
+   so the picture itself stays clickable and can still be dragged bigger. */
+.resizable-image.is-small .resizable-image__handle {
+  right: -19px;
+  bottom: -19px;
 }
 
 /* A tagged picture or drawing. An inline highlight has text to tint; these do not, so the
@@ -559,6 +585,8 @@
   background: var(--bg-primary);
   cursor: nwse-resize;
   opacity: 0;
+  /* As above: hidden must also mean untouchable, or it eats clicks meant for the drawing. */
+  pointer-events: none;
   transition: opacity var(--transition-fast);
 }
 
@@ -566,4 +594,5 @@
 .drawing-node.is-selected .drawing-node__handle,
 .drawing-node.is-resizing .drawing-node__handle {
   opacity: 1;
+  pointer-events: auto;
 }
