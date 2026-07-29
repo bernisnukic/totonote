@@ -192,6 +192,25 @@ section you're editing — automatic snapshots taken a moment after you pause.
 
 ![The History tab timeline, with a checkpoint marked](screenshots/30-history.png)
 
+Each row says **what changed** at that point, so the list reads as a log of the session:
+
+| | |
+|---|---|
+| `Added “hello”` | you wrote something |
+| `Removed “hello”` | you deleted it |
+| `Replaced “red” with “blue”` | you changed a word |
+| `Added 340 characters` | too much to quote |
+| `Highlighted “the dragon”` | you tagged a passage |
+| `Added a drawing` · `Changed a drawing` | drawings |
+| `Added a picture` | an image went in |
+| `Starting point` | the first checkpoint |
+
+Undoing shows as whatever it put back — undoing a deletion of *hello* reads as
+`Added “hello”`, because a checkpoint records the state of the section, not the button you
+pressed to get there.
+
+Hover a row to see how the section opened at that point.
+
 Click any checkpoint to roll the section back to that state. The whole timeline stays put,
 so you can jump forward again just as easily — it's more forgiving than plain undo, which
 throws the "future" away the moment you make a new edit.

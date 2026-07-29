@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
 import { summarizeDoc } from '../lib/doc-summary';
+import { describeChange } from '../lib/history-diff';
 
 /** Where one highlight sat at the moment a checkpoint was taken. */
 export interface SnapshotAnnotation {
@@ -23,6 +24,13 @@ export interface Snapshot {
   content: string;
   chars: number;
   preview: string;
+  /**
+   * What changed since the checkpoint before — "Added “hello”", "Removed a drawing".
+   *
+   * Worked out once, here, rather than in the panel: the previous checkpoint is to hand at
+   * this point and the answer never changes afterwards.
+   */
+  change: string;
   /**
    * Highlight positions at this point.
    *
@@ -127,6 +135,7 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
         content,
         chars,
         preview,
+        change: describeChange(last ?? null, { content, annotations, drawings }),
         annotations,
         drawings: last ? shareUnchangedStrokes(last.drawings, drawings) : drawings,
       };

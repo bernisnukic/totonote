@@ -66,10 +66,7 @@ test.describe('History restore and highlights', () => {
 
     // Roll back to the checkpoint where the highlight existed over "GURA IS A SHARK".
     await page.locator('.sidebar-tab', { hasText: 'History' }).click();
-    const target = page
-      .locator('.history-item')
-      .filter({ has: page.locator('.history-item-preview', { hasText: /^GURA IS A SHARK$/ }) })
-      .first();
+    const target = page.locator('.history-item[data-preview="GURA IS A SHARK"]').first();
     await expect(target).toBeVisible();
     await target.click();
     await dismissConfirmIfShown(page); // in case anything post-dates the checkpoint

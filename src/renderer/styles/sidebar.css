@@ -1003,9 +1003,10 @@
   font-size: var(--font-size-xs);
   color: var(--accent-primary);
 }
-.history-item-preview {
+/* The change that produced this checkpoint — the line you actually read down the list. */
+.history-item-change {
   font-size: var(--font-size-sm);
-  color: var(--text-secondary);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

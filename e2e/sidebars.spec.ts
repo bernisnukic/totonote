@@ -696,6 +696,25 @@ test.describe('Editing settings and undo', () => {
     await expect(page.locator('.tag-tree-name', { hasText: 'Griffin' })).toHaveCount(0);
   });
 
+  test('History reads as a log of what changed, not the same preview repeated', async () => {
+    await docWithSection();
+    const editor = page.locator('.tiptap').first();
+    await editor.click();
+    await editor.pressSequentially('hello', { delay: 20 });
+    await page.waitForTimeout(1400);
+    // Take it away again, which is the case the tester spelled out.
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Backspace');
+    await page.waitForTimeout(1400);
+
+    await page.locator('.sidebar-tab', { hasText: 'History' }).click();
+    const rows = page.locator('.history-item-change');
+    // Reported: "the history previews are not helpful, you cannot tell what the history
+    // is" — every row showed the same opening sixty characters of the section.
+    await expect(rows.filter({ hasText: 'Removed “hello”' })).toHaveCount(1);
+    await expect(rows.filter({ hasText: 'Added “hello”' })).toHaveCount(1);
+  });
+
   test('History tab restores an earlier checkpoint', async () => {
     await docWithSection();
     const editor = page.locator('.tiptap').first();
@@ -711,7 +730,7 @@ test.describe('Editing settings and undo', () => {
 
     // Restore the "Alpha" checkpoint (anchored, so it isn't the "Alpha Beta" one).
     await page
-      .locator('.history-item', { has: page.locator('.history-item-preview', { hasText: /^Alpha$/ }) })
+      .locator('.history-item[data-preview="Alpha"]')
       .click();
 
     // It always asks first — rolling back discards everything written since, and the only
@@ -735,7 +754,7 @@ test.describe('Editing settings and undo', () => {
 
     await page.locator('.sidebar-tab', { hasText: 'History' }).click();
     await page
-      .locator('.history-item', { has: page.locator('.history-item-preview', { hasText: /^Alpha$/ }) })
+      .locator('.history-item[data-preview="Alpha"]')
       .click();
 
     // Dismissing the warning must mean "no", not "yes by default".

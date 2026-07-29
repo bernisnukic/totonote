@@ -146,7 +146,14 @@ export function HistoryPanel() {
                 className={`history-item${isCurrent ? ' current' : ''}`}
                 onClick={() => void restore(snap)}
                 disabled={isCurrent}
-                title={isCurrent ? 'This is the current state' : 'Restore this state'}
+                // The opening of the section as it stood here. Too samey to be the label —
+                // every checkpoint starts with the same words — but worth having on hover,
+                // since it says what you would be going back to.
+                data-preview={snap.preview}
+                title={
+                  (isCurrent ? 'This is the current state' : 'Restore this state') +
+                  (snap.preview ? `\n\n${snap.preview}` : '')
+                }
               >
                 <span className="history-item-dot" />
                 <span className="history-item-body">
@@ -154,7 +161,10 @@ export function HistoryPanel() {
                     {i === 0 ? 'Latest' : relativeTime(snap.at)}
                     {isCurrent ? ' · current' : ''}
                   </span>
-                  <span className="history-item-preview">{snap.preview || '(empty)'}</span>
+                  {/* What changed, not what the section opens with: every checkpoint
+                      began with the same sixty characters, so the list read as one line
+                      repeated and said nothing about which state you were choosing. */}
+                  <span className="history-item-change">{snap.change}</span>
                   <span className="history-item-meta">{snap.chars} chars</span>
                 </span>
               </button>

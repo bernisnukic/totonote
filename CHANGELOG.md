@@ -1,5 +1,20 @@
 # What's New
 
+## 1.22.0
+
+**History reads as a log of what you did.** Every checkpoint used to be labelled with the
+opening of the section — the same sixty characters every time — so the list said nothing
+about which state you were choosing. Each row now names the change that produced it:
+
+- `Added “hello”` · `Removed “hello”` · `Replaced “red” with “blue”`
+- `Added 340 characters`, when it is too much to quote
+- `Highlighted “the dragon”`
+- `Added a drawing` · `Changed a drawing` · `Added a picture`
+
+Undoing shows as whatever it put back — undoing a deletion of *hello* reads as
+`Added “hello”` — because a checkpoint records the state of the section, not which button
+you pressed. Hover a row to see how the section opened at that point.
+
 ## 1.21.3
 
 **Resizing a drawing works again.** 1.21.2 broke it badly: a drawing could be made smaller
