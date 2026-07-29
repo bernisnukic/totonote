@@ -3,6 +3,7 @@ import { useStore } from '../../stores';
 import { Modal } from './Modal';
 import { ShortcutSettingsContent } from './ShortcutSettings';
 import { StorageSettings } from './StorageSettings';
+import { UpdateSettings } from './UpdateSettings';
 import { BackupSettings } from './BackupSettings';
 
 const THEMES = [
@@ -55,9 +56,11 @@ const HISTORY_INTERVALS = [
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Opened from "Check for Updates…", so run the check rather than waiting to be asked. */
+  checkUpdates?: boolean;
 }
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, checkUpdates }: SettingsModalProps) {
   const theme = useStore(s => s.theme);
   const setTheme = useStore(s => s.setTheme);
   const autoSaveEnabled = useStore(s => s.autoSaveEnabled);
@@ -181,6 +184,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           The History tab saves a checkpoint once you've paused this long. Shorter fills the
           timeline as you write; longer keeps its 60 checkpoints reaching further back.
         </p>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-section-title">Updates</h3>
+        <UpdateSettings autoCheck={checkUpdates} />
       </div>
 
       <div className="settings-section">

@@ -141,6 +141,38 @@ test.describe('Two tagged drawings', () => {
   });
 });
 
+test.describe('The space beside a narrowed drawing', () => {
+  test('belongs to the page, not to the drawing', async () => {
+    await setup();
+    const surface = page.locator('.drawing-node__surface');
+    const full = (await surface.boundingBox())!.width;
+    await dragHandle(-Math.round(full * 0.5));
+
+    const box = (await surface.boundingBox())!;
+    const node = (await page.locator('.drawing-node').boundingBox())!;
+    // The node's own box stops where the drawing does — this is what makes the empty
+    // space beside it belong to the document. Reported as "the left/right click should
+    // not work outside the drawing, specifically the empty space to the right".
+    expect(node.width).toBeLessThan(full * 0.75);
+
+    // Clicking well to the right of it must not select it.
+    await page.mouse.click(box.x + box.width + 120, box.y + box.height / 2);
+    await expect(page.locator('.drawing-node.is-selected')).toHaveCount(0);
+  });
+
+  test('the Tag toolbar opens above the drawing, not over it', async () => {
+    await setup();
+    await page.locator('.drawing-node__surface').click();
+    await expect(page.locator('.selection-toolbar')).toBeVisible({ timeout: 15000 });
+
+    const toolbar = (await page.locator('.selection-toolbar').boundingBox())!;
+    const drawing = (await page.locator('.drawing-node__surface').boundingBox())!;
+    // Reported as "the pop up thing should not be covering the drawing, it should be like
+    // tagged text". Above means its bottom edge clears the drawing's top edge.
+    expect(toolbar.y + toolbar.height).toBeLessThanOrEqual(drawing.y + 1);
+  });
+});
+
 /** An 8x4 PNG — smaller than the resize handle, which is the whole point. */
 const TINY_PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAAgAAAAECAIAAAA8r+mnAAAAGUlEQVR4nGP4P9/Z4/ZvTJIBqyiQZCBZBwB+iD/x62W8gAAAAABJRU5ErkJggg==';

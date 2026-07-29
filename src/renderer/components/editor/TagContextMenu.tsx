@@ -269,9 +269,58 @@ export function TagContextMenu() {
     editor.chain().focus().setNodeSelection(pos).deleteSelection().run();
   };
 
+  /**
+   * Put the picture or drawing back to its natural size.
+   *
+   * Dragging a corner is easy to overshoot and there was no way back short of undoing far
+   * enough to lose other work — so a drawing dragged too small stayed too small.
+   */
+  const resetMediaSize = () => {
+    const media = contextMenu?.media;
+    const sectionId = activeSectionId;
+    setContextMenu(null);
+    setShowCombineMenu(false);
+    if (!media || !sectionId) return;
+    const editor = getEditor(sectionId);
+    if (!editor) return;
+
+    // By identity, for the same reason deleteMedia does it: a remembered position goes
+    // stale the moment anything above it changes.
+    let pos = -1;
+    let attrs: Record<string, unknown> | null = null;
+    editor.state.doc.descendants((node, at) => {
+      if (pos >= 0) return false;
+      const matches =
+        media.kind === 'drawing'
+          ? node.type.name === 'drawing' && node.attrs.drawingId === media.key
+          : node.type.name === 'image' && node.attrs.src === media.key;
+      if (matches) {
+        pos = at;
+        attrs = node.attrs;
+      }
+      return pos < 0;
+    });
+    if (pos < 0 || !attrs) return;
+    editor
+      .chain()
+      .focus()
+      .command(({ tr }) => {
+        tr.setNodeMarkup(pos, undefined, { ...attrs, width: null });
+        return true;
+      })
+      .run();
+  };
+
+  const mediaSized = Boolean(contextMenu?.media?.width);
+
   const deleteMediaItem = contextMenu?.media ? (
     <>
       <div className="context-menu-separator" />
+      {mediaSized && (
+        <div className="context-menu-item" {...clickable(resetMediaSize)}>
+          Reset {contextMenu.media.kind === 'drawing' ? 'drawing' : 'picture'} size
+        </div>
+      )}
       <div className="context-menu-item danger" {...clickable(() => void deleteMedia())}>
         Delete {contextMenu.media.kind === 'drawing' ? 'drawing' : 'picture'}
       </div>

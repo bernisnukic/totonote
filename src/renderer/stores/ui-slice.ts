@@ -19,7 +19,7 @@ export interface ContextMenuState {
    * document position: `posAtDOM` on a node view's wrapper does not reliably give the
    * position of the node itself, and a wrong one deletes nothing at all.
    */
-  media?: { kind: 'image' | 'drawing'; key: string };
+  media?: { kind: 'image' | 'drawing'; key: string; width?: number | null };
 }
 
 export interface UiSlice {

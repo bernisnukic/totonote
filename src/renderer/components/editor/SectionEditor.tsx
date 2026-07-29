@@ -10,6 +10,7 @@ import { AnnotationDecoration, annotationPluginKey } from '../../extensions/anno
 import { DocumentLink } from '../../extensions/document-link';
 import { DocumentLinkPicker } from './DocumentLinkPicker';
 import { useStore } from '../../stores';
+import { toolbarPosition } from '../../lib/toolbar-position';
 import { useDebounce } from '../../hooks/useDebounce';
 import { registerEditor, unregisterEditor } from '../../lib/editor-registry';
 import { registerFlusher, unregisterFlusher } from '../../lib/save-registry';
@@ -204,8 +205,21 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
       const { from, to } = editor.state.selection;
       if (from !== to) {
         setSelection(from, to, section.id);
+        // A whole picture or drawing is selected as one node, and the top of that node is
+        // the top of the thing itself — so measure its box and go above it, rather than
+        // landing the toolbar on top of what was just clicked.
+        const selectedNode = editor.view.nodeDOM(from) as HTMLElement | null;
+        const box =
+          selectedNode && selectedNode.getBoundingClientRect
+            ? selectedNode.getBoundingClientRect()
+            : null;
         const coords = editor.view.coordsAtPos(from);
-        setSelectionToolbarPos({ x: coords.left, y: coords.top - 40 });
+        setSelectionToolbarPos(
+          toolbarPosition(
+            box ?? { top: coords.top, bottom: coords.bottom, left: coords.left },
+            window.innerHeight,
+          ),
+        );
       } else {
         clearSelection();
       }
@@ -459,10 +473,16 @@ export function SectionEditor({ section, isActive, onFocus }: SectionEditorProps
     const mediaKey = mediaEl?.classList.contains('drawing-node')
       ? mediaEl.getAttribute('data-drawing-id')
       : mediaEl?.querySelector('img')?.getAttribute('src');
+    // Whether it has been resized, so the menu knows to offer putting it back. Read from
+    // the DOM rather than the document: this runs on the element that was clicked.
+    const sizedWidth = mediaEl?.classList.contains('drawing-node')
+      ? (mediaEl as HTMLElement).style.width
+      : mediaEl?.querySelector('img')?.getAttribute('width');
     const media = mediaEl && mediaKey
       ? {
           kind: (mediaEl.classList.contains('drawing-node') ? 'drawing' : 'image') as 'drawing' | 'image',
           key: mediaKey,
+          width: sizedWidth ? parseInt(sizedWidth, 10) || null : null,
         }
       : undefined;
 

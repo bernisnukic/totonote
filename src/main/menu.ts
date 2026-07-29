@@ -35,6 +35,11 @@ export function buildAppMenu(): void {
             label: app.name,
             submenu: [
               { role: 'about' },
+              // Where everyone looks for it on macOS, next to About.
+              {
+                label: 'Check for Updates…',
+                click: () => sendToFocused('menu:check-updates'),
+              },
               { type: 'separator' },
               // macOS users look for preferences here first, under ⌘, — the toolbar gear
               // is easy to miss and doesn't exist on the Documents screen at all.

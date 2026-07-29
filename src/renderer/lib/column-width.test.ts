@@ -16,8 +16,9 @@ function fakeColumn(clientWidth: number, paddingLeft = '0px', paddingRight = '0p
 const originalGetComputedStyle = globalThis.getComputedStyle;
 
 function withPadding<T>(run: () => T): T {
-  globalThis.getComputedStyle = ((el: HTMLElement) =>
-    (el as unknown as { __padding: Record<string, string> }).__padding) as typeof getComputedStyle;
+  globalThis.getComputedStyle = ((el: Element) =>
+    (el as unknown as { __padding: Record<string, string> })
+      .__padding) as unknown as typeof getComputedStyle;
   try {
     return run();
   } finally {

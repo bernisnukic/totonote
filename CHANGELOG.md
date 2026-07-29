@@ -1,5 +1,24 @@
 # What's New
 
+## 1.23.0
+
+**Check for updates whenever you like.** **TotoNote → Check for Updates…**, or the
+**Updates** section in Settings. It tells you what you have, what's out, and opens the
+download page. It can't install the update for itself — TotoNote isn't signed with an Apple
+developer certificate, which is also why macOS asks you to approve it the first time.
+
+**The space beside a drawing belongs to the page again.** Narrow a drawing and the empty
+space to its right was still part of it, so clicking there selected it and right-clicking
+there opened its menu.
+
+**The Tag toolbar opens above a drawing instead of on top of it**, the same as it does for
+selected text.
+
+**Reset a drawing or picture to its original size** — a new item in its right-click menu,
+above Delete. Dragging a corner is easy to overshoot, and there was no way back.
+
+**Delete is red before you touch it**, and hovering fills the row rather than tinting it.
+
 ## 1.22.0
 
 **History reads as a log of what you did.** Every checkpoint used to be labelled with the

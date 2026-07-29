@@ -34,7 +34,18 @@ export function App() {
   const openHelp = useStore(s => s.openHelp);
   const theme = useStore(s => s.theme);
   const lineSpacing = useStore(s => s.lineSpacing);
+  // Set when Settings was opened by "Check for Updates…", so it checks rather than waiting.
+  const [checkUpdatesOnOpen, setCheckUpdatesOnOpen] = useState(false);
 
+
+  // TotoNote > Check for Updates… — people look next to About before they look in
+  // Settings, and there was no way to ask at all before this.
+  useEffect(() => {
+    return window.api.onMenu('menu:check-updates', () => {
+      setCheckUpdatesOnOpen(true);
+      setSettingsOpen(true);
+    });
+  }, [setSettingsOpen]);
 
   useEffect(() => {
     loadPreferences();
@@ -100,7 +111,14 @@ export function App() {
       <TooltipHost />
       <UndoToast />
       <ConfirmDialogHost />
-      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => {
+          setSettingsOpen(false);
+          setCheckUpdatesOnOpen(false);
+        }}
+        checkUpdates={checkUpdatesOnOpen}
+      />
       <HelpViewer />
       <WikiView />
     </>

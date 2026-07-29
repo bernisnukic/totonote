@@ -335,6 +335,22 @@
   margin: var(--space-4) 0;
 }
 
+/* The box TipTap wraps around the node view is as wide as the column, so the empty space
+   beside a narrowed drawing still belonged to the drawing: clicking there selected it and
+   right-clicking there opened its menu.
+
+   Shrink-wrapping this is what broke resizing in 1.21.2, and it is safe now for reasons
+   that were not true then: the drawing inside carries an explicit pixel width rather than
+   `width: 100%`, so `fit-content` has something to measure; the drag ceiling is taken from
+   the editor column rather than from this box; and the tag outline is drawn on the drawing
+   itself, so nothing depends on the size of this element. Only when a width has been
+   chosen — an untouched drawing fills the column and must keep doing so. */
+.react-renderer.node-drawing:has(> .drawing-node.is-sized),
+.react-renderer.node-image {
+  width: fit-content;
+  max-width: 100%;
+}
+
 .drawing-node__surface {
   position: relative;
   width: 100%;
@@ -493,9 +509,15 @@
 }
 
 /* Resizable images */
+/* Only as wide as the picture. Left at the width of the column, the empty space beside a
+   narrow picture still belonged to it, so clicking there selected it and right-clicking
+   there opened its menu. Safe to shrink-wrap here because the picture has a width of its
+   own — unlike a drawing, whose surface is a percentage and so has nothing to measure. */
 .resizable-image {
   position: relative;
   display: block;
+  width: fit-content;
+  max-width: 100%;
   line-height: 0;
   margin: var(--space-3) 0;
 }

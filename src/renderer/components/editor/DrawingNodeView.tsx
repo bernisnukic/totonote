@@ -56,7 +56,11 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
     if (!editor.isEditable) return;
     event.preventDefault();
     event.stopPropagation();
-    const host = hostRef.current;
+    // The wrapper is what is sized, not the surface inside it. A wrapper left at the full
+    // width of the column stays clickable in the empty space beside a narrowed drawing, and
+    // clicking there selected the drawing — reported as "the left/right click should not
+    // work outside the drawing, specifically the empty space to the right".
+    const host = nodeRef.current;
     if (!host) return;
     const startX = event.clientX;
     const startWidth = host.getBoundingClientRect().width;
@@ -82,6 +86,8 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
   };
 
   const hostRef = useRef<HTMLDivElement>(null);
+  /** The node's own box — sized to the drawing, so nothing beside it is clickable. */
+  const nodeRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clonedRef = useRef(false);
 
@@ -306,7 +312,9 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
     <NodeViewWrapper
       className={`drawing-node${selected ? ' is-selected' : ''}${editing ? ' is-editing' : ''}${
         resizing ? ' is-resizing' : ''
-      }`}
+      }${storedWidth ? ' is-sized' : ''}`}
+      ref={nodeRef}
+      style={storedWidth ? { width: `${storedWidth}px` } : undefined}
       data-drawing-id={drawingId ?? undefined}
     >
       {/* Double-click to start drawing, the way double-click opens anything else. The
@@ -314,7 +322,7 @@ export function DrawingNodeView({ node, selected, editor, updateAttributes, getP
       <div
         className="drawing-node__surface"
         ref={hostRef}
-        style={{ aspectRatio: String(aspectRatio), width: storedWidth ? `${storedWidth}px` : undefined }}
+        style={{ aspectRatio: String(aspectRatio) }}
         onDoubleClick={beginEditing}
       >
         {backgroundMediaId && (

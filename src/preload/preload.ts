@@ -10,6 +10,7 @@ const MENU_CHANNELS = [
   'menu:redo',
   'menu:save-all',
   'menu:open-settings',
+  'menu:check-updates',
   'menu:backup',
   'menu:restore',
   'menu:export-page',

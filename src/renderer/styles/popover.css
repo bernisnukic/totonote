@@ -76,9 +76,15 @@
   color: var(--text-primary);
 }
 
-.context-menu-item.danger:hover {
-  background: rgba(255, 71, 87, 0.15);
+/* Destructive items read as destructive before you touch them, not only on hover — and
+   hovering fills the row rather than tinting it, the way every other desktop menu does. */
+.context-menu-item.danger {
   color: var(--color-error);
+}
+
+.context-menu-item.danger:hover {
+  background: var(--color-error);
+  color: #fff;
 }
 
 .context-menu-shortcut {
