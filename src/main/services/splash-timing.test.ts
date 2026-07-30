@@ -61,7 +61,18 @@ describe('splash timings', () => {
   });
 
   it('plays once, so there is a last frame to linger on', () => {
-    expect(gif.loopCount).toBe(1);
+    // No NETSCAPE block at all. Setting the loop count to 1 is *not* how a GIF is made to
+    // play once — Chromium reads it as "repeat once more" and plays it twice, which is
+    // what shipped in 1.23.1: the splash closed partway through the second play-through.
+    // A GIF with no loop extension plays exactly once and stops on its last frame.
+    expect(gif.loopCount).toBeNull();
+  });
+
+  it('ships the still of the first frame that the fade lands on', () => {
+    // Without it the fade arrives at an empty box, which renders as a pale rectangle on
+    // the black card — reported as "at the start i see a white border instead of all
+    // black".
+    expect(fs.existsSync(path.join(path.dirname(GIF), 'intro-first.png'))).toBe(true);
   });
 
   it('waits for the whole animation, not most of it', () => {

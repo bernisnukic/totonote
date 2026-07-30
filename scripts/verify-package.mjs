@@ -83,7 +83,7 @@ console.log(`✓ verify-package: Drizzle migrations bundled (${sqlFiles.length} 
 // copied the app still starts — it just silently never shows a splash, which is exactly
 // the kind of packaged-only regression nobody notices until a user reports it.
 const splashDir = join(res, 'splash');
-for (const f of ['splash.html', 'intro.gif']) {
+for (const f of ['splash.html', 'intro.gif', 'intro-first.png']) {
   if (!existsSync(join(splashDir, f))) {
     fail(`Missing ${join(splashDir, f)} — the splash wasn't copied. Check extraResource in forge.config.ts.`);
   }

@@ -1,5 +1,18 @@
 # What's New
 
+## 1.23.2
+
+**The splash animation really does play once now, and holds on its last frame.** 1.23.1
+claimed to fix this and did not: the animation was set to loop once more rather than not at
+all, so it played, started over, and was cut off partway through the second run.
+
+**It starts black.** The whole card was being faded in, and the splash window is
+transparent — so at the very start you saw through it to whatever was behind, which showed
+as a pale edge rather than black. The card is black from the first moment; only the mark
+and the text fade up.
+
+**The fade lands on the first frame** rather than on an empty space where the mark will be.
+
 ## 1.23.1
 
 **The splash fades in before the animation starts**, instead of appearing already halfway

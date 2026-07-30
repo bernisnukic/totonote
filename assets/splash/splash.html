@@ -12,19 +12,16 @@
     -webkit-user-select: none;
     cursor: default;
   }
+  /* Opaque from the first paint, and never faded. Fading the card itself made the whole
+     window see-through at the start — the window *is* transparent, so what showed through
+     was whatever happened to be behind it, reported as "a white border instead of all
+     black". Only the contents fade; the black is there from the beginning. */
   .splash {
     height: 100%;
-    /* Fade the mark up before it starts moving, rather than snapping into a window that
-       is already mid-animation. The GIF is not given its source until this finishes, so
-       the animation genuinely begins at frame 1 once the card is visible. */
-    opacity: 0;
-    animation: fade-in 450ms ease-out forwards;
     box-sizing: border-box;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
     /* Pure black, because the mark's own background is — anything lighter draws a
        visible square around the logo. */
     background: #000;
@@ -32,12 +29,19 @@
     border-radius: 12px;
     font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace;
   }
-  /* Square, and stated, so reserving the space costs no layout shift while the source
-     is withheld during the fade. */
-  img { width: 120px; height: 120px; }
+  .contents {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    opacity: 0;
+    animation: fade-in 450ms ease-out forwards;
+  }
   @keyframes fade-in {
     to { opacity: 1; }
   }
+  /* Square, and stated, so swapping the still for the animation shifts nothing. */
+  img { width: 120px; height: 120px; }
   .name {
     color: #e0e0e0;
     font-size: 15px;
@@ -66,14 +70,18 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .bar span { animation: none; width: 100%; opacity: 0.5; }
-    .splash { animation: none; opacity: 1; }
+    .contents { animation: none; opacity: 1; }
   }
 </style>
 <div class="splash" onclick="window.close()" title="Click to skip">
-  <img id="mark" alt="" width="120" height="120" />
-  <div class="name">TotoNote</div>
-  <div class="version" id="version"></div>
-  <div class="bar"><span></span></div>
+  <div class="contents" id="contents">
+    <!-- The still of frame 1, so the fade arrives *at* the first frame rather than at an
+         empty box. Swapped for the animation once the fade is done. -->
+    <img id="mark" src="intro-first.png" alt="" width="120" height="120" />
+    <div class="name">TotoNote</div>
+    <div class="version" id="version"></div>
+    <div class="bar"><span></span></div>
+  </div>
 </div>
 <script>
   // The version is passed in on the query string — the splash has no preload and no
@@ -81,9 +89,10 @@
   const v = new URLSearchParams(location.search).get('v');
   if (v) document.getElementById('version').textContent = 'Version ' + v;
 
-  // A GIF starts the moment it has a source, so the source is withheld until the card has
-  // faded up. Decoding it first means assigning it later starts frame 1 immediately rather
-  // than leaving a gap where the fade ends and the animation has not begun.
+  // black -> fade in to the first frame -> the animation plays -> it holds on the last
+  // frame. A GIF starts the instant it has a source, so it is not put in place until the
+  // fade has finished; until then the still stands in for it. Decoded up front, so the
+  // swap starts frame 1 at once and shows no gap.
   const mark = document.getElementById('mark');
   const warm = new Image();
   warm.src = 'intro.gif';
@@ -98,11 +107,11 @@
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
     play();
   } else {
-    document.querySelector('.splash').addEventListener('animationend', event => {
+    document.getElementById('contents').addEventListener('animationend', event => {
       if (event.animationName === 'fade-in') play();
     });
-    // If the animation never reports finishing, play anyway: a splash stuck on an empty
-    // square is far worse than one that starts a moment early.
+    // If the animation never reports finishing, play anyway: a splash stuck on a still
+    // frame is worse than one that starts a moment early.
     setTimeout(play, 700);
   }
 </script>
