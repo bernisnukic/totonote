@@ -1,5 +1,11 @@
 # What's New
 
+## 1.23.3
+
+**The splash plays once per launch, not every time a window opens.** On macOS, closing the
+window leaves TotoNote running in the dock; clicking it opens a new window, and that was
+replaying the whole splash every time.
+
 ## 1.23.2
 
 **The splash animation really does play once now, and holds on its last frame.** 1.23.1

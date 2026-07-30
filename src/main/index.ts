@@ -46,12 +46,23 @@ let mainWindow: BrowserWindow | null = null;
 // before the window closes. Stays false whenever auto-save is on (nothing to lose).
 let unsavedChanges = false;
 
+/**
+ * The splash belongs to starting the app, not to opening a window.
+ *
+ * On macOS closing the window does not quit — the app stays in the dock, and clicking it
+ * builds a fresh window through 'activate'. That went through the same path as launching,
+ * so the mark played again every single time: "every time i close and open a window
+ * without quitting totonote, it plays the splash". Once per run of the process.
+ */
+let splashShown = false;
+
 const createWindow = (): void => {
   // The splash is a separate window shown while this one loads. Switched off in Settings,
   // or under automation (where a three-second window would sit in front of every test),
   // there is no splash and this window is simply created visible — deciding here rather
   // than after construction means the no-splash path never depends on 'ready-to-show'.
-  const splashWanted = getPreference('introEnabled') !== 'false' && process.env.NODE_ENV !== 'test';
+  const splashWanted =
+    !splashShown && getPreference('introEnabled') !== 'false' && process.env.NODE_ENV !== 'test';
 
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -98,7 +109,10 @@ const createWindow = (): void => {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
-  if (splashWanted) void runSplash(mainWindow);
+  if (splashWanted) {
+    splashShown = true;
+    void runSplash(mainWindow);
+  }
   else if (process.env.NODE_ENV === 'test') {
     // showInactive, not show: visible enough to click, without taking the foreground.
     mainWindow.once('ready-to-show', () => mainWindow?.showInactive());

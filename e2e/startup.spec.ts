@@ -57,6 +57,42 @@ test.describe('The splash window', () => {
     }
   });
 
+  test('does not play again when a closed window is reopened', async () => {
+    // macOS only by construction: everywhere else closing the last window quits the app,
+    // so there is no way back in without launching afresh. On macOS the app stays in the
+    // dock and 'activate' builds a new window — which went through the same path as
+    // launching, so the mark played every time. Reported as "every time i close and open a
+    // window without quitting totonote, it plays the splash".
+    test.skip(process.platform !== 'darwin', 'only macOS keeps the app alive without windows');
+
+    const { app } = await launch({ test: false });
+    try {
+      // Let the splash finish and hand over, so the first launch is definitely done.
+      await expect
+        .poll(() => visibleWindows(app).then(w => w.some(x => x.bounds.width > 900)), {
+          timeout: 20000,
+        })
+        .toBe(true);
+
+      await app.evaluate(({ BrowserWindow }) => {
+        for (const w of BrowserWindow.getAllWindows()) w.destroy();
+      });
+      await expect.poll(() => visibleWindows(app).then(w => w.length), { timeout: 10000 }).toBe(0);
+
+      // What clicking the dock icon does.
+      await app.evaluate(({ app: electronApp }) => {
+        electronApp.emit('activate');
+      });
+
+      await expect.poll(() => visibleWindows(app).then(w => w.length), { timeout: 20000 }).toBe(1);
+      const [only] = await visibleWindows(app);
+      // The app window, at full size — not the 420x260 splash.
+      expect(only.bounds.width).toBeGreaterThan(900);
+    } finally {
+      await app.close();
+    }
+  });
+
   test('hands over to the app window, then closes itself', async () => {
     const { app } = await launch({ test: false });
     try {
