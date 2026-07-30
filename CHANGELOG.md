@@ -1,5 +1,13 @@
 # What's New
 
+## 1.23.1
+
+**The splash fades in before the animation starts**, instead of appearing already halfway
+through it, and **holds on the finished mark for a moment** before the app opens.
+
+The animation also plays to its end now. It was being cut off five frames early: the splash
+waited 3150ms for an animation that runs for 3300ms.
+
 ## 1.23.0
 
 **Check for updates whenever you like.** **TotoNote → Check for Updates…**, or the

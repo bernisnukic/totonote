@@ -14,6 +14,11 @@
   }
   .splash {
     height: 100%;
+    /* Fade the mark up before it starts moving, rather than snapping into a window that
+       is already mid-animation. The GIF is not given its source until this finishes, so
+       the animation genuinely begins at frame 1 once the card is visible. */
+    opacity: 0;
+    animation: fade-in 450ms ease-out forwards;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -27,7 +32,12 @@
     border-radius: 12px;
     font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace;
   }
-  img { width: 120px; height: auto; }
+  /* Square, and stated, so reserving the space costs no layout shift while the source
+     is withheld during the fade. */
+  img { width: 120px; height: 120px; }
+  @keyframes fade-in {
+    to { opacity: 1; }
+  }
   .name {
     color: #e0e0e0;
     font-size: 15px;
@@ -56,10 +66,11 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .bar span { animation: none; width: 100%; opacity: 0.5; }
+    .splash { animation: none; opacity: 1; }
   }
 </style>
 <div class="splash" onclick="window.close()" title="Click to skip">
-  <img src="intro.gif" alt="" />
+  <img id="mark" alt="" width="120" height="120" />
   <div class="name">TotoNote</div>
   <div class="version" id="version"></div>
   <div class="bar"><span></span></div>
@@ -69,4 +80,29 @@
   // access to the app, deliberately: it must never be able to delay startup.
   const v = new URLSearchParams(location.search).get('v');
   if (v) document.getElementById('version').textContent = 'Version ' + v;
+
+  // A GIF starts the moment it has a source, so the source is withheld until the card has
+  // faded up. Decoding it first means assigning it later starts frame 1 immediately rather
+  // than leaving a gap where the fade ends and the animation has not begun.
+  const mark = document.getElementById('mark');
+  const warm = new Image();
+  warm.src = 'intro.gif';
+
+  let started = false;
+  const play = () => {
+    if (started) return;
+    started = true;
+    mark.src = 'intro.gif';
+  };
+
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    play();
+  } else {
+    document.querySelector('.splash').addEventListener('animationend', event => {
+      if (event.animationName === 'fade-in') play();
+    });
+    // If the animation never reports finishing, play anyway: a splash stuck on an empty
+    // square is far worse than one that starts a moment early.
+    setTimeout(play, 700);
+  }
 </script>

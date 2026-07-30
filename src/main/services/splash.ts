@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from 'electron';
+import { MINIMUM_MS, MAXIMUM_MS } from './splash-timing';
 import fs from 'fs';
 import path from 'path';
 
@@ -13,15 +14,6 @@ import path from 'path';
  * It has no preload and no access to the database or IPC. A splash that can fail is worse
  * than no splash, so the only thing it is given is a version string on the query.
  */
-
-/** How long the mark is shown, matching one play-through of the GIF. */
-const MINIMUM_MS = 3150;
-
-/**
- * How long to wait for the main window before giving up and showing it anyway. A splash
- * that outlives a wedged renderer would leave someone staring at a logo forever.
- */
-const MAXIMUM_MS = 12000;
 
 let splash: BrowserWindow | null = null;
 
